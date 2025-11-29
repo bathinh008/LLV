@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Lịch làm việc tuần</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    max-width: 1200px;
+    margin: auto;
+    background: #f4f6f9;
+}
+h1 { text-align: center; margin-bottom: 5px; }
+.header-week { text-align: center; margin-bottom: 10px; font-size: 18px; }
+.group-label { text-align:center; margin-bottom:15px; font-style:italic; }
+
+.control-bar {
+    display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;
+}
+button {
+    padding:8px 12px;
+    border-radius:6px;
+    border:none;
+    cursor:pointer;
+    font-size:13px;
+}
+.btn-primary { background:#3498db; color:#fff; }
+.btn-success { background:#27ae60; color:#fff; }
+.btn-warning { background:#f39c12; color:#fff; }
+.btn-outline { background:#fff; border:1px solid #7f8c8d; color:#2c3e50; }
+.btn-danger { background:#e74c3c; color:#fff; }
+
+table {
+    width:100%; border-collapse:collapse; background:#fff; font-size:14px;
+}
+th,td {
+    border:1px solid #333;
+    padding:4px 6px;
+    text-align:center;
+}
+thead th { background:#f2f2f2; }
+td[contenteditable="true"] { background:#fbffea; }
+
+.ca-s  { background:#fff2ac; }
+.ca-c  { background:#b7ff9d; }
+.ca-hc { background:#ffb3b3; }
+.ca-nc { background:#f6ff82; }
+.ca-p  { background:#ff6666; }
+.ca-nb { background:#ff7a7a; }
+.ca-ct { background:#9dd3ff; }
+
+.shift { min-width:40px; cursor:pointer; }
+
+/* Popup nền */
+.popup-bg {
+    display:none; position:fixed; left:0; top:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.4);
+    align-items:center; justify-content:center;
+    z-index:9999;
+}
+.popup-box {
+    background:#fff; padding:20px;
+    border-radius:10px; width:320px;
+}
+.popup-box h3 { margin-top:0; }
+.popup-box input, .popup-box select {
+    width:100%; padding:8px; margin-bottom:10px;
+    border-radius:6px; border:1px solid #ccc;
+}
+
+/* Menu chọn ca */
+#shiftMenu {
+    position:absolute;
+    background:#fff;
+    border:1px solid #bdc3c7;
+    border-radius:6px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    padding:4px;
+    display:none;
+    z-index:999;
+    font-size:13px;
+}
+#shiftMenu button {
+    display:block;
+    width:100%;
+    text-align:left;
+    border:none;
+    background:transparent;
+    padding:4px 8px;
+    cursor:pointer;
+}
+#shiftMenu button:hover {
+    background:#ecf0f1;
+}
+</style>
+</head>
+<body>
+
+<h1>LỊCH LÀM VIỆC</h1>
+<div class="header-week" id="weekRange"></div>
+<div class="group-label" id="groupLabel"></div>
+
+<div class="control-bar">
+    <button class="btn-primary" onclick="openAddEmpPopup()">+ Thêm nhân viên</button>
+    <button class="btn-success" onclick="autoAssignShifts()">Chia ca tự động</button>
+    <button class="btn-outline" onclick="openWeekPopup()">Tạo tuần mới</button>
+    <button class="btn-outline" onclick="openOldWeekPopup()">Xem tuần đã lưu</button>
+    <button class="btn-warning" onclick="saveSchedule()">Lưu lịch tuần</button>
+    <button class="btn-warning" onclick="exportToExcel()">Xuất Excel</button>
+    <button class="btn-outline" onclick="goBack()">← Về chọn nhóm</button>
+</div>
+
+<table id="scheduleTable">
+    <thead>
+        <tr>
+            <th rowspan="2">STT</th>
+            <th rowspan="2">MÃ NV</th>
+            <th rowspan="2">HỌ TÊN</th>
+            <th rowspan="2">CHỨC VỤ</th>
+            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
+            <th rowspan="2">NGÀY BÙ</th>
+            <th rowspan="2">PHÉP NĂM</th>
+            <th rowspan="2">XÓA</th>
+        </tr>
+        <tr id="headerDatesRow"></tr>
+    </thead>
+    <tbody id="staffRows"></tbody>
+</table>
+
+<!-- Menu chọn ca -->
+<div id="shiftMenu"></div>
+
+<!-- Popup thêm nhân viên -->
+<div id="addEmpPopup" class="popup-bg">
+    <div class="popup-box">
+        <h3>Thêm nhân viên</h3>
+        <input id="empCode" placeholder="Mã nhân viên">
+        <input id="empName" placeholder="Họ tên nhân viên">
+        <input id="empRole" placeholder="Chức vụ">
+        <button class="btn-primary" onclick="saveNewEmployee()">Lưu</button>
+        <button class="btn-danger" onclick="closeAddEmpPopup()">Hủy</button>
+    </div>
+</div>
+
+<!-- Popup tạo tuần mới -->
+<div id="weekPopup" class="popup-bg">
+    <div class="popup-box">
+        <h3>Chọn ngày bắt đầu tuần (Thứ 2)</h3>
+        <input id="weekStart" type="date">
+        <button class="btn-primary" onclick="applyNewWeek()">Tạo</button>
+        <button class="btn-danger" onclick="closeWeekPopup()">Đóng</button>
+    </div>
+</div>
+
+<!-- Popup chọn tuần đã lưu -->
+<div id="oldWeekPopup" class="popup-bg">
+    <div class="popup-box">
+        <h3>Chọn tuần đã lưu</h3>
+        <select id="weekSelect"></select>
+        <button class="btn-primary" onclick="loadSelectedWeek()">Tải tuần</button>
+        <button class="btn-danger" onclick="closeOldWeekPopup()">Đóng</button>
+    </div>
+</div>
+
+<script>
+const SCRIPT_URL = localStorage.getItem("scriptUrl");
+const params = new URLSearchParams(window.location.search);
+const currentGroup = params.get("group") || (localStorage.getItem("group") || "default");
+
+document.getElementById("groupLabel").innerText = "Nhóm: " + currentGroup;
+
+const staffTbody = document.getElementById("staffRows");
+const headerDatesRow = document.getElementById("headerDatesRow");
+const weekRangeEl = document.getElementById("weekRange");
+
+const SHIFTS = [
+  { code:"",   label:"(Trống)",        className:""      },
+  { code:"S",  label:"Ca sáng (S)",    className:"ca-s"  },
+  { code:"S1", label:"Ca S1",          className:"ca-s"  },
+  { code:"C",  label:"Ca chiều (C)",   className:"ca-c"  },
+  { code:"HC", label:"Hành chính",     className:"ca-hc" },
+  { code:"NB", label:"Nghỉ bù",        className:"ca-nb" },
+  { code:"NC", label:"Nghỉ chủ nhật",  className:"ca-nc" },
+  { code:"P",  label:"Nghỉ phép",      className:"ca-p"  },
+  { code:"CT", label:"Công tác",       className:"ca-ct" }
+];
+
+const COLOR_MAP = {
+  "ca-s":"FFF2AC",
+  "ca-c":"B7FF9D",
+  "ca-hc":"FFB3B3",
+  "ca-nc":"F6FF82",
+  "ca-p":"FF6666",
+  "ca-nb":"FF7A7A",
+  "ca-ct":"9DD3FF"
+};
+
+let currentEditedCell = null;
+
+/* =========== INIT =========== */
+document.addEventListener("DOMContentLoaded", () => {
+    if (!SCRIPT_URL) {
+        alert("Không có scriptUrl. Hãy đăng nhập lại.");
+        return;
+    }
+    initDefaultWeek();
+    loadEmployees();
+});
+
+/* =========== WEEK HEADER =========== */
+function generateDates(startDate) {
+    const arr = [];
+    const d = new Date(startDate);
+    for (let i = 0; i < 7; i++) {
+        const dd = String(d.getDate()).padStart(2,"0");
+        const mm = String(d.getMonth()+1).padStart(2,"0");
+        arr.push(`${dd}/${mm}`);
+        d.setDate(d.getDate()+1);
+    }
+    return arr;
+}
+
+function initDefaultWeek() {
+    const today = new Date();
+    const day = today.getDay(); // 0 CN, 1 T2...
+    const monday = new Date(today);
+    const diff = (day === 0 ? -6 : 1 - day);
+    monday.setDate(today.getDate() + diff);
+
+    updateWeekHeader(monday);
+}
+
+function updateWeekHeader(start) {
+    const dates = generateDates(start);
+    headerDatesRow.innerHTML = dates.map(d => `<th>${d}</th>`).join("");
+
+    const end = new Date(start);
+    end.setDate(start.getDate()+6);
+
+    const dd1 = String(start.getDate()).padStart(2,"0");
+    const mm1 = String(start.getMonth()+1).padStart(2,"0");
+    const yyyy1 = start.getFullYear();
+
+    const dd2 = String(end.getDate()).padStart(2,"0");
+    const mm2 = String(end.getMonth()+1).padStart(2,"0");
+    const yyyy2 = end.getFullYear();
+
+    weekRangeEl.innerText = `Tuần từ ${dd1}/${mm1}/${yyyy1} đến ${dd2}/${mm2}/${yyyy2}`;
+}
+
+/* =========== ADD / LOAD EMPLOYEES =========== */
+function appendEmployeeRow(code, name, role) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+        <td class="stt"></td>
+        <td class="emp-code" contenteditable="true">${code}</td>
+        <td class="emp-name" contenteditable="true">${name}</td>
+        <td class="emp-role" contenteditable="true">${role}</td>
+        ${[0,1,2,3,4,5,6].map(i => `<td class="shift" data-day="${i}"></td>`).join("")}
+        <td class="ngaybu" contenteditable="true">0</td>
+        <td class="phepnam" contenteditable="true">0</td>
+        <td><button class="btn-danger" onclick="deleteRow(this)">X</button></td>
+    `;
+    staffTbody.appendChild(tr);
+
+    tr.querySelectorAll(".shift").forEach(td => {
+        td.addEventListener("click", onShiftCellClick);
+    });
+
+    updateStt();
+}
+
+function updateStt() {
+    [...staffTbody.querySelectorAll(".stt")].forEach((td, i) => {
+        td.innerText = i+1;
+    });
+}
+
+async function loadEmployees() {
+    const res = await fetch(`${SCRIPT_URL}?action=listEmployees&group=${encodeURIComponent(currentGroup)}`);
+    const json = await res.json();
+
+    staffTbody.innerHTML = "";
+    (json.data || []).forEach(emp => {
+        appendEmployeeRow(emp.code, emp.name, emp.role);
+    });
+}
+
+function openAddEmpPopup() {
+    document.getElementById("addEmpPopup").style.display = "flex";
+}
+function closeAddEmpPopup() {
+    document.getElementById("addEmpPopup").style.display = "none";
+}
+
+async function saveNewEmployee() {
+    const code = document.getElementById("empCode").value.trim();
+    const name = document.getElementById("empName").value.trim();
+    const role = document.getElementById("empRole").value.trim();
+
+    if (!code || !name || !role) {
+        alert("Vui lòng nhập đủ mã, tên, chức vụ.");
+        return;
+    }
+
+    appendEmployeeRow(code, name, role);
+
+    await fetch(SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            action:"saveEmployee",
+            group:currentGroup,
+            code,name,role
+        })
+    });
+
+    alert("Đã thêm nhân viên!");
+    document.getElementById("empCode").value = "";
+    document.getElementById("empName").value = "";
+    document.getElementById("empRole").value = "";
+    closeAddEmpPopup();
+}
+
+/* =========== SHIFT MENU =========== */
+const shiftMenu = document.getElementById("shiftMenu");
+
+function onShiftCellClick(e) {
+    e.stopPropagation();
+    currentEditedCell = e.target;
+
+    const rect = currentEditedCell.getBoundingClientRect();
+    shiftMenu.style.left = rect.left + window.scrollX + "px";
+    shiftMenu.style.top  = rect.bottom + window.scrollY + "px";
+
+    shiftMenu.innerHTML = SHIFTS.map(s => `
+        <button data-code="${s.code}" data-class="${s.className}">
+            ${s.code ? `<b>${s.code}</b> – ` : ""}${s.label}
+        </button>
+    `).join("");
+
+    shiftMenu.style.display = "block";
+
+    shiftMenu.querySelectorAll("button").forEach(btn => {
+        btn.onclick = () => {
+            const code = btn.getAttribute("data-code");
+            const cls  = btn.getAttribute("data-class");
+            setShiftOnCell(currentEditedCell, code, cls);
+            shiftMenu.style.display = "none";
+        };
+    });
+}
+
+function setShiftOnCell(td, code, className) {
+    td.classList.forEach(c => {
+        if (c.startsWith("ca-")) td.classList.remove(c);
+    });
+    td.innerText = code || "";
+    if (className) td.classList.add(className);
+}
+
+document.addEventListener("click", () => {
+    shiftMenu.style.display = "none";
+});
+
+/* =========== AUTO ASSIGN SHIFTS =========== */
+function autoAssignShifts() {
+    const rows = [...staffTbody.querySelectorAll("tr")];
+    const pattern = ["S","C","HC"];
+
+    rows.forEach((row, rIdx) => {
+        const tds = row.querySelectorAll(".shift");
+        tds.forEach((td, dIdx) => {
+            const code = pattern[(rIdx+dIdx)%pattern.length];
+            let cls = "";
+            if (code==="S")  cls="ca-s";
+            if (code==="C")  cls="ca-c";
+            if (code==="HC") cls="ca-hc";
+            setShiftOnCell(td, code, cls);
+        });
+    });
+}
+
+/* =========== DELETE ROW =========== */
+function deleteRow(btn) {
+    const tr = btn.closest("tr");
+    tr.remove();
+    updateStt();
+}
+
+/* =========== SAVE SCHEDULE =========== */
+function collectScheduleData() {
+    const rows = [...staffTbody.querySelectorAll("tr")];
+    return rows.map(row => {
+        const code = row.querySelector(".emp-code").innerText.trim();
+        const name = row.querySelector(".emp-name").innerText.trim();
+        const role = row.querySelector(".emp-role").innerText.trim();
+        const ngaybu = row.querySelector(".ngaybu").innerText.trim();
+        const phepnam = row.querySelector(".phepnam").innerText.trim();
+        const shifts = [...row.querySelectorAll(".shift")].map(td => td.innerText.trim());
+        return { code,name,role,ngaybu,phepnam,shifts };
+    });
+}
+
+function getCurrentWeekStart() {
+    const firstTh = headerDatesRow.querySelector("th");
+    if (!firstTh) return null;
+
+    const [dd,mm] = firstTh.innerText.split("/");
+    const yearStr = weekRangeEl.innerText.slice(-4);
+    return `${yearStr}-${mm}-${dd}`;
+}
+
+async function saveSchedule() {
+    const weekStart = getCurrentWeekStart();
+    if (!weekStart) {
+        alert("Không xác định được ngày bắt đầu tuần.");
+        return;
+    }
+    const payload = {
+        action:"saveSchedule",
+        group:currentGroup,
+        weekStart:weekStart,
+        weekRange:weekRangeEl.innerText,
+        data:collectScheduleData()
+    };
+
+    await fetch(SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+    });
+
+    alert("Đã lưu lịch tuần!");
+}
+
+/* =========== NEW WEEK POPUP =========== */
+function openWeekPopup() {
+    document.getElementById("weekPopup").style.display = "flex";
+}
+function closeWeekPopup() {
+    document.getElementById("weekPopup").style.display = "none";
+}
+
+function applyNewWeek() {
+    const val = document.getElementById("weekStart").value;
+    if (!val) {
+        alert("Chọn ngày bắt đầu tuần (thứ 2).");
+        return;
+    }
+    const d = new Date(val);
+    if (d.getDay() !== 1) {
+        alert("Ngày chọn phải là thứ 2.");
+        return;
+    }
+    updateWeekHeader(d);
+
+    // reset ca
+    staffTbody.querySelectorAll(".shift").forEach(td => {
+        td.innerText = "";
+        td.classList.forEach(c => { if (c.startsWith("ca-")) td.classList.remove(c); });
+    });
+
+    closeWeekPopup();
+}
+
+/* =========== LOAD OLD WEEK =========== */
+async function openOldWeekPopup() {
+    document.getElementById("oldWeekPopup").style.display = "flex";
+    const sel = document.getElementById("weekSelect");
+    sel.innerHTML = "<option>Đang tải...</option>";
+
+    const res = await fetch(`${SCRIPT_URL}?action=listWeeks&group=${encodeURIComponent(currentGroup)}`);
+    const json = await res.json();
+
+    sel.innerHTML = "";
+    (json.weeks || []).forEach(w => {
+        const opt = document.createElement("option");
+        opt.value = w.weekStart;
+        opt.textContent = `${w.weekRange} (${w.weekStart})`;
+        sel.appendChild(opt);
+    });
+
+    if (!json.weeks || json.weeks.length === 0) {
+        const opt = document.createElement("option");
+        opt.textContent = "Chưa có tuần nào được lưu.";
+        opt.disabled = true;
+        sel.appendChild(opt);
+    }
+}
+
+function closeOldWeekPopup() {
+    document.getElementById("oldWeekPopup").style.display = "none";
+}
+
+async function loadSelectedWeek() {
+    const sel = document.getElementById("weekSelect");
+    const ws = sel.value;
+    if (!ws) {
+        alert("Chưa chọn tuần.");
+        return;
+    }
+
+    const res = await fetch(`${SCRIPT_URL}?action=getSchedule&group=${encodeURIComponent(currentGroup)}&weekStart=${encodeURIComponent(ws)}`);
+    const json = await res.json();
+
+    // Cập nhật tuần
+    const start = new Date(json.weekStart);
+    updateWeekHeader(start);
+
+    // Clear bảng
+    staffTbody.innerHTML = "";
+    (json.data || []).forEach(rec => {
+        appendEmployeeRow(rec.code, rec.name, rec.role);
+        const tr = staffTbody.lastElementChild;
+        tr.querySelector(".ngaybu").innerText  = rec.ngaybu || "0";
+        tr.querySelector(".phepnam").innerText = rec.phepnam || "0";
+
+        const tds = tr.querySelectorAll(".shift");
+        (rec.shifts || []).forEach((code, idx) => {
+            if (!tds[idx]) return;
+            let cls = "";
+            if (code==="S" || code==="S1") cls="ca-s";
+            else if (code==="C") cls="ca-c";
+            else if (code==="HC") cls="ca-hc";
+            else if (code==="NB") cls="ca-nb";
+            else if (code==="NC") cls="ca-nc";
+            else if (code==="P") cls="ca-p";
+            else if (code==="CT") cls="ca-ct";
+            setShiftOnCell(tds[idx], code, cls);
+        });
+    });
+
+    closeOldWeekPopup();
+}
+
+/* =========== EXPORT EXCEL =========== */
+function exportToExcel() {
+    const table = document.getElementById("scheduleTable");
+    const rows = [...table.rows];
+
+    const data = rows.map(r => [...r.cells].map(c => c.innerText));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    rows.forEach((tr, r) => {
+        [...tr.cells].forEach((td, c) => {
+            const caClass = [...td.classList].find(cl => cl.startsWith("ca-"));
+            if (!caClass) return;
+            const addr = XLSX.utils.encode_cell({ r, c });
+            if (!ws[addr]) ws[addr] = { t:"s", v:td.innerText };
+            ws[addr].s = {
+                fill:{
+                    patternType:"solid",
+                    fgColor:{ rgb: COLOR_MAP[caClass] || "FFFFFF" }
+                },
+                alignment:{ horizontal:"center", vertical:"center" },
+                border:{
+                    top:{style:"thin",color:{rgb:"000000"}},
+                    bottom:{style:"thin",color:{rgb:"000000"}},
+                    left:{style:"thin",color:{rgb:"000000"}},
+                    right:{style:"thin",color:{rgb:"000000"}}
+                }
+            };
+        });
+    });
+
+    XLSX.utils.book_append_sheet(wb, ws, "LichTuan");
+    XLSX.writeFile(wb, `lich-${currentGroup}.xlsx`);
+}
+
+/* =========== NAVIGATION =========== */
+function goBack() {
+    window.location.href = "dashboard.html";
+}
+</script>
+
+</body>
+</html>

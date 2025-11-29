@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Chọn nhóm</title>
+<style>
+body {
+    font-family: Arial;
+    background:#f4f6f9;
+    padding:30px;
+}
+.box {
+    max-width:700px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,0.2);
+}
+h2 { margin-top:0; }
+.group, .user-row {
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    margin-bottom:8px;
+    cursor:pointer;
+    background:#fafafa;
+}
+.group:hover, .user-row:hover {
+    background:#eaf2ff;
+}
+.admin-panel {
+    margin-top:25px;
+    padding:15px;
+    border-radius:10px;
+    background:#fdfdfd;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+input, select {
+    padding:6px;
+    border-radius:6px;
+    border:1px solid #bbb;
+    width:100%;
+    margin-top:4px;
+    margin-bottom:8px;
+}
+button {
+    padding:6px 10px;
+    border-radius:6px;
+    border:none;
+    background:#3498db;
+    color:white;
+    cursor:pointer;
+    font-size:13px;
+}
+button:hover { background:#2980b9; }
+.small-btn {
+    padding:3px 8px;
+    font-size:12px;
+    margin-left:8px;
+    background:#e74c3c;
+}
+.small-btn:hover { background:#c0392b; }
+.header-row {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+}
+.badge {
+    display:inline-block;
+    padding:2px 6px;
+    border-radius:8px;
+    font-size:11px;
+    background:#ecf0f1;
+    margin-left:6px;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+    <div class="header-row">
+        <h2>Chọn nhóm làm việc</h2>
+        <div id="userInfo"></div>
+    </div>
+
+    <div id="groupList">Đang tải nhóm...</div>
+
+    <div id="adminPanel" class="admin-panel" style="display:none;">
+        <h3>⚙ Quản trị hệ thống</h3>
+
+        <h4>➕ Thêm nhóm</h4>
+        <input id="newGroup" placeholder="Tên nhóm mới">
+        <button onclick="addGroup()">Thêm nhóm</button>
+
+        <h4 style="margin-top:20px;">🗑 Xóa nhóm</h4>
+        <div id="groupDeleteList">Đang tải...</div>
+
+        <h4 style="margin-top:20px;">👤 Quản lý tài khoản</h4>
+        <div id="userList">Đang tải danh sách tài khoản...</div>
+    </div>
+</div>
+
+<script>
+const SCRIPT_URL = localStorage.getItem("scriptUrl");
+
+// thông tin hiện tại
+const CURRENT_USER = localStorage.getItem("username") || "Unknown";
+const CURRENT_ROLE = localStorage.getItem("role") || "user";
+
+document.getElementById("userInfo").innerHTML =
+    `👤 ${CURRENT_USER} <span class="badge">${CURRENT_ROLE}</span>`;
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (!SCRIPT_URL) {
+        document.getElementById("groupList").innerHTML =
+            "<span style='color:red'>Không có scriptUrl! Hãy quay lại trang đăng nhập.</span>";
+        return;
+    }
+    loadGroups();
+
+    if (CURRENT_ROLE === "admin") {
+        document.getElementById("adminPanel").style.display = "block";
+        loadGroupsForDelete();
+        loadUsers();
+    }
+});
+
+async function loadGroups() {
+    const box = document.getElementById("groupList");
+    box.innerHTML = "Đang tải nhóm...";
+
+    try {
+        const res = await fetch(SCRIPT_URL + "?action=listGroups");
+        const json = await res.json();
+
+        box.innerHTML = "";
+        (json.groups || []).forEach(g => {
+            const div = document.createElement("div");
+            div.className = "group";
+            div.textContent = g;
+            div.onclick = () => {
+                window.location.href = "scheduler.html?group=" + encodeURIComponent(g);
+            };
+            box.appendChild(div);
+        });
+
+        if (!json.groups || json.groups.length === 0) {
+            box.innerHTML = "<i>Chưa có nhóm nào. Hãy thêm nhóm nếu bạn là admin.</i>";
+        }
+    } catch (err) {
+        console.error(err);
+        box.innerHTML = "<span style='color:red'>Không tải được nhóm.</span>";
+    }
+}
+
+/* ADMIN – ADD GROUP */
+async function addGroup() {
+    const name = document.getElementById("newGroup").value.trim();
+    if (!name) return alert("Nhập tên nhóm!");
+
+    await fetch(SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ action:"addGroup", group:name })
+    });
+
+    alert("Đã thêm nhóm!");
+    document.getElementById("newGroup").value = "";
+    loadGroups();
+    loadGroupsForDelete();
+}
+
+/* ADMIN – LOAD GROUPS FOR DELETE */
+async function loadGroupsForDelete() {
+    const box = document.getElementById("groupDeleteList");
+    box.innerHTML = "Đang tải...";
+
+    const res = await fetch(SCRIPT_URL + "?action=listGroups");
+    const json = await res.json();
+
+    box.innerHTML = "";
+    (json.groups || []).forEach(g => {
+        const div = document.createElement("div");
+        div.className = "group";
+        div.innerHTML = `
+            ${g}
+            <button class="small-btn" onclick="deleteGroup('${g}')">Xóa</button>
+        `;
+        box.appendChild(div);
+    });
+
+    if (!json.groups || json.groups.length === 0) {
+        box.innerHTML = "<i>Chưa có nhóm nào.</i>";
+    }
+}
+
+/* ADMIN – DELETE GROUP */
+async function deleteGroup(g) {
+    if (!confirm("Bạn chắc chắn muốn xóa nhóm: " + g + " ?")) return;
+
+    await fetch(SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ action:"deleteGroup", group:g })
+    });
+
+    alert("Đã xóa nhóm!");
+    loadGroups();
+    loadGroupsForDelete();
+}
+
+/* ADMIN – LOAD USERS */
+async function loadUsers() {
+    const box = document.getElementById("userList");
+    box.innerHTML = "Đang tải...";
+
+    const res = await fetch(SCRIPT_URL + "?action=listUsers");
+    const json = await res.json();
+
+    box.innerHTML = "";
+    const groups = json.groups || [];
+
+    (json.users || []).forEach(u => {
+        const row = document.createElement("div");
+        row.className = "user-row";
+
+        row.innerHTML = `
+            <b>${u.username}</b> 
+            <span class="badge">${u.role}</span><br>
+            Nhóm: 
+            <select onchange="updateUser('${u.username}', this.value, null)">
+                ${groups.map(g => `<option value="${g}" ${g===u.group?"selected":""}>${g}</option>`).join("")}
+            </select>
+            Quyền:
+            <select onchange="updateUser('${u.username}', null, this.value)">
+                <option value="user" ${u.role==="user"?"selected":""}>user</option>
+                <option value="admin" ${u.role==="admin"?"selected":""}>admin</option>
+            </select>
+        `;
+        box.appendChild(row);
+    });
+
+    if (!json.users || json.users.length === 0) {
+        box.innerHTML = "<i>Chưa có tài khoản nào trong sheet Users.</i>";
+    }
+}
+
+/* ADMIN – UPDATE USER */
+async function updateUser(username, group, role) {
+    const body = { action:"updateUser", username };
+
+    if (group !== null) body.group = group;
+    if (role  !== null) body.role  = role;
+
+    await fetch(SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(body)
+    });
+
+    alert("Đã cập nhật tài khoản " + username);
+}
+</script>
+
+</body>
+</html>
