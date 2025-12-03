@@ -7,10 +7,11 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 
 <style>
+/* ================= CSS CHUNG ================= */
 body {
     font-family: Arial, sans-serif;
     padding: 20px;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: auto;
     background: #f4f6f9;
 }
@@ -18,8 +19,10 @@ h1 { text-align: center; margin-bottom: 5px; }
 .header-week { text-align: center; margin-bottom: 10px; font-size: 18px; }
 .group-label { text-align:center; margin-bottom:15px; font-style:italic; }
 
+/* Control Bar */
 .control-bar {
     display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;
+    justify-content: center;
 }
 button {
     padding:8px 12px;
@@ -27,50 +30,63 @@ button {
     border:none;
     cursor:pointer;
     font-size:13px;
+    transition: 0.2s;
 }
+button:hover { opacity: 0.9; transform: translateY(-1px); }
 .btn-primary { background:#3498db; color:#fff; }
 .btn-success { background:#27ae60; color:#fff; }
 .btn-warning { background:#f39c12; color:#fff; }
 .btn-outline { background:#fff; border:1px solid #7f8c8d; color:#2c3e50; }
 .btn-danger { background:#e74c3c; color:#fff; }
 
+/* Table Styles */
 table {
-    width:100%; border-collapse:collapse; background:#fff; font-size:14px;
+    width:100%; border-collapse:collapse; background:#fff; font-size:13px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-th,td {
-    border:1px solid #333;
-    padding:4px 6px;
+th, td {
+    border:1px solid #ddd;
+    padding:6px 4px;
     text-align:center;
+    vertical-align: middle;
 }
-thead th { background:#f2f2f2; }
-td[contenteditable="true"] { background:#fbffea; }
+thead th { background:#f2f2f2; color: #333; font-weight: bold; }
 
+/* Màu sắc các cột số dư (Header) */
+.col-p-old { background-color: #ffe6e6 !important; color: #c0392b; } 
+.col-p-new { background-color: #ffcccc !important; color: #c0392b; } 
+.col-b-old { background-color: #e6f2ff !important; color: #2980b9; } 
+.col-b-new { background-color: #cce6ff !important; color: #2980b9; } 
+
+/* Class Ca kíp */
 .ca-s  { background:#fff2ac; }
 .ca-c  { background:#b7ff9d; }
 .ca-hc { background:#ffb3b3; }
 .ca-nc { background:#f6ff82; }
-.ca-p  { background:#ff6666; }
-.ca-nb { background:#ff7a7a; }
+.ca-p  { background:#ff6666; color: white; }
+.ca-nb { background:#ff7a7a; color: white; }
 .ca-ct { background:#9dd3ff; }
 
 .shift { min-width:40px; cursor:pointer; }
+.emp-code, .emp-name, .emp-role { font-weight: 500; }
 
-/* Popup nền */
+/* Popup */
 .popup-bg {
     display:none; position:fixed; left:0; top:0;
     width:100%; height:100%;
-    background:rgba(0,0,0,0.4);
+    background:rgba(0,0,0,0.5);
     align-items:center; justify-content:center;
     z-index:9999;
 }
 .popup-box {
     background:#fff; padding:20px;
-    border-radius:10px; width:320px;
+    border-radius:10px; width:350px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-.popup-box h3 { margin-top:0; }
+.popup-box h3 { margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;}
 .popup-box input, .popup-box select {
     width:100%; padding:8px; margin-bottom:10px;
-    border-radius:6px; border:1px solid #ccc;
+    border-radius:6px; border:1px solid #ccc; box-sizing: border-box;
 }
 
 /* Menu chọn ca */
@@ -86,16 +102,15 @@ td[contenteditable="true"] { background:#fbffea; }
     font-size:13px;
 }
 #shiftMenu button {
-    display:block;
-    width:100%;
-    text-align:left;
-    border:none;
-    background:transparent;
-    padding:4px 8px;
-    cursor:pointer;
+    display:block; width:100%; text-align:left;
+    border:none; background:transparent; padding:6px 10px; cursor:pointer;
 }
-#shiftMenu button:hover {
-    background:#ecf0f1;
+#shiftMenu button:hover { background:#ecf0f1; }
+
+/* CSS Swap */
+.swap-selected {
+    border: 2px solid #3498db !important;
+    background: #e9f2fb !important;
 }
 </style>
 </head>
@@ -106,40 +121,51 @@ td[contenteditable="true"] { background:#fbffea; }
 <div class="group-label" id="groupLabel"></div>
 
 <div class="control-bar">
-    <button class="btn-primary" onclick="openAddEmpPopup()">+ Thêm nhân viên</button>
+    <button class="btn-primary" style="position:relative;" onclick="openRequestsPopup()">
+        🔔 Yêu cầu <span id="badgeCount" style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:11px; position:absolute; top:-5px; right:-5px; display:none;">0</span>
+    </button>
+
+    <button class="btn-primary" onclick="openAddEmpPopup()">➕ Thêm nhân viên</button>
+    <button class="btn-primary" onclick="openBulkLeavePopup()">➕ Thêm Phép/Bù</button>
     <button class="btn-success" onclick="autoAssignShifts()">Chia ca tự động</button>
+    <button class="btn-outline" onclick="enableSwap()">⇌ Đảo vị trí</button> 
     <button class="btn-outline" onclick="openWeekPopup()">Tạo tuần mới</button>
     <button class="btn-outline" onclick="openOldWeekPopup()">Xem tuần đã lưu</button>
-    <button class="btn-warning" onclick="saveSchedule()">Lưu lịch tuần</button>
-    <button class="btn-warning" onclick="exportToExcel()">Xuất Excel</button>
-    <button class="btn-outline" onclick="goBack()">← Về chọn nhóm</button>
+    <button class="btn-warning" onclick="saveSchedule()">💾 Lưu lịch tuần</button>
+    <button class="btn-warning" onclick="exportToExcel()">📊 Xuất Excel</button>
+    <button class="btn-outline" onclick="goBack()">← Về trang chủ</button>
 </div>
 
 <table id="scheduleTable">
     <thead>
         <tr>
-            <th rowspan="2">STT</th>
-            <th rowspan="2">MÃ NV</th>
-            <th rowspan="2">HỌ TÊN</th>
-            <th rowspan="2">CHỨC VỤ</th>
+            <th rowspan="2" style="width: 30px;">STT</th>
+            <th rowspan="2" style="width: 60px;">MÃ NV</th>
+            <th rowspan="2" style="width: 150px;">HỌ TÊN</th>
+            <th rowspan="2" style="width: 80px;">CHỨC VỤ</th>
+            
             <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-            <th rowspan="2">NGÀY BÙ</th>
-            <th rowspan="2">PHÉP NĂM</th>
-            <th rowspan="2">XÓA</th>
+            
+            <th rowspan="2" class="col-p-old" style="display:none;">PHÉP CŨ</th>
+            <th rowspan="2" class="col-p-new">PHÉP MỚI</th>
+            <th rowspan="2" class="col-b-old" style="display:none;">BÙ CŨ</th>
+            <th rowspan="2" class="col-b-new">BÙ MỚI</th>
+            
+            <th rowspan="2" style="background-color: #fff3cd; color: #d35400;">TỔNG</th>
+
+            <th rowspan="2" style="width: 40px;">XÓA</th>
         </tr>
         <tr id="headerDatesRow"></tr>
     </thead>
     <tbody id="staffRows"></tbody>
 </table>
 
-<!-- Menu chọn ca -->
 <div id="shiftMenu"></div>
 
-<!-- Popup thêm nhân viên -->
 <div id="addEmpPopup" class="popup-bg">
     <div class="popup-box">
         <h3>Thêm nhân viên</h3>
-        <input id="empCode" placeholder="Mã nhân viên">
+        <input id="empCode" placeholder="Mã nhân viên (VD: NV01)">
         <input id="empName" placeholder="Họ tên nhân viên">
         <input id="empRole" placeholder="Chức vụ">
         <button class="btn-primary" onclick="saveNewEmployee()">Lưu</button>
@@ -147,17 +173,15 @@ td[contenteditable="true"] { background:#fbffea; }
     </div>
 </div>
 
-<!-- Popup tạo tuần mới -->
 <div id="weekPopup" class="popup-bg">
     <div class="popup-box">
-        <h3>Chọn ngày bắt đầu tuần (Thứ 2)</h3>
+        <h3>Chọn ngày bắt đầu (Thứ 2)</h3>
         <input id="weekStart" type="date">
         <button class="btn-primary" onclick="applyNewWeek()">Tạo</button>
         <button class="btn-danger" onclick="closeWeekPopup()">Đóng</button>
     </div>
 </div>
 
-<!-- Popup chọn tuần đã lưu -->
 <div id="oldWeekPopup" class="popup-bg">
     <div class="popup-box">
         <h3>Chọn tuần đã lưu</h3>
@@ -167,52 +191,104 @@ td[contenteditable="true"] { background:#fbffea; }
     </div>
 </div>
 
+<div id="bulkLeavePopup" class="popup-bg">
+    <div class="popup-box" style="width: 500px;">
+        <h3>➕ Thêm Phép / Bù</h3>
+        <div style="display:flex; gap:10px;">
+            <select id="bulkLeaveType" style="flex:1;">
+                <option value="NB">Ngày Bù (NB)</option>
+                <option value="PN">Phép Năm (PN)</option>
+            </select>
+            <input id="bulkLeaveAmount" type="number" step="0.5" min="0.5" value="1" style="width: 100px;" title="Số lượng">
+        </div>
+        <input id="bulkLeaveReason" placeholder="Lý do (Ví dụ: Trực lễ, Tăng ca...)" style="margin-top: 10px;">
+        <div style="margin: 10px 0; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+            <input type="checkbox" id="checkAllBulk" checked onclick="toggleCheckAll(this.checked)"> Chọn tất cả
+        </div>
+        <div id="bulkEmployeeList" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background: #fafafa; border-radius: 4px;"></div>
+        <div style="margin-top: 15px; text-align: right;">
+            <button class="btn-danger" onclick="closeBulkLeavePopup()">Hủy</button>
+            <button class="btn-primary" onclick="saveBulkLeave()">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<div id="requestsPopup" class="popup-bg">
+    <div class="popup-box" style="width: 700px; max-width:95%;">
+        <h3>🔔 Danh Sách Yêu Cầu Nghỉ</h3>
+        <div id="reqListContainer" style="max-height: 400px; overflow-y: auto;">
+            <table style="width:100%; font-size:13px;">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>NV</th>
+                        <th>Loại</th>
+                        <th>Ngày nghỉ</th>
+                        <th>Lý do</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="reqTableBody"></tbody>
+            </table>
+            <p id="noReqMsg" style="text-align:center; color:#888; display:none;">Không có yêu cầu nào.</p>
+        </div>
+        <div style="text-align:right; margin-top:15px;">
+            <button class="btn-outline" onclick="closeRequestsPopup()">Đóng</button>
+        </div>
+    </div>
+</div>
+
 <script>
-const SCRIPT_URL = localStorage.getItem("scriptUrl");
+/* ===========================================================
+    CONFIG + KHỞI TẠO
+=========================================================== */
+const SCRIPT_URL = localStorage.getItem("SCRIPT_URL");
 const params = new URLSearchParams(window.location.search);
-const currentGroup = params.get("group") || (localStorage.getItem("group") || "default");
+const currentGroup = params.get("group") || localStorage.getItem("group") || "";
 
 document.getElementById("groupLabel").innerText = "Nhóm: " + currentGroup;
 
-const staffTbody = document.getElementById("staffRows");
+const staffTbody     = document.getElementById("staffRows");
 const headerDatesRow = document.getElementById("headerDatesRow");
-const weekRangeEl = document.getElementById("weekRange");
+const weekRangeEl    = document.getElementById("weekRange");
 
+// Danh sách mã ca (Đã có P/2 và NB/2)
 const SHIFTS = [
   { code:"",   label:"(Trống)",        className:""      },
   { code:"S",  label:"Ca sáng (S)",    className:"ca-s"  },
   { code:"S1", label:"Ca S1",          className:"ca-s"  },
   { code:"C",  label:"Ca chiều (C)",   className:"ca-c"  },
   { code:"HC", label:"Hành chính",     className:"ca-hc" },
-  { code:"NB", label:"Nghỉ bù",        className:"ca-nb" },
-  { code:"NC", label:"Nghỉ chủ nhật",  className:"ca-nc" },
-  { code:"P",  label:"Nghỉ phép",      className:"ca-p"  },
+  { code:"NB", label:"Nghỉ bù (1.0)",  className:"ca-nb" },
+  { code:"NB/2", label:"Nghỉ bù (0.5)",className:"ca-nb" },
+  { code:"NC", label:"Nghỉ CN",        className:"ca-nc" },
+  { code:"P",  label:"Nghỉ phép (1.0)",className:"ca-p"  },
+  { code:"P/2", label:"Nghỉ phép (0.5)",className:"ca-p"  },
   { code:"CT", label:"Công tác",       className:"ca-ct" }
 ];
 
-const COLOR_MAP = {
-  "ca-s":"FFF2AC",
-  "ca-c":"B7FF9D",
-  "ca-hc":"FFB3B3",
-  "ca-nc":"F6FF82",
-  "ca-p":"FF6666",
-  "ca-nb":"FF7A7A",
-  "ca-ct":"9DD3FF"
-};
-
 let currentEditedCell = null;
+const shiftMenu = document.getElementById("shiftMenu");
+let swapRow1 = null;
 
-/* =========== INIT =========== */
+/* ===========================================================
+    INIT
+=========================================================== */
 document.addEventListener("DOMContentLoaded", () => {
     if (!SCRIPT_URL) {
-        alert("Không có scriptUrl. Hãy đăng nhập lại.");
+        alert("Chưa đăng nhập! Vui lòng quay lại trang Login.");
+        window.location.href = "index.html"; 
         return;
     }
-    initDefaultWeek();
-    loadEmployees();
+    loadLastSavedWeek();
+    
+    // KHỞI TẠO CHECK THÔNG BÁO (MỚI)
+    initNotifications();
 });
 
-/* =========== WEEK HEADER =========== */
+/* ===========================================================
+    1) TẠO HEADER NGÀY
+=========================================================== */
 function generateDates(startDate) {
     const arr = [];
     const d = new Date(startDate);
@@ -227,11 +303,8 @@ function generateDates(startDate) {
 
 function initDefaultWeek() {
     const today = new Date();
-    const day = today.getDay(); // 0 CN, 1 T2...
     const monday = new Date(today);
-    const diff = (day === 0 ? -6 : 1 - day);
-    monday.setDate(today.getDate() + diff);
-
+    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); 
     updateWeekHeader(monday);
 }
 
@@ -240,244 +313,268 @@ function updateWeekHeader(start) {
     headerDatesRow.innerHTML = dates.map(d => `<th>${d}</th>`).join("");
 
     const end = new Date(start);
-    end.setDate(start.getDate()+6);
-
-    const dd1 = String(start.getDate()).padStart(2,"0");
-    const mm1 = String(start.getMonth()+1).padStart(2,"0");
-    const yyyy1 = start.getFullYear();
-
-    const dd2 = String(end.getDate()).padStart(2,"0");
-    const mm2 = String(end.getMonth()+1).padStart(2,"0");
-    const yyyy2 = end.getFullYear();
-
-    weekRangeEl.innerText = `Tuần từ ${dd1}/${mm1}/${yyyy1} đến ${dd2}/${mm2}/${yyyy2}`;
+    end.setDate(start.getDate() + 6);
+    const d1 = `${String(start.getDate()).padStart(2,"0")}/${String(start.getMonth()+1).padStart(2,"0")}`;
+    const d2 = `${String(end.getDate()).padStart(2,"0")}/${String(end.getMonth()+1).padStart(2,"0")}/${end.getFullYear()}`;
+    weekRangeEl.innerText = `Tuần từ ${d1} đến ${d2}`;
 }
 
-/* =========== ADD / LOAD EMPLOYEES =========== */
-function appendEmployeeRow(code, name, role) {
+function getCurrentWeekStart() {
+    const firstTh = headerDatesRow.querySelector("th");
+    if (!firstTh) return null;
+    const [dd, mm] = firstTh.innerText.split("/");
+    const yearMatch = weekRangeEl.innerText.match(/(\d{4})\s*$/);
+    const year = yearMatch ? yearMatch[1] : new Date().getFullYear();
+    return `${year}-${mm}-${dd}`;
+}
+
+/* ===========================================================
+    2) HÀNG NHÂN VIÊN & HIỂN THỊ CỘT ĐỘNG
+=========================================================== */
+function appendEmployeeRow(code, name, role, pOld, pNew, bOld, bNew) {
     const tr = document.createElement("tr");
+    
+    // TÍNH TỔNG SỐ DƯ
+    const valPOld = Number(pOld) || 0;
+    const valPNew = Number(pNew) || 0;
+    const valBOld = Number(bOld) || 0;
+    const valBNew = Number(bNew) || 0;
+    const totalRemaining = valPOld + valPNew + valBOld + valBNew;
+
+    // Đã xóa contenteditable để ReadOnly
     tr.innerHTML = `
         <td class="stt"></td>
-        <td class="emp-code" contenteditable="true">${code}</td>
-        <td class="emp-name" contenteditable="true">${name}</td>
-        <td class="emp-role" contenteditable="true">${role}</td>
+        <td class="emp-code">${code || ""}</td>
+        <td class="emp-name">${name || ""}</td>
+        <td class="emp-role">${role || ""}</td>
         ${[0,1,2,3,4,5,6].map(i => `<td class="shift" data-day="${i}"></td>`).join("")}
-        <td class="ngaybu" contenteditable="true">0</td>
-        <td class="phepnam" contenteditable="true">0</td>
-        <td><button class="btn-danger" onclick="deleteRow(this)">X</button></td>
+        
+        <td class="col-p-old" style="display:none; font-weight:bold; color:#c0392b;">${valPOld}</td>
+        <td class="col-p-new" style="font-weight:bold; color:#c0392b;">${valPNew}</td>
+        <td class="col-b-old" style="display:none; font-weight:bold; color:#2980b9;">${valBOld}</td>
+        <td class="col-b-new" style="font-weight:bold; color:#2980b9;">${valBNew}</td>
+        
+        <td style="font-weight:bold; color:#d35400; background-color: #fff3cd; text-align:center;">
+            ${totalRemaining}
+        </td>
+        
+        <td><button class="btn-danger" onclick="deleteEmployee(this)">X</button></td>
     `;
     staffTbody.appendChild(tr);
 
     tr.querySelectorAll(".shift").forEach(td => {
         td.addEventListener("click", onShiftCellClick);
     });
-
+    
+    if (swapRow1) {
+        tr.onclick = onSwapRowClick;
+        tr.style.cursor = 'pointer';
+    }
     updateStt();
 }
 
 function updateStt() {
-    [...staffTbody.querySelectorAll(".stt")].forEach((td, i) => {
-        td.innerText = i+1;
-    });
+    [...staffTbody.querySelectorAll(".stt")].forEach((td, i) => td.innerText = i + 1);
 }
 
-async function loadEmployees() {
-    const res = await fetch(`${SCRIPT_URL}?action=listEmployees&group=${encodeURIComponent(currentGroup)}`);
-    const json = await res.json();
+/* ===========================================================
+    3) LOAD DATA TỪ SERVER
+=========================================================== */
+async function loadLastSavedWeek() {
+    const res = await fetch(`${SCRIPT_URL}?action=getLastSavedWeek&group=${encodeURIComponent(currentGroup)}`);
+    let json;
+    try { json = await res.json(); } catch(e) { console.error(e); }
+
+    if (!json || !json.weekStart) {
+        initDefaultWeek(); 
+        loadScheduleOfCurrentWeek(); 
+        return;
+    }
+
+    const start = new Date(json.weekStart);
+    updateWeekHeader(start);
+    if (json.weekRange) weekRangeEl.innerText = json.weekRange;
+    loadScheduleOfCurrentWeek(json.weekStart);
+}
+
+async function loadScheduleOfCurrentWeek(explicitWeekStart) {
+    const weekStart = explicitWeekStart || getCurrentWeekStart();
+    if (!weekStart) return;
+
+    const res = await fetch(
+        `${SCRIPT_URL}?action=getSchedule`
+        + `&group=${encodeURIComponent(currentGroup)}`
+        + `&weekStart=${encodeURIComponent(weekStart)}`
+    );
+
+    const text = await res.text();
+    let json;
+    try { json = JSON.parse(text); }
+    catch(err) {
+        console.error("JSON ERROR:", err, text);
+        alert("Lỗi dữ liệu từ server.");
+        return;
+    }
+
+    if (json.weekRange) weekRangeEl.innerText = json.weekRange;
 
     staffTbody.innerHTML = "";
-    (json.data || []).forEach(emp => {
-        appendEmployeeRow(emp.code, emp.name, emp.role);
+    
+    // Ẩn hiện cột cũ
+    const prevYear = json.prevYear;
+    const curYear = json.currentYear;
+    const data = json.data || [];
+
+    let showPOld = false;
+    let showBOld = false;
+
+    data.forEach(rec => {
+        if (Number(rec.phep_old) > 0) showPOld = true;
+        if (Number(rec.bu_old) > 0) showBOld = true;
     });
+
+    document.querySelector(".col-p-old").innerText = `PHÉP ${prevYear}`;
+    document.querySelector(".col-p-new").innerText = `PHÉP ${curYear}`;
+    document.querySelector(".col-b-old").innerText = `BÙ ${prevYear}`;
+    document.querySelector(".col-b-new").innerText = `BÙ ${curYear}`;
+
+    const setDisplay = (cls, isShow) => {
+        document.querySelectorAll(cls).forEach(el => el.style.display = isShow ? "table-cell" : "none");
+    };
+
+    data.forEach(rec => {
+        appendEmployeeRow(rec.code, rec.name, rec.role, rec.phep_old, rec.phep_new, rec.bu_old, rec.bu_new);
+        
+        const tr = staffTbody.lastElementChild;
+        const tds = tr.querySelectorAll(".shift");
+        const shiftsArr = (rec.shifts && rec.shifts.length === 7) ? rec.shifts : ["","","","","","",""];
+
+        shiftsArr.forEach((code, idx) => {
+            if (!tds[idx]) return;
+            const shiftObj = SHIFTS.find(s => s.code === code);
+            const cls = shiftObj ? shiftObj.className : "";
+            setShiftOnCell(tds[idx], code, cls);
+        });
+    });
+
+    setDisplay(".col-p-old", showPOld);
+    setDisplay(".col-b-old", showBOld);
+    setDisplay(".col-p-new", true); 
+    setDisplay(".col-b-new", true);
+    
+    updateStt();
 }
 
-function openAddEmpPopup() {
-    document.getElementById("addEmpPopup").style.display = "flex";
+/* ===========================================================
+    4) MENU CHỌN CA
+=========================================================== */
+function onShiftCellClick(e) {
+    if (swapRow1) return; 
+    e.stopPropagation();
+    currentEditedCell = e.target;
+
+    const rect = currentEditedCell.getBoundingClientRect();
+    shiftMenu.style.left = (rect.left + window.scrollX) + "px";
+    shiftMenu.style.top  = (rect.bottom + window.scrollY) + "px";
+
+    shiftMenu.innerHTML = SHIFTS.map(s => `
+        <button onmousedown="selectShift('${s.code}','${s.className}')">
+            ${s.code ? `<b>${s.code}</b> – ` : ""}${s.label}
+        </button>
+    `).join("");
+    shiftMenu.style.display = "block";
 }
-function closeAddEmpPopup() {
-    document.getElementById("addEmpPopup").style.display = "none";
+
+function selectShift(code, cls) {
+    setShiftOnCell(currentEditedCell, code, cls);
+    shiftMenu.style.display = "none";
 }
+
+function setShiftOnCell(td, code, className) {
+    td.className = "shift"; 
+    if (className) td.classList.add(className);
+    td.innerText = code || "";
+}
+
+document.addEventListener("click", () => { shiftMenu.style.display = "none"; });
+
+/* ===========================================================
+    5) THÊM/XÓA NHÂN VIÊN
+=========================================================== */
+function openAddEmpPopup() { document.getElementById("addEmpPopup").style.display = "flex"; }
+function closeAddEmpPopup() { document.getElementById("addEmpPopup").style.display = "none"; }
 
 async function saveNewEmployee() {
     const code = document.getElementById("empCode").value.trim();
     const name = document.getElementById("empName").value.trim();
     const role = document.getElementById("empRole").value.trim();
 
-    if (!code || !name || !role) {
-        alert("Vui lòng nhập đủ mã, tên, chức vụ.");
-        return;
-    }
+    if (!code || !name || !role) { alert("Vui lòng nhập đủ thông tin."); return; }
 
-    appendEmployeeRow(code, name, role);
+    appendEmployeeRow(code, name, role, 0, 0, 0, 0);
 
-    await fetch(SCRIPT_URL, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({
-            action:"saveEmployee",
-            group:currentGroup,
-            code,name,role
-        })
-    });
+    const obj = { group: currentGroup, code, name, role };
+    await fetch(`${SCRIPT_URL}?action=saveEmployee&data=` + encodeURIComponent(JSON.stringify(obj)));
 
     alert("Đã thêm nhân viên!");
+    closeAddEmpPopup();
     document.getElementById("empCode").value = "";
     document.getElementById("empName").value = "";
     document.getElementById("empRole").value = "";
-    closeAddEmpPopup();
 }
 
-/* =========== SHIFT MENU =========== */
-const shiftMenu = document.getElementById("shiftMenu");
-
-function onShiftCellClick(e) {
-    e.stopPropagation();
-    currentEditedCell = e.target;
-
-    const rect = currentEditedCell.getBoundingClientRect();
-    shiftMenu.style.left = rect.left + window.scrollX + "px";
-    shiftMenu.style.top  = rect.bottom + window.scrollY + "px";
-
-    shiftMenu.innerHTML = SHIFTS.map(s => `
-        <button data-code="${s.code}" data-class="${s.className}">
-            ${s.code ? `<b>${s.code}</b> – ` : ""}${s.label}
-        </button>
-    `).join("");
-
-    shiftMenu.style.display = "block";
-
-    shiftMenu.querySelectorAll("button").forEach(btn => {
-        btn.onclick = () => {
-            const code = btn.getAttribute("data-code");
-            const cls  = btn.getAttribute("data-class");
-            setShiftOnCell(currentEditedCell, code, cls);
-            shiftMenu.style.display = "none";
-        };
-    });
-}
-
-function setShiftOnCell(td, code, className) {
-    td.classList.forEach(c => {
-        if (c.startsWith("ca-")) td.classList.remove(c);
-    });
-    td.innerText = code || "";
-    if (className) td.classList.add(className);
-}
-
-document.addEventListener("click", () => {
-    shiftMenu.style.display = "none";
-});
-
-/* =========== AUTO ASSIGN SHIFTS =========== */
-function autoAssignShifts() {
-    const rows = [...staffTbody.querySelectorAll("tr")];
-    const pattern = ["S","C","HC"];
-
-    rows.forEach((row, rIdx) => {
-        const tds = row.querySelectorAll(".shift");
-        tds.forEach((td, dIdx) => {
-            const code = pattern[(rIdx+dIdx)%pattern.length];
-            let cls = "";
-            if (code==="S")  cls="ca-s";
-            if (code==="C")  cls="ca-c";
-            if (code==="HC") cls="ca-hc";
-            setShiftOnCell(td, code, cls);
-        });
-    });
-}
-
-/* =========== DELETE ROW =========== */
-function deleteRow(btn) {
+async function deleteEmployee(btn) {
+    if (swapRow1) return; 
+    if (!confirm("Chắc chắn xóa nhân viên này?")) return;
+    
     const tr = btn.closest("tr");
+    const code = tr.querySelector(".emp-code").innerText.trim();
+    
+    await fetch(`${SCRIPT_URL}?action=deleteEmployee&group=${encodeURIComponent(currentGroup)}&code=${encodeURIComponent(code)}`);
     tr.remove();
     updateStt();
 }
 
-/* =========== SAVE SCHEDULE =========== */
-function collectScheduleData() {
-    const rows = [...staffTbody.querySelectorAll("tr")];
-    return rows.map(row => {
-        const code = row.querySelector(".emp-code").innerText.trim();
-        const name = row.querySelector(".emp-name").innerText.trim();
-        const role = row.querySelector(".emp-role").innerText.trim();
-        const ngaybu = row.querySelector(".ngaybu").innerText.trim();
-        const phepnam = row.querySelector(".phepnam").innerText.trim();
-        const shifts = [...row.querySelectorAll(".shift")].map(td => td.innerText.trim());
-        return { code,name,role,ngaybu,phepnam,shifts };
-    });
-}
+/* ===========================================================
+    6) TẠO TUẦN MỚI & XEM TUẦN CŨ
+=========================================================== */
+function openWeekPopup() { document.getElementById("weekPopup").style.display = "flex"; }
+function closeWeekPopup() { document.getElementById("weekPopup").style.display = "none"; }
 
-function getCurrentWeekStart() {
-    const firstTh = headerDatesRow.querySelector("th");
-    if (!firstTh) return null;
-
-    const [dd,mm] = firstTh.innerText.split("/");
-    const yearStr = weekRangeEl.innerText.slice(-4);
-    return `${yearStr}-${mm}-${dd}`;
-}
-
-async function saveSchedule() {
-    const weekStart = getCurrentWeekStart();
-    if (!weekStart) {
-        alert("Không xác định được ngày bắt đầu tuần.");
-        return;
-    }
-    const payload = {
-        action:"saveSchedule",
-        group:currentGroup,
-        weekStart:weekStart,
-        weekRange:weekRangeEl.innerText,
-        data:collectScheduleData()
-    };
-
-    await fetch(SCRIPT_URL, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify(payload)
-    });
-
-    alert("Đã lưu lịch tuần!");
-}
-
-/* =========== NEW WEEK POPUP =========== */
-function openWeekPopup() {
-    document.getElementById("weekPopup").style.display = "flex";
-}
-function closeWeekPopup() {
-    document.getElementById("weekPopup").style.display = "none";
-}
-
-function applyNewWeek() {
+/* ===========================================================
+   CẬP NHẬT HÀM TẠO TUẦN MỚI (TẠO XONG TỰ LƯU LUÔN)
+=========================================================== */
+async function applyNewWeek() {
     const val = document.getElementById("weekStart").value;
-    if (!val) {
-        alert("Chọn ngày bắt đầu tuần (thứ 2).");
-        return;
-    }
+    if (!val) { alert("Chọn ngày!"); return; }
+    
     const d = new Date(val);
-    if (d.getDay() !== 1) {
-        alert("Ngày chọn phải là thứ 2.");
-        return;
-    }
+    if (d.getDay() !== 1) { alert("Phải chọn Thứ 2!"); return; }
+
+    // 1. Cập nhật giao diện ngày tháng (Header)
     updateWeekHeader(d);
 
-    // reset ca
-    staffTbody.querySelectorAll(".shift").forEach(td => {
-        td.innerText = "";
-        td.classList.forEach(c => { if (c.startsWith("ca-")) td.classList.remove(c); });
-    });
+    // 2. Tải dữ liệu của tuần đó về giao diện trước
+    // (Nếu tuần mới chưa có gì, nó sẽ tải danh sách nhân viên mặc định về)
+    // Dùng 'await' để đảm bảo tải xong mới được Lưu
+    await loadScheduleOfCurrentWeek(val);
+
+    // 3. Gọi hàm Lưu lịch ngay lập tức
+    // Hàm này sẽ lấy dữ liệu đang hiển thị và ghi vào Sheet 'weeks' và 'schedule'
+    await saveSchedule();
 
     closeWeekPopup();
 }
 
-/* =========== LOAD OLD WEEK =========== */
 async function openOldWeekPopup() {
+    if (swapRow1) disableSwap();
     document.getElementById("oldWeekPopup").style.display = "flex";
     const sel = document.getElementById("weekSelect");
     sel.innerHTML = "<option>Đang tải...</option>";
 
     const res = await fetch(`${SCRIPT_URL}?action=listWeeks&group=${encodeURIComponent(currentGroup)}`);
     const json = await res.json();
-
+    
     sel.innerHTML = "";
     (json.weeks || []).forEach(w => {
         const opt = document.createElement("option");
@@ -485,100 +582,257 @@ async function openOldWeekPopup() {
         opt.textContent = `${w.weekRange} (${w.weekStart})`;
         sel.appendChild(opt);
     });
-
-    if (!json.weeks || json.weeks.length === 0) {
-        const opt = document.createElement("option");
-        opt.textContent = "Chưa có tuần nào được lưu.";
-        opt.disabled = true;
-        sel.appendChild(opt);
+}
+function closeOldWeekPopup() { document.getElementById("oldWeekPopup").style.display = "none"; }
+function loadSelectedWeek() {
+    const ws = document.getElementById("weekSelect").value;
+    if (ws) {
+        updateWeekHeader(new Date(ws));
+        loadScheduleOfCurrentWeek(ws);
+        closeOldWeekPopup();
     }
 }
 
-function closeOldWeekPopup() {
-    document.getElementById("oldWeekPopup").style.display = "none";
+/* ===========================================================
+    7) LƯU LỊCH (SAVE)
+=========================================================== */
+function collectScheduleData() {
+    const rows = [...staffTbody.querySelectorAll("tr")];
+    return rows.map(row => {
+        const code = row.querySelector(".emp-code").innerText.trim();
+        const name = row.querySelector(".emp-name").innerText.trim();
+        const role = row.querySelector(".emp-role").innerText.trim();
+        const shifts = [...row.querySelectorAll(".shift")].map(td => td.innerText.trim());
+        return { code, name, role, shifts };
+    });
 }
 
-async function loadSelectedWeek() {
-    const sel = document.getElementById("weekSelect");
-    const ws = sel.value;
-    if (!ws) {
-        alert("Chưa chọn tuần.");
-        return;
+async function saveSchedule() {
+    if (swapRow1) disableSwap();
+    const weekStart = getCurrentWeekStart();
+    const payload = {
+        group: currentGroup,
+        weekStart: weekStart,
+        weekRange: weekRangeEl.innerText,
+        data: collectScheduleData()
+    };
+
+    const btn = document.querySelector(".btn-warning");
+    const oldText = btn.innerText;
+    btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+    await fetch(`${SCRIPT_URL}?action=saveSchedule&data=` + encodeURIComponent(JSON.stringify(payload)));
+
+    alert("Đã lưu thành công!");
+    btn.innerText = oldText; btn.disabled = false;
+    
+    loadScheduleOfCurrentWeek(weekStart);
+}
+
+/* ===========================================================
+    8) TÍNH NĂNG: ĐẢO VỊ TRÍ (SWAP)
+=========================================================== */
+function enableSwap() {
+    if (swapRow1) { disableSwap(); return; }
+    alert("Chế độ ĐẢO VỊ TRÍ: Chọn người thứ 1, sau đó chọn người thứ 2 để đổi chỗ.");
+    
+    [...staffTbody.querySelectorAll("tr")].forEach(tr => {
+        tr.onclick = onSwapRowClick;
+        tr.style.cursor = 'pointer';
+    });
+    swapRow1 = "ready"; 
+}
+
+function disableSwap() {
+    [...staffTbody.querySelectorAll("tr")].forEach(tr => {
+        tr.onclick = null;
+        tr.style.cursor = 'default';
+        tr.classList.remove("swap-selected");
+    });
+    swapRow1 = null;
+}
+
+function onSwapRowClick(e) {
+    const tr = e.currentTarget;
+    if (swapRow1 === "ready") {
+        swapRow1 = tr;
+        tr.classList.add("swap-selected");
+    } else if (swapRow1 === tr) {
+        tr.classList.remove("swap-selected");
+        swapRow1 = "ready";
+    } else {
+        const tr1 = swapRow1;
+        const tr2 = tr;
+        
+        const parent = tr1.parentNode;
+        const next1 = tr1.nextSibling;
+        const next2 = tr2.nextSibling;
+        
+        if (next1 === tr2) parent.insertBefore(tr2, tr1);
+        else if (next2 === tr1) parent.insertBefore(tr1, tr2);
+        else {
+            parent.insertBefore(tr1, tr2);
+            parent.insertBefore(tr2, next1);
+        }
+        
+        disableSwap();
+        updateStt();
     }
+}
 
-    const res = await fetch(`${SCRIPT_URL}?action=getSchedule&group=${encodeURIComponent(currentGroup)}&weekStart=${encodeURIComponent(ws)}`);
-    const json = await res.json();
+/* ===========================================================
+    9) TÍNH NĂNG: BULK LEAVE
+=========================================================== */
+function openBulkLeavePopup() {
+    if (swapRow1) disableSwap();
+    const rows = collectScheduleData();
+    const listDiv = document.getElementById("bulkEmployeeList");
+    listDiv.innerHTML = "";
+    
+    rows.forEach(emp => {
+        const div = document.createElement("div");
+        div.innerHTML = `<label><input type="checkbox" value="${emp.code}" checked> ${emp.code} - ${emp.name}</label>`;
+        listDiv.appendChild(div);
+    });
+    document.getElementById("bulkLeavePopup").style.display = "flex";
+}
+function closeBulkLeavePopup() { document.getElementById("bulkLeavePopup").style.display = "none"; }
 
-    // Cập nhật tuần
-    const start = new Date(json.weekStart);
-    updateWeekHeader(start);
+function toggleCheckAll(checked) {
+    document.querySelectorAll("#bulkEmployeeList input").forEach(cb => cb.checked = checked);
+}
 
-    // Clear bảng
-    staffTbody.innerHTML = "";
-    (json.data || []).forEach(rec => {
-        appendEmployeeRow(rec.code, rec.name, rec.role);
-        const tr = staffTbody.lastElementChild;
-        tr.querySelector(".ngaybu").innerText  = rec.ngaybu || "0";
-        tr.querySelector(".phepnam").innerText = rec.phepnam || "0";
+async function saveBulkLeave() {
+    const type = document.getElementById("bulkLeaveType").value;
+    const amount = document.getElementById("bulkLeaveAmount").value;
+    const reason = document.getElementById("bulkLeaveReason").value;
+    
+    const checkboxes = document.querySelectorAll("#bulkEmployeeList input:checked");
+    if (checkboxes.length === 0) { alert("Chưa chọn nhân viên!"); return; }
+    if (!reason) { alert("Chưa nhập lý do!"); return; }
 
-        const tds = tr.querySelectorAll(".shift");
-        (rec.shifts || []).forEach((code, idx) => {
-            if (!tds[idx]) return;
-            let cls = "";
-            if (code==="S" || code==="S1") cls="ca-s";
-            else if (code==="C") cls="ca-c";
-            else if (code==="HC") cls="ca-hc";
-            else if (code==="NB") cls="ca-nb";
-            else if (code==="NC") cls="ca-nc";
-            else if (code==="P") cls="ca-p";
-            else if (code==="CT") cls="ca-ct";
-            setShiftOnCell(tds[idx], code, cls);
-        });
+    const payload = [];
+    checkboxes.forEach(cb => {
+        payload.push({ code: cb.value, type: type, amount: amount, reason: reason });
     });
 
-    closeOldWeekPopup();
+    await fetch(`${SCRIPT_URL}?action=addBulkLeave&data=` + encodeURIComponent(JSON.stringify(payload)));
+    
+    alert("Đã cập nhật số dư!");
+    closeBulkLeavePopup();
+    loadScheduleOfCurrentWeek(getCurrentWeekStart());
 }
 
-/* =========== EXPORT EXCEL =========== */
+/* ===========================================================
+    10) CÁC TIỆN ÍCH KHÁC
+=========================================================== */
+function autoAssignShifts() {
+    if (swapRow1) disableSwap();
+    const rows = [...staffTbody.querySelectorAll("tr")];
+    const pattern = ["S","C","HC"];
+    rows.forEach((row, rIdx) => {
+        const tds = row.querySelectorAll(".shift");
+        tds.forEach((td, dIdx) => {
+            const code = pattern[(rIdx + dIdx) % 3];
+            let cls = "";
+            if (code==="S") cls="ca-s"; if (code==="C") cls="ca-c"; if (code==="HC") cls="ca-hc";
+            setShiftOnCell(td, code, cls);
+        });
+    });
+}
+
 function exportToExcel() {
     const table = document.getElementById("scheduleTable");
-    const rows = [...table.rows];
-
-    const data = rows.map(r => [...r.cells].map(c => c.innerText));
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
-
-    rows.forEach((tr, r) => {
-        [...tr.cells].forEach((td, c) => {
-            const caClass = [...td.classList].find(cl => cl.startsWith("ca-"));
-            if (!caClass) return;
-            const addr = XLSX.utils.encode_cell({ r, c });
-            if (!ws[addr]) ws[addr] = { t:"s", v:td.innerText };
-            ws[addr].s = {
-                fill:{
-                    patternType:"solid",
-                    fgColor:{ rgb: COLOR_MAP[caClass] || "FFFFFF" }
-                },
-                alignment:{ horizontal:"center", vertical:"center" },
-                border:{
-                    top:{style:"thin",color:{rgb:"000000"}},
-                    bottom:{style:"thin",color:{rgb:"000000"}},
-                    left:{style:"thin",color:{rgb:"000000"}},
-                    right:{style:"thin",color:{rgb:"000000"}}
-                }
-            };
-        });
-    });
-
-    XLSX.utils.book_append_sheet(wb, ws, "LichTuan");
-    XLSX.writeFile(wb, `lich-${currentGroup}.xlsx`);
+    const wb = XLSX.utils.table_to_book(table, {sheet:"LichTuan"});
+    XLSX.writeFile(wb, `Lich_${currentGroup}.xlsx`);
 }
 
-/* =========== NAVIGATION =========== */
-function goBack() {
-    window.location.href = "dashboard.html";
+function goBack() { window.location.href = "dashboard.html"; }
+
+/* ===========================================================
+    11) LOGIC THÔNG BÁO & DUYỆT YÊU CẦU (MỚI)
+=========================================================== */
+function initNotifications() {
+    checkPendingRequests();
+    // Tự động check mỗi 60 giây
+    setInterval(checkPendingRequests, 60000);
+}
+
+async function checkPendingRequests() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=getPendingRequests&group=${encodeURIComponent(currentGroup)}`);
+        const json = await res.json();
+        if (json.success) {
+            const count = json.data.length;
+            const badge = document.getElementById("badgeCount");
+            badge.innerText = count;
+            badge.style.display = count > 0 ? "inline-block" : "none";
+            window.pendingReqs = json.data;
+        }
+    } catch(e) { console.error(e); }
+}
+
+function openRequestsPopup() {
+    document.getElementById("requestsPopup").style.display = "flex";
+    renderRequestsTable();
+}
+function closeRequestsPopup() {
+    document.getElementById("requestsPopup").style.display = "none";
+    loadScheduleOfCurrentWeek();
+}
+
+function renderRequestsTable() {
+    const tbody = document.getElementById("reqTableBody");
+    const msg = document.getElementById("noReqMsg");
+    tbody.innerHTML = "";
+    
+    if (!window.pendingReqs || window.pendingReqs.length === 0) {
+        msg.style.display = "block";
+        return;
+    }
+    msg.style.display = "none";
+
+    window.pendingReqs.forEach(req => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${req.time}</td>
+            <td><b>${req.code}</b><br>${req.name}</td>
+            <td><span class="ca-${req.type === 'NB' ? 'nb' : 'p'}" style="padding:2px 5px; border-radius:4px;">${req.type}</span></td>
+            <td style="color:#d35400; font-weight:bold;">${req.displayDate}</td>
+            <td style="max-width:200px; text-align:left;">${req.reason}</td>
+            <td>
+                <button class="btn-success" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.row}, 'APPROVE', this)">✔ Duyệt</button>
+                <button class="btn-danger" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.row}, 'REJECT', this)">✘ Hủy</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function processRequest(rowId, action, btn) {
+    if (!confirm(action === 'APPROVE' ? "Duyệt yêu cầu này và tự động xếp lịch?" : "Từ chối yêu cầu này?")) return;
+
+    const parentTd = btn.parentNode;
+    parentTd.innerHTML = "Đang xử lý...";
+
+    try {
+        // CHÚ Ý: Đổi tên tham số cuối cùng thành 'decision'
+        const res = await fetch(`${SCRIPT_URL}?action=handleLeaveAction&group=${encodeURIComponent(currentGroup)}&row=${rowId}&decision=${action}`);
+        const json = await res.json();
+        
+        if (json.success) {
+            alert(json.msg);
+            await checkPendingRequests();
+            renderRequestsTable();
+        } else {
+            alert("Lỗi: " + json.message);
+            renderRequestsTable();
+        }
+    } catch(e) {
+        alert("Lỗi kết nối server!");
+        renderRequestsTable();
+    }
 }
 </script>
-
 </body>
 </html>
