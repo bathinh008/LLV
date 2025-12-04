@@ -102,21 +102,23 @@ button:active { transform: translateY(0); }
 .btn-outline { background: white; border: 1px solid #bdc3c7; color: #555; }
 .btn-outline:hover { border-color: var(--primary-color); color: var(--primary-color); }
 
-/* ================= TABLE STYLES ================= */
+/* ================= TABLE STYLES (ĐÃ SỬA LỖI VIỀN) ================= */
 table {
     width: 100%;
-    border-collapse: separate; /* Để bo góc */
+    border-collapse: separate; 
     border-spacing: 0;
     background: var(--card-bg);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: var(--shadow-md);
     margin-bottom: 50px;
+    /* Viền bao ngoài bảng */
+    border: 1px solid #bdc3c7; 
 }
 
 thead {
     background: #f8f9fa;
-    position: sticky; /* Cố định header khi scroll */
+    position: sticky;
     top: 0;
     z-index: 5;
 }
@@ -127,28 +129,68 @@ th {
     font-weight: 700;
     color: #444;
     text-transform: uppercase;
-    border-bottom: 2px solid #dfe6e9;
-    border-right: 1px solid #f1f1f1;
-    background: #f8f9fa; /* Để sticky hoạt động tốt */
+    
+    /* Viền dưới và viền phải màu xám đậm #bdc3c7 */
+    border-bottom: 2px solid #bdc3c7; 
+    border-right: 1px solid #bdc3c7;
+    
+    background: #f8f9fa;
 }
 
 td {
     padding: 8px 5px;
-    border-bottom: 1px solid #eee;
-    border-right: 1px solid #f9f9f9;
+    
+    /* Viền các ô dữ liệu */
+    border-bottom: 1px solid #bdc3c7;
+    border-right: 1px solid #bdc3c7;
+    
     font-size: 13px;
     text-align: center;
-    height: 40px; /* Chiều cao cố định cho ô */
+    height: 40px; 
     transition: background 0.1s;
+}
+
+/* Mặc định: Xóa viền phải của cột cuối cùng để bảng trông gọn hơn */
+th:last-child, td:last-child {
+    border-right: none;
+}
+
+/* === [QUAN TRỌNG] SỬA LỖI MẤT VIỀN CHỖ BẠN KHOANH VÙNG === */
+/* Riêng ô ngày cuối cùng (CN) trong dòng header thứ 2 thì BẮT BUỘC phải có viền phải 
+   để ngăn cách với cột Phép/Bù bên cạnh */
+#headerDatesRow th:last-child {
+    border-right: 1px solid #bdc3c7 !important;
+}
+/* ========================================================= */
+
+tr:last-child td {
+    border-bottom: none;
 }
 
 /* Hover dòng */
 tr:hover td { background-color: #fcfcfc; }
 
 /* Các cột thông tin nhân viên */
+.emp-code { color: #555; font-family: monospace; font-size: 12px; font-weight: 600; }
+.emp-name { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; }
+.emp-role { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; white-space: nowrap;}
+
+/* Ô Lịch (Shift) */
+.shift {
+    cursor: pointer;
+    font-weight: 600;
+    position: relative;
+    user-select: none;
+}
+.shift:hover {
+    background-color: #ebf5fb !important;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+/* Các cột thông tin nhân viên */
 .emp-code { color: #888; font-family: monospace; font-size: 12px; }
 .emp-name { font-weight: 600; color: #333; text-align: left; padding-left: 10px; }
-.emp-role { font-size: 12px; color: #666; background: #f0f3f4; border-radius: 4px; padding: 2px 6px; display: inline-block; }
+.emp-role { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; white-space: nowrap;}
 
 /* Ô Lịch (Shift) */
 .shift {
