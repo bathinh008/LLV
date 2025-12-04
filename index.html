@@ -2,46 +2,124 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Đăng nhập</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập Hệ thống</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-body {
-    font-family: Arial;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    background:#f4f6f9;
-}
-.box {
-    width:310px;
-    background:#fff;
-    padding:25px;
-    border-radius:12px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.2);
-}
-input,button { width:100%; padding:10px; margin-top:10px; }
-button { background:#3498db; color:white; border:none; border-radius:6px; }
-button:disabled { opacity:0.6; cursor:not-allowed; }
-.remember {
-    display:flex;
-    align-items:center;
-    margin-top:5px;
-    font-size:14px;
-}
-.remember input {
-    width:auto;
-    margin-right:6px;
-}
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f0f2f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        color: #1f2937;
+    }
+
+    .login-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 380px;
+        padding: 40px 30px;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+
+    .login-header h2 {
+        margin: 0 0 10px 0;
+        color: #4a90e2; /* Màu chủ đạo giống Scheduler */
+        font-weight: 700;
+        font-size: 24px;
+        text-transform: uppercase;
+        letter-spacing: -0.5px;
+    }
+    
+    .login-header p {
+        margin: 0 0 30px 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .input-group {
+        margin-bottom: 20px;
+        text-align: left;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        color: #374151;
+    }
+
+    input[type="text"], input[type="password"] {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+        transition: all 0.2s;
+        background: #f9fafb;
+        font-family: 'Inter', sans-serif;
+    }
+
+    input:focus {
+        outline: none;
+        border-color: #4a90e2;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+
+    .remember {
+        display: flex;
+        align-items: center;
+        margin-bottom: 25px;
+        font-size: 13px;
+        color: #6b7280;
+    }
+    .remember input { margin-right: 8px; cursor: pointer; }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover { background-color: #357abd; }
+    button:active { transform: scale(0.98); }
+    button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
 </style>
 </head>
-
 <body>
-<div class="box">
-    <h2 style="text-align:center">Đăng nhập</h2>
 
-    <input id="inputUser" placeholder="Tên đăng nhập">
-    <input id="inputPass" type="password" placeholder="Mật khẩu">
+<div class="login-card">
+    <div class="login-header">
+        <h2>Hệ Thống Quản Trị</h2>
+        <p>Vui lòng đăng nhập để tiếp tục</p>
+    </div>
+
+    <div class="input-group">
+        <label>Tên đăng nhập</label>
+        <input id="inputUser" type="text" placeholder="Nhập mã nhân viên">
+    </div>
+
+    <div class="input-group">
+        <label>Mật khẩu</label>
+        <input id="inputPass" type="password" placeholder="••••••••">
+    </div>
 
     <div class="remember">
         <input type="checkbox" id="rememberMe">
@@ -53,13 +131,12 @@ button:disabled { opacity:0.6; cursor:not-allowed; }
 
 <script>
 /* =============================
-    GÁN CỐ ĐỊNH API
+    CẤU HÌNH API
 ============================= */
-const SCRIPT_URL = 
-    "https://script.google.com/macros/s/AKfycbxRJeVTiI0g1yp-ehdX_HCQpNog0aZ--HlYyqZ7qy6UWebJDVpwkqjLg3NDK56MwNSl/exec";
+// Bạn hãy dán Link Web App Script mới nhất của bạn vào đây
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRJeVTiI0g1yp-ehdX_HCQpNog0aZ--HlYyqZ7qy6UWebJDVpwkqjLg3NDK56MwNSl/exec";
 
 localStorage.setItem("SCRIPT_URL", SCRIPT_URL);
-
 
 /* =============================
     LOAD USERNAME (nếu có)
@@ -67,35 +144,34 @@ localStorage.setItem("SCRIPT_URL", SCRIPT_URL);
 window.onload = function() {
     const savedUser = localStorage.getItem("remember_username");
     if (savedUser) {
-        inputUser.value = savedUser;
+        document.getElementById("inputUser").value = savedUser;
         document.getElementById("rememberMe").checked = true;
-        inputPass.focus();
+        document.getElementById("inputPass").focus();
+    } else {
+        document.getElementById("inputUser").focus();
     }
 };
 
-
 /* =============================
-           LOGIN
+            LOGIN
 ============================= */
 async function login() {
-    const username = inputUser.value.trim();
-    const password = inputPass.value.trim();
+    const username = document.getElementById("inputUser").value.trim();
+    const password = document.getElementById("inputPass").value.trim();
     const btn = document.getElementById("btnLogin");
 
     if (!username || !password) {
         return alert("Vui lòng nhập đủ tài khoản & mật khẩu!");
     }
 
-    // Xử lý "Ghi nhớ tài khoản"
     if (document.getElementById("rememberMe").checked) {
         localStorage.setItem("remember_username", username);
     } else {
         localStorage.removeItem("remember_username");
     }
 
-    // Loading effect
     btn.disabled = true;
-    btn.innerHTML = "⏳ Đang đăng nhập...";
+    btn.innerHTML = "⏳ Đang kiểm tra...";
 
     const api = `${SCRIPT_URL}?action=login`
         + `&username=${encodeURIComponent(username)}`
@@ -108,37 +184,29 @@ async function login() {
         if (!json.success) {
             btn.disabled = false;
             btn.innerHTML = "Đăng nhập";
-            return alert("Sai tài khoản hoặc mật khẩu!");
+            return alert(json.message || "Sai tài khoản hoặc mật khẩu!");
         }
 
-        // Lưu thông tin
-        localStorage.setItem("username", json.username);
-        localStorage.setItem("group", json.group);
-        localStorage.setItem("groups_list", json.groups);
-        localStorage.setItem("role", json.role);
+        localStorage.setItem("currentUser", json.username);
+        localStorage.setItem("currentRole", json.role);
+        localStorage.setItem("currentGroup", json.group);       
+        localStorage.setItem("currentGroupsSub", json.groups);  
 
         window.location.href = "dashboard.html";
     }
     catch (err) {
         console.error(err);
-        alert("Không kết nối được Google Script!");
+        alert("Lỗi kết nối! Vui lòng kiểm tra đường truyền hoặc Script URL.");
         btn.disabled = false;
         btn.innerHTML = "Đăng nhập";
     }
 }
 
-
-/* =============================
-   ENTER = LOGIN
-============================= */
 document.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
-        e.preventDefault();
-
         if (document.activeElement.id === "inputUser") {
             document.getElementById("inputPass").focus();
-        }
-        else {
+        } else {
             login();
         }
     }

@@ -7,111 +7,298 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 
 <style>
-/* ================= CSS CHUNG ================= */
-body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 1400px;
-    margin: auto;
-    background: #f4f6f9;
-}
-h1 { text-align: center; margin-bottom: 5px; }
-.header-week { text-align: center; margin-bottom: 10px; font-size: 18px; }
-.group-label { text-align:center; margin-bottom:15px; font-style:italic; }
+/* ================= FONTS & RESET ================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Control Bar */
-.control-bar {
-    display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;
-    justify-content: center;
+:root {
+    --primary-color: #4a90e2;    /* Xanh dương hiện đại */
+    --success-color: #2ecc71;    /* Xanh lá tươi */
+    --warning-color: #f39c12;    /* Vàng cam */
+    --danger-color: #e74c3c;     /* Đỏ */
+    --text-color: #2c3e50;
+    --bg-color: #f0f2f5;
+    --card-bg: #ffffff;
+    --border-color: #e1e4e8;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
 }
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.5;
+}
+
+/* ================= LAYOUT HEADER ================= */
+h1 {
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+    font-size: 24px;
+}
+
+.header-week {
+    font-size: 16px;
+    color: #555;
+    background: #fff;
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.group-label {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 20px;
+    font-style: normal;
+    font-weight: 600;
+}
+
+/* ================= CONTROL BAR ================= */
+.control-bar {
+    background: var(--card-bg);
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--border-color);
+}
+
 button {
-    padding:8px 12px;
-    border-radius:6px;
-    border:none;
-    cursor:pointer;
-    font-size:13px;
+    font-family: 'Inter', sans-serif;
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 2px rgba(0,0,0,0.05);
+}
+
+button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); filter: brightness(105%); }
+button:active { transform: translateY(0); }
+
+.btn-primary { background: var(--primary-color); color: white; }
+.btn-success { background: var(--success-color); color: white; }
+.btn-warning { background: var(--warning-color); color: white; }
+.btn-danger  { background: var(--danger-color); color: white; }
+.btn-outline { background: white; border: 1px solid #bdc3c7; color: #555; }
+.btn-outline:hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+/* ================= TABLE STYLES ================= */
+table {
+    width: 100%;
+    border-collapse: separate; /* Để bo góc */
+    border-spacing: 0;
+    background: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 50px;
+}
+
+thead {
+    background: #f8f9fa;
+    position: sticky; /* Cố định header khi scroll */
+    top: 0;
+    z-index: 5;
+}
+
+th {
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+    text-transform: uppercase;
+    border-bottom: 2px solid #dfe6e9;
+    border-right: 1px solid #f1f1f1;
+    background: #f8f9fa; /* Để sticky hoạt động tốt */
+}
+
+td {
+    padding: 8px 5px;
+    border-bottom: 1px solid #eee;
+    border-right: 1px solid #f9f9f9;
+    font-size: 13px;
+    text-align: center;
+    height: 40px; /* Chiều cao cố định cho ô */
+    transition: background 0.1s;
+}
+
+/* Hover dòng */
+tr:hover td { background-color: #fcfcfc; }
+
+/* Các cột thông tin nhân viên */
+.emp-code { color: #888; font-family: monospace; font-size: 12px; }
+.emp-name { font-weight: 600; color: #333; text-align: left; padding-left: 10px; }
+.emp-role { font-size: 12px; color: #666; background: #f0f3f4; border-radius: 4px; padding: 2px 6px; display: inline-block; }
+
+/* Ô Lịch (Shift) */
+.shift {
+    cursor: pointer;
+    font-weight: 600;
+    position: relative;
+    user-select: none;
+}
+.shift:hover {
+    background-color: #ebf5fb !important; /* Highlight khi di chuột */
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+/* Màu sắc các Ca - Tone màu Pastel dịu mắt hơn */
+.ca-s  { background-color: #e3f2fd; color: #1565c0; }     /* Sáng: Xanh nhạt */
+.ca-c  { background-color: #e8f5e9; color: #2e7d32; }     /* Chiều: Xanh lá nhạt */
+.ca-hc { background-color: #f3e5f5; color: #7b1fa2; }     /* HC: Tím nhạt */
+.ca-nc { background-color: #fff3e0; color: #ef6c00; }     /* CN: Cam nhạt */
+.ca-nb { background-color: #ffebee; color: #c62828; }     /* Bù: Đỏ nhạt */
+.ca-p  { background-color: #fce4ec; color: #ad1457; }     /* Phép: Hồng */
+.ca-ct { background-color: #e0f7fa; color: #006064; }     /* Công tác: Cyan */
+.ca-s-plus { background-color: #fff9c4; color: #fbc02d; font-weight: 700; border: 1px solid #fff176;} 
+
+/* Hiệu ứng chọn ô */
+.cell-selected {
+    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
+    background-color: rgba(52, 152, 219, 0.1) !important;
+}
+.cell-multi-selected {
+    background-color: rgba(52, 152, 219, 0.2) !important;
+    border: 1px dashed var(--primary-color);
+}
+
+/* Header số dư */
+.col-p-old, .col-p-new, .col-b-old, .col-b-new {
+    font-size: 11px; 
+    border-radius: 4px;
+}
+
+/* ================= POPUP / MODAL ================= */
+.popup-bg {
+    display: none; /* <--- DÒNG QUAN TRỌNG NHẤT: Mặc định phải ẩn đi */
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    z-index: 9999; /* Luôn nằm trên cùng */
+    justify-content: center; /* Căn giữa ngang */
+    align-items: center;     /* Căn giữa dọc */
+    
+    background: rgba(44, 62, 80, 0.6); /* Màu nền tối mờ */
+    backdrop-filter: blur(2px);        /* Hiệu ứng làm mờ phía sau */
+}
+
+.popup-box {
+    background: #fff;
+    /* Mẹo: Đặt padding-top = 0 để tiêu đề nằm sát mép trên cùng */
+    padding: 0 20px 20px 20px; 
+    
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    
+    /* Animation hiện ra nhẹ nhàng */
+    animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    
+    /* Đặt max-height để nếu danh sách dài quá thì nó tự cuộn, không bị tràn màn hình */
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.popup-box h3 {
+    background: var(--primary-color);
+    color: white;
+    
+    /* QUAN TRỌNG: margin-top = 0 (không kéo lên nữa) */
+    /* Chỉ kéo margin trái/phải âm để tràn viền 2 bên */
+    margin: 0 -20px 20px -20px; 
+    
+    padding: 15px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    
+    /* Bo góc trên để khớp với cái hộp */
+    border-radius: 16px 16px 0 0;
+    
+    /* Dính header lên đầu khi cuộn danh sách dài */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.popup-box input, .popup-box select {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
     transition: 0.2s;
 }
-button:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-primary { background:#3498db; color:#fff; }
-.btn-success { background:#27ae60; color:#fff; }
-.btn-warning { background:#f39c12; color:#fff; }
-.btn-outline { background:#fff; border:1px solid #7f8c8d; color:#2c3e50; }
-.btn-danger { background:#e74c3c; color:#fff; }
-
-/* Table Styles */
-table {
-    width:100%; border-collapse:collapse; background:#fff; font-size:13px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-th, td {
-    border:1px solid #ddd;
-    padding:6px 4px;
-    text-align:center;
-    vertical-align: middle;
-}
-thead th { background:#f2f2f2; color: #333; font-weight: bold; }
-
-/* Màu sắc các cột số dư (Header) */
-.col-p-old { background-color: #ffe6e6 !important; color: #c0392b; } 
-.col-p-new { background-color: #ffcccc !important; color: #c0392b; } 
-.col-b-old { background-color: #e6f2ff !important; color: #2980b9; } 
-.col-b-new { background-color: #cce6ff !important; color: #2980b9; } 
-
-/* Class Ca kíp */
-.ca-s  { background:#fff2ac; }
-.ca-c  { background:#b7ff9d; }
-.ca-hc { background:#ffb3b3; }
-.ca-nc { background:#f6ff82; }
-.ca-p  { background:#ff6666; color: white; }
-.ca-nb { background:#ff7a7a; color: white; }
-.ca-ct { background:#9dd3ff; }
-
-.shift { min-width:40px; cursor:pointer; }
-.emp-code, .emp-name, .emp-role { font-weight: 500; }
-
-/* Popup */
-.popup-bg {
-    display:none; position:fixed; left:0; top:0;
-    width:100%; height:100%;
-    background:rgba(0,0,0,0.5);
-    align-items:center; justify-content:center;
-    z-index:9999;
-}
-.popup-box {
-    background:#fff; padding:20px;
-    border-radius:10px; width:350px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-.popup-box h3 { margin-top:0; border-bottom: 1px solid #eee; padding-bottom: 10px;}
-.popup-box input, .popup-box select {
-    width:100%; padding:8px; margin-bottom:10px;
-    border-radius:6px; border:1px solid #ccc; box-sizing: border-box;
+.popup-box input:focus, .popup-box select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
 }
 
-/* Menu chọn ca */
+/* ================= CONTEXT MENU (Shift Menu) ================= */
 #shiftMenu {
-    position:absolute;
-    background:#fff;
-    border:1px solid #bdc3c7;
-    border-radius:6px;
-    box-shadow:0 2px 8px rgba(0,0,0,0.2);
-    padding:4px;
-    display:none;
-    z-index:999;
-    font-size:13px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    padding: 5px;
+    min-width: 150px;
 }
 #shiftMenu button {
-    display:block; width:100%; text-align:left;
-    border:none; background:transparent; padding:6px 10px; cursor:pointer;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 2px;
 }
-#shiftMenu button:hover { background:#ecf0f1; }
+#shiftMenu button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+#shiftMenu button b {
+    display: inline-block;
+    width: 30px;
+    text-align: center;
+    margin-right: 8px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+    padding: 2px 0;
+}
 
 /* CSS Swap */
 .swap-selected {
-    border: 2px solid #3498db !important;
-    background: #e9f2fb !important;
+    outline: 2px dashed var(--warning-color) !important;
+    background: #fff9e6 !important;
+    transform: scale(0.99);
 }
+
+.noselect { user-select: none; }
 </style>
 </head>
 <body>
@@ -121,19 +308,27 @@ thead th { background:#f2f2f2; color: #333; font-weight: bold; }
 <div class="group-label" id="groupLabel"></div>
 
 <div class="control-bar">
-    <button class="btn-primary" style="position:relative;" onclick="openRequestsPopup()">
-        🔔 Yêu cầu <span id="badgeCount" style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:11px; position:absolute; top:-5px; right:-5px; display:none;">0</span>
-    </button>
+    <div style="display:flex; gap:5px; border-right:1px solid #ddd; padding-right:10px;">
+        <button class="btn-primary" onclick="openRequestsPopup()">
+             🔔 Yêu cầu <span id="badgeCount" style="display:none; background:red; color:white; border-radius:50%; padding:2px 5px; font-size:10px; margin-left:5px;">0</span>
+        </button>
+        <button class="btn-primary" onclick="openAddEmpPopup()">➕ NV</button>
+        <button class="btn-primary" onclick="openBulkLeavePopup()">➕ Phép/Bù</button>
+    </div>
 
-    <button class="btn-primary" onclick="openAddEmpPopup()">➕ Thêm nhân viên</button>
-    <button class="btn-primary" onclick="openBulkLeavePopup()">➕ Thêm Phép/Bù</button>
-    <button class="btn-success" onclick="autoAssignShifts()">Chia ca tự động</button>
-    <button class="btn-outline" onclick="enableSwap()">⇌ Đảo vị trí</button> 
-    <button class="btn-outline" onclick="openWeekPopup()">Tạo tuần mới</button>
-    <button class="btn-outline" onclick="openOldWeekPopup()">Xem tuần đã lưu</button>
-    <button class="btn-warning" onclick="saveSchedule()">💾 Lưu lịch tuần</button>
-    <button class="btn-warning" onclick="exportToExcel()">📊 Xuất Excel</button>
-    <button class="btn-outline" onclick="goBack()">← Về trang chủ</button>
+    <div style="display:flex; gap:5px; border-right:1px solid #ddd; padding-right:10px;">
+        <button class="btn-success" onclick="autoAssignShifts()">⚡ Chia ca</button>
+        <button class="btn-outline" onclick="enableSwap()">⇌ Đảo</button> 
+        <button class="btn-outline" onclick="openWeekPopup()">📅 Tuần mới</button>
+        <button class="btn-outline" onclick="openOldWeekPopup()">📂 Mở lại</button>
+    </div>
+
+    <div style="display:flex; gap:5px;">
+        <button class="btn-warning" onclick="saveSchedule()">💾 Lưu</button>
+        <button class="btn-warning" onclick="exportToExcel()">📊 Excel</button>
+        <button class="btn-warning" onclick="openExportRangePopup()">📅 Xuất Tùy Chọn</button>
+        <button class="btn-outline" onclick="goBack()">← Về Home</button>
+    </div>
 </div>
 
 <table id="scheduleTable">
@@ -238,25 +433,57 @@ thead th { background:#f2f2f2; color: #333; font-weight: bold; }
     </div>
 </div>
 
+<div id="exportRangePopup" class="popup-bg">
+    <div class="popup-box">
+        <h3>Xuất Báo Cáo Excel</h3>
+        <label>Từ ngày:</label>
+        <input type="date" id="expFrom">
+        <label>Đến ngày:</label>
+        <input type="date" id="expTo">
+        
+        <div style="margin-top:15px; text-align:right;">
+            <button class="btn-danger" onclick="document.getElementById('exportRangePopup').style.display='none'">Đóng</button>
+            <button class="btn-success" onclick="doExportRange()">Tải về</button>
+        </div>
+    </div>
+</div>
+
 <script>
 /* ===========================================================
-    CONFIG + KHỞI TẠO
+    CONFIG + KHỞI TẠO (DÀNH CHO SCHEDULER.HTML)
 =========================================================== */
 const SCRIPT_URL = localStorage.getItem("SCRIPT_URL");
-const params = new URLSearchParams(window.location.search);
-const currentGroup = params.get("group") || localStorage.getItem("group") || "";
 
+// 1. Lấy Group từ URL (Do Dashboard truyền sang)
+// Ví dụ: scheduler.html?group=kinhdoanh
+const params = new URLSearchParams(window.location.search);
+let currentGroup = params.get("group");
+
+// Nếu URL không có group, thử lấy group chính của user đăng nhập
+if (!currentGroup) {
+    currentGroup = localStorage.getItem("currentGroup") || "";
+}
+
+// Nếu vẫn không có group nào -> Báo lỗi quay về Dashboard
+if (!currentGroup) {
+    alert("Không xác định được nhóm làm việc! Vui lòng chọn nhóm từ Dashboard.");
+    window.location.href = "dashboard.html";
+}
+
+// Hiển thị tên nhóm lên giao diện
 document.getElementById("groupLabel").innerText = "Nhóm: " + currentGroup;
 
+// Các biến toàn cục khác
 const staffTbody     = document.getElementById("staffRows");
 const headerDatesRow = document.getElementById("headerDatesRow");
 const weekRangeEl    = document.getElementById("weekRange");
 
-// Danh sách mã ca (Đã có P/2 và NB/2)
+// Danh sách mã ca (Giữ nguyên của bạn)
 const SHIFTS = [
   { code:"",   label:"(Trống)",        className:""      },
   { code:"S",  label:"Ca sáng (S)",    className:"ca-s"  },
   { code:"S1", label:"Ca S1",          className:"ca-s"  },
+  { code:"S+", label:"Ca sáng (Chào cờ)", className:"ca-s-plus" },
   { code:"C",  label:"Ca chiều (C)",   className:"ca-c"  },
   { code:"HC", label:"Hành chính",     className:"ca-hc" },
   { code:"NB", label:"Nghỉ bù (1.0)",  className:"ca-nb" },
@@ -270,6 +497,21 @@ const SHIFTS = [
 let currentEditedCell = null;
 const shiftMenu = document.getElementById("shiftMenu");
 let swapRow1 = null;
+
+// --- INIT ---
+document.addEventListener("DOMContentLoaded", () => {
+    if (!SCRIPT_URL) {
+        alert("Chưa đăng nhập! Vui lòng quay lại trang Login.");
+        window.location.href = "index.html"; 
+        return;
+    }
+    
+    // Tải dữ liệu tuần gần nhất của nhóm này
+    loadLastSavedWeek();
+    
+    // Khởi tạo thông báo (nếu bạn muốn hiện thông báo ở trang này)
+    initNotifications();
+});
 
 /* ===========================================================
     INIT
@@ -469,9 +711,21 @@ async function loadScheduleOfCurrentWeek(explicitWeekStart) {
     4) MENU CHỌN CA
 =========================================================== */
 function onShiftCellClick(e) {
-    if (swapRow1) return; 
+    if (swapRow1) return; // Đang swap thì không paste
     e.stopPropagation();
-    currentEditedCell = e.target;
+    
+    const cell = e.target;
+
+    // --- LOGIC MỚI: Đánh dấu ô đang chọn để Paste ---
+    // Xóa class selected cũ
+    if (lastSelectedCell) lastSelectedCell.classList.remove("cell-selected");
+    
+    // Gán ô mới
+    lastSelectedCell = cell;
+    lastSelectedCell.classList.add("cell-selected");
+    // ------------------------------------------------
+
+    currentEditedCell = cell;
 
     const rect = currentEditedCell.getBoundingClientRect();
     shiftMenu.style.left = (rect.left + window.scrollX) + "px";
@@ -484,6 +738,17 @@ function onShiftCellClick(e) {
     `).join("");
     shiftMenu.style.display = "block";
 }
+
+// Thêm sự kiện click ra ngoài để bỏ chọn ô
+document.addEventListener("click", (e) => { 
+    shiftMenu.style.display = "none";
+    
+    // Nếu click ra ngoài bảng thì bỏ chọn ô (để tránh paste nhầm)
+    if (!e.target.closest("#scheduleTable")) {
+        if (lastSelectedCell) lastSelectedCell.classList.remove("cell-selected");
+        lastSelectedCell = null;
+    }
+});
 
 function selectShift(code, cls) {
     setShiftOnCell(currentEditedCell, code, cls);
@@ -831,6 +1096,294 @@ async function processRequest(rowId, action, btn) {
     } catch(e) {
         alert("Lỗi kết nối server!");
         renderRequestsTable();
+    }
+}
+
+/* ===========================================================
+   TÍNH NĂNG: COPY PASTE TỪ EXCEL (MỚI)
+=========================================================== */
+let lastSelectedCell = null;
+
+// Lắng nghe sự kiện Paste toàn trang
+document.addEventListener('paste', function(e) {
+    // Chỉ xử lý nếu đang có một ô lịch được chọn
+    if (!lastSelectedCell) return;
+    
+    // Ngăn hành động paste mặc định của trình duyệt
+    e.preventDefault();
+    
+    // Lấy dữ liệu từ clipboard
+    const clipboardData = e.clipboardData || window.clipboardData;
+    const pastedData = clipboardData.getData('Text');
+    
+    // Gọi hàm xử lý
+    processExcelPaste(pastedData);
+});
+
+function processExcelPaste(data) {
+    if (!lastSelectedCell) return;
+
+    // 1. Phân tích dữ liệu Excel (Dòng tách bởi \n, Cột tách bởi \t)
+    // Loại bỏ dòng trống ở cuối nếu có
+    const rows = data.split(/\r\n|\n|\r/).filter(row => row.trim() !== "");
+    
+    // 2. Xác định vị trí bắt đầu
+    const startRow = lastSelectedCell.closest("tr");
+    const startRowIndex = Array.from(staffTbody.children).indexOf(startRow);
+    const startColIndex = parseInt(lastSelectedCell.getAttribute("data-day")); // 0-6
+
+    // 3. Duyệt qua dữ liệu và điền vào bảng
+    rows.forEach((rowStr, rIdx) => {
+        const cols = rowStr.split('\t');
+        
+        // Tìm dòng tương ứng trên bảng
+        const targetRow = staffTbody.children[startRowIndex + rIdx];
+        if (!targetRow) return; // Hết dòng bảng
+
+        cols.forEach((val, cIdx) => {
+            // Tìm ô (cell) tương ứng: data-day = startCol + cIdx
+            const targetDayIndex = startColIndex + cIdx;
+            
+            // Chỉ xử lý nếu nằm trong phạm vi 7 ngày (0-6)
+            if (targetDayIndex <= 6) {
+                const targetCell = targetRow.querySelector(`.shift[data-day="${targetDayIndex}"]`);
+                
+                if (targetCell) {
+                    // Chuẩn hóa dữ liệu (Xóa khoảng trắng thừa, viết hoa để khớp mã)
+                    let cleanVal = val.trim().toUpperCase();
+                    
+                    // Nếu Excel để trống, coi là xóa ca (hoặc giữ nguyên tùy logic)
+                    // Ở đây ta cho phép paste ô trống để xóa ca
+                    if (cleanVal === "") cleanVal = "_"; // Hoặc "" tùy logic save của bạn
+
+                    // Tìm class màu sắc tương ứng trong SHIFTS
+                    const shiftObj = SHIFTS.find(s => s.code === cleanVal);
+                    
+                    // Nếu mã không hợp lệ (ví dụ nhập bậy), có thể bỏ qua hoặc điền text thô
+                    // Ở đây ta ưu tiên điền text thô nhưng không có màu
+                    const className = shiftObj ? shiftObj.className : "";
+                    
+                    // Cập nhật giao diện
+                    setShiftOnCell(targetCell, cleanVal, className);
+                }
+            }
+        });
+    });
+    
+    alert(`Đã dán dữ liệu từ Excel (${rows.length} dòng)! Nhớ bấm LƯU.`);
+}
+
+/* ===========================================================
+   TÍNH NĂNG: QUÉT CHUỘT NHIỀU Ô & XÓA (MULTI-SELECT DELETE)
+=========================================================== */
+let isDragging = false;
+let startCell = null;
+
+// 1. Gắn sự kiện chuột vào bảng
+const tableGrid = document.getElementById("scheduleTable");
+
+tableGrid.addEventListener("mousedown", function(e) {
+    // Chỉ bắt sự kiện nếu click vào ô lịch (.shift)
+    const cell = e.target.closest(".shift");
+    if (!cell) {
+        clearSelection(); // Click ra ngoài thì bỏ chọn
+        return;
+    }
+
+    // Nếu click chuột trái
+    if (e.button === 0) {
+        isDragging = true;
+        startCell = cell;
+        clearSelection(); // Xóa vùng chọn cũ
+        toggleCellSelection(cell, true); // Chọn ô bắt đầu
+        document.body.classList.add("noselect"); // Chặn bôi đen văn bản
+    }
+});
+
+tableGrid.addEventListener("mouseover", function(e) {
+    if (!isDragging) return;
+    
+    const currentCell = e.target.closest(".shift");
+    if (currentCell && startCell) {
+        selectRange(startCell, currentCell);
+    }
+});
+
+document.addEventListener("mouseup", function() {
+    isDragging = false;
+    document.body.classList.remove("noselect");
+});
+
+// 2. Hàm tính toán vùng chọn (Hình chữ nhật)
+function selectRange(start, end) {
+    clearSelection();
+
+    // Lấy tọa độ (Row Index và Cell Index trong row)
+    const startRow = start.closest("tr").rowIndex;
+    const endRow = end.closest("tr").rowIndex;
+    
+    // Index của ô shift tính theo data-day (0-6)
+    const startCol = parseInt(start.getAttribute("data-day"));
+    const endCol = parseInt(end.getAttribute("data-day"));
+
+    // Tìm giới hạn hình chữ nhật (Min/Max)
+    const minRow = Math.min(startRow, endRow);
+    const maxRow = Math.max(startRow, endRow);
+    const minCol = Math.min(startCol, endCol);
+    const maxCol = Math.max(startCol, endCol);
+
+    // Duyệt qua các dòng trong phạm vi
+    const rows = tableGrid.rows;
+    for (let r = minRow; r <= maxRow; r++) {
+        const row = rows[r];
+        // Tìm các ô .shift trong dòng này
+        // Lưu ý: Cấu trúc HTML của bạn có các ô stt, code, name... trước
+        // Nên ta querySelectorAll bên trong row để an toàn
+        const cells = row.querySelectorAll(".shift");
+        
+        cells.forEach(cell => {
+            const colIdx = parseInt(cell.getAttribute("data-day"));
+            if (colIdx >= minCol && colIdx <= maxCol) {
+                toggleCellSelection(cell, true);
+            }
+        });
+    }
+}
+
+// Helper: Bật/Tắt class chọn
+function toggleCellSelection(cell, isSelected) {
+    if (isSelected) cell.classList.add("cell-multi-selected");
+    else cell.classList.remove("cell-multi-selected");
+}
+
+// Helper: Xóa toàn bộ vùng chọn
+function clearSelection() {
+    const selected = document.querySelectorAll(".cell-multi-selected");
+    selected.forEach(cell => toggleCellSelection(cell, false));
+}
+
+// 3. Gắn sự kiện phím DELETE / BACKSPACE
+document.addEventListener("keydown", function(e) {
+    // Nếu đang nhập liệu trong ô input/textarea thì không xóa lịch
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+        const selectedCells = document.querySelectorAll(".cell-multi-selected");
+        
+        if (selectedCells.length > 0) {
+            e.preventDefault(); // Ngăn backspace quay lại trang
+            
+            if (confirm(`Bạn muốn xóa ${selectedCells.length} ô đã chọn?`)) {
+                selectedCells.forEach(cell => {
+                    // Đặt về "_" theo logic chuẩn hóa của bạn
+                    setShiftOnCell(cell, "_", ""); 
+                });
+                // clearSelection(); // Có thể giữ vùng chọn hoặc xóa tùy thích
+            }
+        }
+    }
+});
+
+/* ===========================================================
+   TÍNH NĂNG: XUẤT EXCEL THEO KHOẢNG THỜI GIAN
+=========================================================== */
+function openExportRangePopup() {
+    document.getElementById("exportRangePopup").style.display = "flex";
+    // Mặc định chọn ngày 1 đến cuối tháng hiện tại
+    const date = new Date();
+    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    
+    // Format yyyy-MM-dd để gán vào input type=date
+    const toInputStr = (d) => d.toISOString().split('T')[0];
+    
+    if(!document.getElementById("expFrom").value) document.getElementById("expFrom").value = toInputStr(firstDay);
+    if(!document.getElementById("expTo").value) document.getElementById("expTo").value = toInputStr(lastDay);
+}
+
+async function doExportRange() {
+    const fromD = document.getElementById("expFrom").value;
+    const toD = document.getElementById("expTo").value;
+    
+    if (!fromD || !toD) return alert("Vui lòng chọn ngày!");
+    if (fromD > toD) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+
+    const btn = document.querySelector("#exportRangePopup .btn-success");
+    const oldText = btn.innerText;
+    btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=exportScheduleRange&group=${encodeURIComponent(currentGroup)}&fromDate=${fromD}&toDate=${toD}`);
+        const json = await res.json();
+
+        if (json.success) {
+            // Tạo Workbook mới
+            const wb = XLSX.utils.book_new();
+            
+            // Gộp Header và Data thành một mảng lớn (Array of Arrays)
+            const wsData = [json.headers, ...json.data];
+            
+            // Tạo Sheet từ mảng
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // --- TÙY CHỈNH STYLE (Tô màu) ---
+            // Duyệt qua các ô để tô màu nền dựa vào mã ca
+            // (Phần này dùng thư viện xlsx-js-style)
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+                    const cell = ws[cellAddress];
+                    
+                    if (!cell) continue;
+
+                    // Style cho Header (Dòng 0)
+                    if (R === 0) {
+                        cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "EEEEEE" } }, border: { bottom: { style: "thin" } } };
+                    } 
+                    // Style cho Data (Các dòng sau)
+                    else {
+                        // Cột 0,1,2 là thông tin nhân viên, C > 2 là lịch
+                        if (C > 2) {
+                            const val = String(cell.v).trim();
+                            // Map màu tương ứng (Lấy từ biến COLOR_MAP có sẵn trong code cũ)
+                            // Lưu ý: COLOR_MAP trong code cũ key là class (ca-s), ta cần map từ Code (S)
+                            // Ta làm map nhanh ở đây:
+                            let color = "FFFFFF"; // Mặc định trắng
+                            if (val === "S" || val === "S1") color = "FFF2AC";
+                            else if (val === "C") color = "B7FF9D";
+                            else if (val === "HC") color = "FFB3B3";
+                            else if (val === "NB" || val.includes("NB")) color = "FF7A7A";
+                            else if (val === "P" || val.includes("P")) color = "FF6666";
+                            
+                            // Gán màu nền
+                            if (color !== "FFFFFF") {
+                                cell.s = { fill: { fgColor: { rgb: color } }, border: { top: {style:"thin"}, bottom:{style:"thin"}, left:{style:"thin"}, right:{style:"thin"} } };
+                            } else {
+                                // Viền cho ô thường
+                                cell.s = { border: { top: {style:"thin"}, bottom:{style:"thin"}, left:{style:"thin"}, right:{style:"thin"} } };
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Chỉnh độ rộng cột
+            const wscols = [{wch:10}, {wch:20}, {wch:15}]; // 3 cột đầu
+            // Các cột ngày cho nhỏ lại
+            for(let k=3; k<json.headers.length; k++) wscols.push({wch:5});
+            ws['!cols'] = wscols;
+
+            XLSX.utils.book_append_sheet(wb, ws, "BaoCaoLich");
+            XLSX.writeFile(wb, `Lich_${fromD}_${toD}.xlsx`);
+            
+            document.getElementById("exportRangePopup").style.display = "none";
+        }
+    } catch(e) {
+        console.error(e);
+        alert("Lỗi khi xuất file!");
+    } finally {
+        btn.innerText = oldText; btn.disabled = false;
     }
 }
 </script>
