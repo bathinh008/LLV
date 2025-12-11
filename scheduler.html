@@ -2,475 +2,496 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Lịch làm việc tuần</title>
-
-<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LỊCH LÀM VIỆC</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
 <style>
-/* ================= FONTS & RESET ================= */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    /* ================= STYLE CHUẨN ================= */
+    :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; --border: #d1d5db; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #2c3e50; margin: 0; padding: 20px; }
 
-:root {
-    --primary-color: #4a90e2;    /* Xanh dương hiện đại */
-    --success-color: #2ecc71;    /* Xanh lá tươi */
-    --warning-color: #f39c12;    /* Vàng cam */
-    --danger-color: #e74c3c;     /* Đỏ */
-    --text-color: #2c3e50;
-    --bg-color: #f0f2f5;
-    --card-bg: #ffffff;
-    --border-color: #e1e4e8;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-}
-
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 20px;
-    line-height: 1.5;
-}
-
-/* ================= LAYOUT HEADER ================= */
-h1 {
-    font-weight: 700;
-    color: var(--primary-color);
-    margin-bottom: 5px;
-    letter-spacing: -0.5px;
-    text-transform: uppercase;
-    font-size: 24px;
-}
-
-.header-week {
-    font-size: 16px;
-    color: #555;
-    background: #fff;
-    display: inline-block;
-    padding: 5px 15px;
-    border-radius: 20px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.group-label {
-    font-size: 14px;
-    color: #7f8c8d;
-    margin-bottom: 20px;
-    font-style: normal;
-    font-weight: 600;
-}
-
-/* ================= CONTROL BAR ================= */
-.control-bar {
-    background: var(--card-bg);
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    border: 1px solid var(--border-color);
-}
-
-button {
-    font-family: 'Inter', sans-serif;
-    padding: 9px 16px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 600;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 2px 2px rgba(0,0,0,0.05);
-}
-
-button:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); filter: brightness(105%); }
-button:active { transform: translateY(0); }
-
-.btn-primary { background: var(--primary-color); color: white; }
-.btn-success { background: var(--success-color); color: white; }
-.btn-warning { background: var(--warning-color); color: white; }
-.btn-danger  { background: var(--danger-color); color: white; }
-.btn-outline { background: white; border: 1px solid #bdc3c7; color: #555; }
-.btn-outline:hover { border-color: var(--primary-color); color: var(--primary-color); }
-
-/* ================= TABLE STYLES (ĐÃ SỬA LỖI VIỀN) ================= */
-table {
-    width: 100%;
-    border-collapse: separate; 
-    border-spacing: 0;
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
-    margin-bottom: 50px;
-    /* Viền bao ngoài bảng */
-    border: 1px solid #bdc3c7; 
-}
-
-thead {
-    background: #f8f9fa;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-}
-
-th {
-    padding: 12px 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #444;
-    text-transform: uppercase;
+    .container { max-width: 1350px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); min-height: 85vh; }
     
-    /* Viền dưới và viền phải màu xám đậm #bdc3c7 */
-    border-bottom: 2px solid #bdc3c7; 
-    border-right: 1px solid #bdc3c7;
+    .header-bar { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 20px; 
+        background: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
     
-    background: #f8f9fa;
-}
+    /* Khung chứa nút điều hướng */
+    .week-navigator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f8f9fa;
+        padding: 5px;
+        border-radius: 300px; /* Bo tròn như viên thuốc */
+        border: 1px solid #eee;
+    }
 
-td {
-    padding: 8px 5px;
+    /* Phần hiển thị chữ ở giữa */
+    .week-display {
+        font-size: 150px;
+        font-weight: 1000;
+        color: #2c3e50;
+        padding: 0 15px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .week-display:hover { color: var(--primary); }
+    h2 { margin: 0; color: var(--primary); font-weight: 700; font-size: 24px; text-transform: uppercase; }
+    .week-badge { background: #e0f2fe; color: var(--primary); padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 20px; }
     
-    /* Viền các ô dữ liệu */
-    border-bottom: 1px solid #bdc3c7;
-    border-right: 1px solid #bdc3c7;
+    .control-bar { display: flex; gap: 10px; margin-bottom: 20px; background: #f8f9fa; padding: 10px; border-radius: 12px; border: 1px solid var(--border); flex-wrap: wrap; align-items: center;}
     
-    font-size: 13px;
-    text-align: center;
-    height: 40px; 
-    transition: background 0.1s;
-}
-
-/* Mặc định: Xóa viền phải của cột cuối cùng để bảng trông gọn hơn */
-th:last-child, td:last-child {
-    border-right: none;
-}
-
-/* === [QUAN TRỌNG] SỬA LỖI MẤT VIỀN CHỖ BẠN KHOANH VÙNG === */
-/* Riêng ô ngày cuối cùng (CN) trong dòng header thứ 2 thì BẮT BUỘC phải có viền phải 
-   để ngăn cách với cột Phép/Bù bên cạnh */
-#headerDatesRow th:last-child {
-    border-right: 1px solid #bdc3c7 !important;
-}
-/* ========================================================= */
-
-tr:last-child td {
-    border-bottom: none;
-}
-
-/* Hover dòng */
-tr:hover td { background-color: #fcfcfc; }
-
-/* Các cột thông tin nhân viên */
-.emp-code { color: #555; font-family: monospace; font-size: 12px; font-weight: 600; }
-.emp-name { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; }
-.emp-role { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; white-space: nowrap;}
-
-/* Ô Lịch (Shift) */
-.shift {
-    cursor: pointer;
-    font-weight: 600;
-    position: relative;
-    user-select: none;
-}
-.shift:hover {
-    background-color: #ebf5fb !important;
-    box-shadow: inset 0 0 0 2px var(--primary-color);
-}
-
-/* Các cột thông tin nhân viên */
-.emp-code { color: #888; font-family: monospace; font-size: 12px; }
-.emp-name { font-weight: 600; color: #333; text-align: left; padding-left: 10px; }
-.emp-role { font-weight: 700; color: #2c3e50; text-align: left; padding-left: 10px; white-space: nowrap;}
-
-/* Ô Lịch (Shift) */
-.shift {
-    cursor: pointer;
-    font-weight: 600;
-    position: relative;
-    user-select: none;
-}
-.shift:hover {
-    background-color: #ebf5fb !important; /* Highlight khi di chuột */
-    box-shadow: inset 0 0 0 2px var(--primary-color);
-}
-
-/* Màu sắc các Ca - Tone màu Pastel dịu mắt hơn */
-.ca-s  { background-color: #e3f2fd; color: #1565c0; }     /* Sáng: Xanh nhạt */
-.ca-c  { background-color: #e8f5e9; color: #2e7d32; }     /* Chiều: Xanh lá nhạt */
-.ca-hc { background-color: #f3e5f5; color: #7b1fa2; }     /* HC: Tím nhạt */
-.ca-nc { background-color: #fff3e0; color: #ef6c00; }     /* CN: Cam nhạt */
-.ca-nb { background-color: #ffebee; color: #c62828; }     /* Bù: Đỏ nhạt */
-.ca-p  { background-color: #fce4ec; color: #ad1457; }     /* Phép: Hồng */
-.ca-ct { background-color: #e0f7fa; color: #006064; }     /* Công tác: Cyan */
-.ca-s-plus { background-color: #fff9c4; color: #fbc02d; font-weight: 700; border: 1px solid #fff176;} 
-
-/* Hiệu ứng chọn ô */
-.cell-selected {
-    box-shadow: inset 0 0 0 2px var(--primary-color) !important;
-    background-color: rgba(52, 152, 219, 0.1) !important;
-}
-.cell-multi-selected {
-    background-color: rgba(52, 152, 219, 0.2) !important;
-    border: 1px dashed var(--primary-color);
-}
-
-/* Header số dư */
-.col-p-old, .col-p-new, .col-b-old, .col-b-new {
-    font-size: 11px; 
-    border-radius: 4px;
-}
-
-/* ================= POPUP / MODAL ================= */
-.popup-bg {
-    display: none; /* <--- DÒNG QUAN TRỌNG NHẤT: Mặc định phải ẩn đi */
-    position: fixed;
-    top: 0; 
-    left: 0;
-    width: 100%; 
-    height: 100%;
-    z-index: 9999; /* Luôn nằm trên cùng */
-    justify-content: center; /* Căn giữa ngang */
-    align-items: center;     /* Căn giữa dọc */
+    button { padding: 9px 14px; border-radius: 8px; border: none; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-family: 'Inter'; transition: 0.2s; }
+    button:hover { transform: translateY(-2px); filter: brightness(105%); }
+    .btn-p { background: var(--primary); color: white; }
+    .btn-s { background: var(--success); color: white; }
+    .btn-w { background: var(--warning); color: white; }
+    .btn-d { background: var(--danger); color: white; }
+    .btn-o { background: white; border: 1px solid var(--border); color: #555; }
     
-    background: rgba(44, 62, 80, 0.6); /* Màu nền tối mờ */
-    backdrop-filter: blur(2px);        /* Hiệu ứng làm mờ phía sau */
-}
+    /* Style riêng cho nút Đảo khi Active */
+    .btn-swap-active { background: #f39c12; color: white; border: 1px solid #e67e22; animation: pulseBtn 1.5s infinite; }
+    @keyframes pulseBtn { 0% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); } 100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); } }
 
-.popup-box {
-    background: #fff;
-    /* Mẹo: Đặt padding-top = 0 để tiêu đề nằm sát mép trên cùng */
-    padding: 0 20px 20px 20px; 
+    table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 50px; }
+    thead { position: sticky; top: 0; z-index: 10; }
+    th { background: #f8f9fa; padding: 10px 5px; font-size: 12px; font-weight: 700; color: #444; border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); text-transform: uppercase; }
+    td { padding: 5px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); font-size: 13px; text-align: center; height: 38px; vertical-align: middle; position: relative; }
     
-    border-radius: 16px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    
-    /* Animation hiện ra nhẹ nhàng */
-    animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    
-    /* Đặt max-height để nếu danh sách dài quá thì nó tự cuộn, không bị tràn màn hình */
-    max-height: 90vh;
-    overflow-y: auto;
-}
+    th:last-child, td:last-child { border-right: none; }
+    #headerDatesRow th:last-child { border-right: 1px solid var(--border) !important; }
 
-@keyframes slideIn {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
+    /* Cells */
+    .shift { cursor: pointer; font-weight: 700; user-select: none; }
+    .shift:hover { background-color: #ebf5fb !important; box-shadow: inset 0 0 0 2px var(--primary); }
+    .selected { box-shadow: inset 0 0 0 2px var(--primary) !important; background: rgba(74,144,226,0.1); }
+    .copy-source { outline: 2px dashed var(--primary); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { outline-color: transparent; } }
 
-.popup-box h3 {
-    background: var(--primary-color);
-    color: white;
+    /* Hiệu ứng khi chọn dòng để Đảo */
+    .row-swap-selected { background-color: #fff3cd !important; border: 2px dashed #f39c12; }
+    tr.swap-mode-hover:hover td { background-color: #fcf8e3; cursor: pointer; }
+
+    .ca-s { background:#e3f2fd; color:#1565c0; } .ca-c { background:#e8f5e9; color:#2e7d32; }
+    .ca-hc { background:#f3e5f5; color:#7b1fa2; } .ca-nb { background:#ffebee; color:#c62828; }
+    .ca-p { background:#fce4ec; color:#ad1457; } .ca-ct { background:#e0f7fa; color:#006064; }
+	
+	/* --- MÀU SẮC CHO CÁC CA MỚI --- */
+    .ca-s-plus { background: #bbdefb; color: #0d47a1; border: 1px solid #90caf9; } /* Sáng đậm hơn chút */
+    .ca-nc { 
+        background: #fff9c4;       /* Nền vàng kem (để không bị chói mắt) */
+        color: #f57f17;            /* Chữ vàng đậm (Tông Gold/Cam) */
+        border: 1px solid #fbc02d; /* Viền vàng đậm bao quanh */
+        font-weight: bold;         /* In đậm cho nổi bật */
+    }
     
-    /* QUAN TRỌNG: margin-top = 0 (không kéo lên nữa) */
-    /* Chỉ kéo margin trái/phải âm để tràn viền 2 bên */
-    margin: 0 -20px 20px -20px; 
+    .ca-o  { background: #fff3e0; color: #e67e22; } /* Màu cam nhạt cho Con ốm */
+    .ca-te { background: #fef9c3; color: #b45309; border: 1px solid #fde047; } /* Màu vàng tết */
+    .ca-l  { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; } /* Màu đỏ lễ (khác NB chút) */
+    .ca-nm { background: #ccfbf1; color: #0f766e; } /* Màu xanh ngọc nghỉ mát */
+	.ca-kl { background: #e0e0e0; color: #636e72; border: 1px solid #b2bec3; font-weight: bold; }
+
+    /* Popups */
+    .popup-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.6); backdrop-filter: blur(2px); z-index: 1000; justify-content: center; align-items: center; }
+    .popup-box { background: white; padding: 0 25px 25px 25px; width: 450px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: slideIn 0.3s; }
+    .popup-box h3 { background: var(--primary); color: white; margin: 0 -25px 20px -25px; padding: 15px 25px; border-radius: 16px 16px 0 0; font-size: 16px; }
     
-    padding: 15px 20px;
-    font-size: 16px;
-    font-weight: 600;
+    input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; margin-bottom: 15px; }
+    label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
+
+    .emp-list-container { max-height: 150px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 5px; background: #f9fafb; margin-bottom: 15px; }
+    .emp-item { display: flex; align-items: center; padding: 8px; border-radius: 6px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .emp-item:hover { background: #e0f2fe; }
+    .emp-item:last-child { border-bottom: none; }
+    .emp-item input { width: 16px; height: 16px; margin-right: 10px; cursor: pointer; margin-bottom: 0; }
+
+    #shiftMenu { position: absolute; display: none; background: white; border: 1px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-radius: 8px; padding: 5px; width: 160px; z-index: 100; max-height: 300px; overflow-y: auto; }
+    #shiftMenu button { width: 100%; text-align: left; background: none; margin: 1px 0; border-radius: 4px; }
+    #shiftMenu button:hover { background: #f0f2f5; }
+    .menu-badge { display: inline-block; width: 30px; text-align: center; border-radius: 4px; font-size: 11px; margin-right: 8px; border: 1px solid #eee; }
     
-    /* Bo góc trên để khớp với cái hộp */
-    border-radius: 16px 16px 0 0;
+    #loading { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 30px; display: none; z-index: 2000; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+	
+	/* Hiệu ứng khi quét chọn nhiều ô */
+    .cell-multi-selected {
+        background-color: rgba(74, 144, 226, 0.2) !important;
+        border: 1px double var(--primary);
+    }
     
-    /* Dính header lên đầu khi cuộn danh sách dài */
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
+    /* Hiệu ứng ô đang được Copy (Kiến bò) */
+    .copy-source {
+        outline: 2px dashed var(--primary);
+        animation: pulseBorder 1s infinite;
+        background-color: #fff !important;
+    }
+    @keyframes pulseBorder { 50% { outline-color: transparent; } }
+	
+	/* --- BẢNG DUYỆT YÊU CẦU (CHUẨN UI) --- */
+    .req-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    
+    .req-table th { 
+        background: #f8f9fa;           /* Nền xám nhạt */
+        color: #444;                   /* Chữ màu xám đậm */
+        font-size: 12px;               /* Cỡ chữ chuẩn */
+        font-weight: 700;              /* In đậm */
+        text-transform: uppercase;     /* Viết hoa */
+        padding: 12px 5px;             /* Khoảng cách đệm */
+        
+        border-bottom: 2px solid #d1d5db; /* Kẻ dưới đậm */
+        border-right: 1px solid #d1d5db;  /* Kẻ phải (ngăn cách cột) */
+        
+        text-align: center;            /* Mặc định căn giữa tiêu đề */
+        vertical-align: middle;
+        position: sticky; top: 0; z-index: 10; /* Ghim tiêu đề khi cuộn */
+    }
+    
+    /* Bỏ kẻ phải ở cột cuối cùng */
+    .req-table th:last-child { border-right: none; }
 
-.popup-box input, .popup-box select {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 14px;
-    transition: 0.2s;
-}
-.popup-box input:focus, .popup-box select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-}
+    .req-table td { 
+        padding: 8px 5px; 
+        border-bottom: 1px solid #d1d5db; 
+        border-right: 1px solid #d1d5db; /* Kẻ dọc cho phần thân luôn */
+        font-size: 13px; 
+        color: #333; 
+        vertical-align: middle;
+    }
+    .req-table td:last-child { border-right: none; }
+	
+	/* Thêm vào thẻ style */
+	.status-ok { color: #27ae60 !important; } /* Màu xanh */
+	.status-lack { color: #e74c3c !important; } /* Màu đỏ */
+	.src-item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+	.src-item-row:hover { background-color: #f0f9ff; cursor: pointer; }
+	
+	/* Thêm class mới cho nút Excel */
+	.btn-excel { 
+		background-color: #1D6F42; /* Màu xanh Excel đậm */
+		color: white;
+	}
+	.btn-excel:hover {
+		background-color: #155b34; /* Màu khi di chuột vào */
+	}
+	
+	.btn-purple { 
+		background-color: #8e44ad; 
+		color: white; 
+	}
+	.btn-purple:hover { 
+		background-color: #732d91; /* Tím đậm hơn khi di chuột */
+	}
+	
+	/* --- HIỆU ỨNG HIGHLIGHT DÒNG & CỘT (CROSSHAIR) --- */
+    
+    /* Class dùng để làm tối các ô trong dòng/cột đang chọn */
+    .crosshair-highlight {
+        background-color: rgba(0, 0, 0, 0.08) !important; /* Phủ lớp đen mờ 8% */
+        transition: background-color 0.1s ease;
+    }
 
-/* ================= CONTEXT MENU (Shift Menu) ================= */
-#shiftMenu {
-    border: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    border-radius: 8px;
-    padding: 5px;
-    min-width: 150px;
-}
-#shiftMenu button {
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 13px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 2px;
-}
-#shiftMenu button:hover {
-    background-color: var(--primary-color);
-    color: white;
-}
-#shiftMenu button b {
-    display: inline-block;
-    width: 30px;
-    text-align: center;
-    margin-right: 8px;
-    background: rgba(0,0,0,0.1);
-    border-radius: 4px;
-    padding: 2px 0;
-}
+    /* Riêng ô con trỏ chuột đang đứng thì làm tối đậm hơn */
+    .crosshair-center {
+        background-color: rgba(0, 0, 0, 0.15) !important; /* Phủ lớp đen mờ 15% */
+        outline: 2px solid #666; /* Viền bao quanh ô */
+        outline-offset: -2px;
+        cursor: crosshair;
+    }
 
-/* CSS Swap */
-.swap-selected {
-    outline: 2px dashed var(--warning-color) !important;
-    background: #fff9e6 !important;
-    transform: scale(0.99);
-}
+    /* Đảm bảo hiệu ứng đè lên được màu nền của các ca làm việc */
+    td.shift {
+        position: relative; /* Để z-index hoạt động nếu cần */
+    }
+	
+	/* --- CSS CHO NÚT VÀ MODAL CÀI ĐẶT --- */
+    .btn-setting {
+        background: #f1f1f1;
+        color: #555;
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+        font-size: 14px;
+        margin-left: 10px; /* Cách các nút khác */
+    }
 
-.noselect { user-select: none; }
+    /* Modal nền tối */
+    .settings-modal {
+        display: none; 
+        position: fixed; 
+        z-index: 1000; 
+        left: 0; top: 0; 
+        width: 100%; height: 100%;
+        overflow: auto; 
+        background-color: rgba(0,0,0,0.4);
+    }
+
+    /* Nội dung modal */
+    .settings-modal-content {
+        background-color: #fefefe;
+        margin: 10% auto; 
+        padding: 25px;
+        border: 1px solid #888;
+        width: 80%; 
+        max-width: 400px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        animation: animatetop 0.4s;
+    }
+
+    /* Animation mở modal */
+    @keyframes animatetop {
+        from { top: -300px; opacity: 0 }
+        to { top: 0; opacity: 1 }
+    }
+
+    .modal-close {
+        color: #aaa; float: right; font-size: 28px; font-weight: bold;
+    }
+    .modal-close:hover, .modal-close:focus {
+        color: black; text-decoration: none; cursor: pointer;
+    }
+
+    /* Style cho Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px; height: 34px;
+        vertical-align: middle;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #ccc; transition: .4s; border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+        background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #2196F3; }
+    input:checked + .slider:before { transform: translateX(26px); }
 </style>
 </head>
 <body>
 
-<h1>LỊCH LÀM VIỆC</h1>
-<div class="header-week" id="weekRange"></div>
-<div class="group-label" id="groupLabel"></div>
+<div class="container">
+    <div class="header-bar">
+        <div>
+            <h2 style="font-weight:bold; font-size:35px;">LỊCH LÀM VIỆC</h2>
+            <div style="font-size:15px; color:#666; margin-top:5px;">Nhóm: <b id="groupNameDisplay">...</b></div>
+        </div>
+        <div class="week-badge" id="weekRangeDisplay">Đang tải...</div>
+    </div>
 
-<div class="control-bar">
-    <div style="display:flex; gap:5px; border-right:1px solid #ddd; padding-right:10px;">
-        <button class="btn-primary" onclick="openRequestsPopup()">
-             🔔 Yêu cầu <span id="badgeCount" style="display:none; background:red; color:white; border-radius:50%; padding:2px 5px; font-size:10px; margin-left:5px;">0</span>
+    <div class="control-bar">
+        <div style="display:flex; gap:10px; border-right:1px solid #ddd; padding-right:10px;">
+            <button class="btn-p" onclick="openAddEmpPopup()">➕ Nhân viên</button>
+            <button class="btn-p" onclick="openBulkLeavePopup()">➕ Phép/Bù</button>
+			<button class="btn-purple" onclick="openApprovalPopup()" style="position:relative;">
+				🔔 Yêu cầu 
+				<span id="badgeReq" style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; position:absolute; top:-5px; right:-5px; display:none;">0</span>
+			</button>
+        </div>
+        <div style="display:flex; gap:10px; border-right:1px solid #ddd; padding-right:10px;">
+            <button class="btn-o" id="btnSwap" onclick="toggleSwapMode()">⇌ Đảo</button>
+            <button class="btn-o" onclick="openWeekPopup()">📅 Chọn Tuần</button>
+            <button class="btn-o" onclick="loadSchedule()">🔄 Tải lại</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+			<button class="btn-w" onclick="saveSchedule(false)">💾 Lưu lịch</button>
+            <button class="btn-s" onclick="exportToExcel()">📊 Xuất Excel</button>
+			<button class="btn-excel" onclick="openExportRangePopup()">📅 Xuất Excel(Tùy chọn)</button>
+			<button class="btn-setting" onclick="document.getElementById('settingsModal').style.display='block'">
+				⚙️ Cài đặt
+			</button>
+            <button class="btn-d" onclick="window.location.href='dashboard.html'">← Thoát</button>
+        </div>
+    </div>
+
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th rowspan="2" style="width:40px; font-weight:bold; font-size:18px;">STT</th>
+                <th rowspan="2" style="width:60px; font-size:18px;">MÃ NV</th>
+                <th rowspan="2" style="min-width:150px; font-weight:bold; font-size:18px;">HỌ TÊN</th>
+                <th rowspan="2" style="min-width:100px; font-weight:bold; font-size:18px;">CHỨC VỤ</th>
+                
+                <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th style="color:#e74c3c;">CN</th>
+                
+                <th rowspan="2" id="th_p_old" class="col-p-old" style="width:45px; color:#7f8c8d; font-size:11px;">P.CŨ</th>
+				<th rowspan="2" id="th_p_new" style="width:45px;">P.MỚI</th>
+				<th rowspan="2" id="th_b_old" class="col-b-old" style="width:45px; color:#7f8c8d; font-size:11px;">B.CŨ</th>
+				<th rowspan="2" id="th_b_new" style="width:45px;">B.MỚI</th>
+                
+                <th rowspan="2" style="width:50px; background:#fffcf5; color:#d35400;">TỔNG</th>
+                <th rowspan="2" style="width:40px;">XÓA</th>
+            </tr>
+            <tr id="headerDatesRow"></tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+    </table>
+	
+	<div style="margin-top: 20px; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; background: white;">
+        
+        <button onclick="toggleSummaryTable()" style="width: 100%; text-align: left; padding: 12px 20px; background: #e9ecef; border: none; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <span>📋 BẢNG TỔNG HỢP CHI TIẾT (NOTE)</span>
+            <span id="summaryIcon">▼</span>
         </button>
-        <button class="btn-primary" onclick="openAddEmpPopup()">➕ NV</button>
-        <button class="btn-primary" onclick="openBulkLeavePopup()">➕ Phép/Bù</button>
-    </div>
 
-    <div style="display:flex; gap:5px; border-right:1px solid #ddd; padding-right:10px;">
-        <button class="btn-success" onclick="autoAssignShifts()">⚡ Chia ca</button>
-        <button class="btn-outline" onclick="enableSwap()">⇌ Đảo</button> 
-        <button class="btn-outline" onclick="openWeekPopup()">📅 Tuần mới</button>
-        <button class="btn-outline" onclick="openOldWeekPopup()">📂 Mở lại</button>
-    </div>
-
-    <div style="display:flex; gap:5px;">
-        <button class="btn-warning" onclick="saveSchedule()">💾 Lưu</button>
-        <button class="btn-warning" onclick="exportToExcel()">📊 Excel</button>
-        <button class="btn-warning" onclick="openExportRangePopup()">📅 Xuất Tùy Chọn</button>
-        <button class="btn-outline" onclick="goBack()">← Về Home</button>
+        <div id="summaryContainer" style="display: none; padding: 15px;">
+            <table class="summary-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="text-align: left; padding: 8px; border: 1px solid #ddd;">LOẠI CA / NGHỈ</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T2</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T3</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T4</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T5</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T6</th>
+                        <th style="width: 50px; border: 1px solid #ddd;">T7</th>
+                        <th style="width: 50px; border: 1px solid #ddd; color: red;">CN</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryBody">
+                    </tbody>
+            </table>
+        </div>
     </div>
 </div>
-
-<table id="scheduleTable">
-    <thead>
-        <tr>
-            <th rowspan="2" style="width: 30px;">STT</th>
-            <th rowspan="2" style="width: 60px;">MÃ NV</th>
-            <th rowspan="2" style="width: 150px;">HỌ TÊN</th>
-            <th rowspan="2" style="width: 80px;">CHỨC VỤ</th>
-            
-            <th>T2</th><th>T3</th><th>T4</th><th>T5</th><th>T6</th><th>T7</th><th>CN</th>
-            
-            <th rowspan="2" class="col-p-old" style="display:none;">PHÉP CŨ</th>
-            <th rowspan="2" class="col-p-new">PHÉP MỚI</th>
-            <th rowspan="2" class="col-b-old" style="display:none;">BÙ CŨ</th>
-            <th rowspan="2" class="col-b-new">BÙ MỚI</th>
-            
-            <th rowspan="2" style="background-color: #fff3cd; color: #d35400;">TỔNG</th>
-
-            <th rowspan="2" style="width: 40px;">XÓA</th>
-        </tr>
-        <tr id="headerDatesRow"></tr>
-    </thead>
-    <tbody id="staffRows"></tbody>
-</table>
 
 <div id="shiftMenu"></div>
 
-<div id="addEmpPopup" class="popup-bg">
-    <div class="popup-box">
-        <h3>Thêm nhân viên</h3>
-        <input id="empCode" placeholder="Mã nhân viên (VD: NV01)">
-        <input id="empName" placeholder="Họ tên nhân viên">
-        <input id="empRole" placeholder="Chức vụ">
-        <button class="btn-primary" onclick="saveNewEmployee()">Lưu</button>
-        <button class="btn-danger" onclick="closeAddEmpPopup()">Hủy</button>
-    </div>
-</div>
-
 <div id="weekPopup" class="popup-bg">
     <div class="popup-box">
-        <h3>Chọn ngày bắt đầu (Thứ 2)</h3>
-        <input id="weekStart" type="date">
-        <button class="btn-primary" onclick="applyNewWeek()">Tạo</button>
-        <button class="btn-danger" onclick="closeWeekPopup()">Đóng</button>
+        <h3>Chọn Tuần Làm Việc</h3>
+        
+        <label style="color:#2980b9;">📂 Mở tuần đã lưu:</label>
+        <select id="weekSelect" onchange="document.getElementById('newWeekPicker').value = ''">
+            <option value="">-- Đang tải dữ liệu... --</option>
+        </select>
+
+        <div style="text-align:center; color:#999; margin: 10px 0; font-size:12px;">--- HOẶC ---</div>
+
+        <label style="color:#27ae60;">🆕 Tạo tuần mới (Chọn Thứ 2):</label>
+        <input type="date" id="newWeekPicker" onchange="document.getElementById('weekSelect').value = ''">
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('weekPopup')">Đóng</button>
+            <button class="btn-p" onclick="confirmWeekSelection()">Mở Lịch</button>
+        </div>
     </div>
 </div>
 
-<div id="oldWeekPopup" class="popup-bg">
-    <div class="popup-box">
-        <h3>Chọn tuần đã lưu</h3>
-        <select id="weekSelect"></select>
-        <button class="btn-primary" onclick="loadSelectedWeek()">Tải tuần</button>
-        <button class="btn-danger" onclick="closeOldWeekPopup()">Đóng</button>
+<div id="addEmpPopup" class="popup-bg">
+    <div class="popup-box" style="width: 500px;"> 
+        <h3>Thêm Nhân Viên</h3>
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1"><label>Mã NV:</label><input id="newEmpCode" placeholder="VD: NV01"></div>
+            <div style="flex:2"><label>Họ Tên:</label><input id="newEmpName" placeholder="Nhập tên"></div>
+        </div>
+        <label>Chức vụ:</label><input id="newEmpRole" placeholder="VD: Nhân viên">
+        
+        <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('addEmpPopup')">Hủy</button> 
+            <button class="btn-p" onclick="confirmAddEmployee()">Lưu vào Lịch</button>
+        </div>
     </div>
 </div>
 
 <div id="bulkLeavePopup" class="popup-bg">
-    <div class="popup-box" style="width: 500px;">
-        <h3>➕ Thêm Phép / Bù</h3>
-        <div style="display:flex; gap:10px;">
-            <select id="bulkLeaveType" style="flex:1;">
-                <option value="NB">Ngày Bù (NB)</option>
-                <option value="PN">Phép Năm (PN)</option>
-            </select>
-            <input id="bulkLeaveAmount" type="number" step="0.5" min="0.5" value="1" style="width: 100px;" title="Số lượng">
+    <div class="popup-box">
+        <h3>Cộng Phép / Bù</h3>
+        <label>Loại:</label>
+        <select id="blType" style="margin-bottom:10px;"><option value="PN">Phép Năm (PN)</option><option value="NB">Nghỉ Bù (NB)</option></select>
+        
+        <label>Số lượng:</label>
+        <input type="number" id="blAmount" value="1" style="margin-bottom:10px;">
+        
+        <label>Lý do:</label>
+        <input id="blReason" placeholder="Lý do (VD: Thưởng lễ)" style="margin-bottom:10px;">
+        
+        <label>Chọn nhân viên:</label>
+        <div style="border:1px solid #d1d5db; border-radius:8px; padding:10px; background:white;">
+            <div style="padding-bottom:5px; border-bottom:1px solid #eee; margin-bottom:5px;">
+                <label style="display:flex; align-items:center; cursor:pointer; font-weight:700; color:var(--primary);">
+                    <input type="checkbox" id="checkAllBox" onchange="toggleCheckAll(this)" style="width:16px; height:16px; margin:0 10px 0 0;"> Chọn tất cả
+                </label>
+            </div>
+            <div id="blEmpList" class="emp-list-container" style="border:none; margin:0; padding:0; background:white;"></div>
         </div>
-        <input id="bulkLeaveReason" placeholder="Lý do (Ví dụ: Trực lễ, Tăng ca...)" style="margin-top: 10px;">
-        <div style="margin: 10px 0; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-            <input type="checkbox" id="checkAllBulk" checked onclick="toggleCheckAll(this.checked)"> Chọn tất cả
-        </div>
-        <div id="bulkEmployeeList" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; background: #fafafa; border-radius: 4px;"></div>
-        <div style="margin-top: 15px; text-align: right;">
-            <button class="btn-danger" onclick="closeBulkLeavePopup()">Hủy</button>
-            <button class="btn-primary" onclick="saveBulkLeave()">Xác nhận</button>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-d" onclick="closePopup('bulkLeavePopup')">Hủy</button> 
+            <button class="btn-p" onclick="submitBulkLeave()">Lưu</button>
         </div>
     </div>
 </div>
 
-<div id="requestsPopup" class="popup-bg">
-    <div class="popup-box" style="width: 700px; max-width:95%;">
-        <h3>🔔 Danh Sách Yêu Cầu Nghỉ</h3>
-        <div id="reqListContainer" style="max-height: 400px; overflow-y: auto;">
-            <table style="width:100%; font-size:13px;">
+<div id="approvalPopup" class="popup-bg">
+    <div class="popup-box" style="width: 900px;"> <h3>🔔 Duyệt Yêu Cầu Nghỉ Phép</h3>
+        
+        <div style="">
+            <table class="req-table">
                 <thead>
                     <tr>
-                        <th>Thời gian</th>
-                        <th>NV</th>
-                        <th>Loại</th>
-                        <th>Ngày nghỉ</th>
-                        <th>Lý do</th>
-                        <th>Thao tác</th>
+                        <th style="width: 80px;">Mã NV</th>
+                        <th style="width: 180px; text-align: left; padding-left: 10px;">Họ Tên</th>
+                        <th style="width: 100px;">Ngày</th>
+                        <th style="width: 80px;">Loại</th>
+                        <th style="text-align: left; padding-left: 10px;">Lý Do / Ghi Chú</th>
+                        <th style="width: 140px;">Thao Tác</th>
                     </tr>
                 </thead>
-                <tbody id="reqTableBody"></tbody>
+                <tbody id="reqListBody"></tbody>
             </table>
-            <p id="noReqMsg" style="text-align:center; color:#888; display:none;">Không có yêu cầu nào.</p>
+            
+            <div id="noReqMsg" style="text-align:center; padding:30px; color:#999; display:none;">
+                Không có yêu cầu nào đang chờ duyệt.
+            </div>
         </div>
-        <div style="text-align:right; margin-top:15px;">
-            <button class="btn-outline" onclick="closeRequestsPopup()">Đóng</button>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button class="btn-d" onclick="closePopup('approvalPopup')">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<div id="nbSourcePopup" class="popup-bg">
+    <div class="popup-box" style="width: 500px;">
+        <h3 id="nbSourceTitle">Chọn nguồn công bù</h3>
+        
+        <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-bottom:15px;">
+            <div style="font-size:13px; color:#555;">Đang chọn cho mã: <b id="nbTargetCode" style="color:#2980b9;">...</b></div>
+            <div style="font-size:13px; color:#555;">Ngày nghỉ: <b id="nbTargetDate" style="color:#e74c3c;">...</b></div>
+            <div style="font-size:13px; color:#555;">Loại nghỉ: <b id="nbTargetType" style="color:#27ae60;">...</b></div>
+        </div>
+
+        <label style="color:#1967d2;">Danh sách nguồn bù khả dụng:</label>
+        <div id="nbSourceList" class="emp-list-container" style="height:200px; background:white;">
+            <div style="padding:10px; text-align:center;">Đang tải dữ liệu...</div>
+        </div>
+
+        <div id="nbCalcStatus" style="text-align:right; font-weight:bold; font-size:13px; margin-top:10px; color:#e74c3c;">
+            ...
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('nbSourcePopup')">Hủy</button> 
+            <button class="btn-p" onclick="confirmNbSelection()">Xác nhận & Lưu</button>
         </div>
     </div>
 </div>
@@ -478,956 +499,2610 @@ tr:hover td { background-color: #fcfcfc; }
 <div id="exportRangePopup" class="popup-bg">
     <div class="popup-box">
         <h3>Xuất Báo Cáo Excel</h3>
+        
         <label>Từ ngày:</label>
         <input type="date" id="expFrom">
+        
         <label>Đến ngày:</label>
         <input type="date" id="expTo">
         
-        <div style="margin-top:15px; text-align:right;">
-            <button class="btn-danger" onclick="document.getElementById('exportRangePopup').style.display='none'">Đóng</button>
-            <button class="btn-success" onclick="doExportRange()">Tải về</button>
+        <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="document.getElementById('exportRangePopup').style.display='none'">Đóng</button>
+            <button class="btn-s" onclick="doExportRange()">Tải về</button>
         </div>
     </div>
 </div>
 
+<div id="settingsModal" class="settings-modal">
+    <div class="settings-modal-content">
+        <span class="modal-close" onclick="document.getElementById('settingsModal').style.display='none'">&times;</span>
+        <h2>⚙️ Cài đặt Ứng dụng</h2>
+        <hr style="border:none; border-top: 1px solid #eee; margin:15px 0;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <label style="font-weight: 500;">Bật Highlight Dòng & Cột:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="toggleCrosshair" onchange="toggleCrosshairFeature(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <p style="font-size:12px; color:#888;">*Tính năng Highlight giúp dễ dàng theo dõi dòng/cột khi rê chuột.</p>
+    </div>
+</div>
+
+<div id="loading">⏳ Đang xử lý...</div>
+
 <script>
-/* ===========================================================
-    CONFIG + KHỞI TẠO (DÀNH CHO SCHEDULER.HTML)
-=========================================================== */
-const SCRIPT_URL = localStorage.getItem("SCRIPT_URL");
+	// biến phần cài đặt
+	let isCrosshairEnabled = true; // Biến trạng thái toàn cục
+    const SETTINGS_KEY = 'scheduler_settings';
 
-// 1. Lấy Group từ URL (Do Dashboard truyền sang)
-// Ví dụ: scheduler.html?group=kinhdoanh
-const params = new URLSearchParams(window.location.search);
-let currentGroup = params.get("group");
+    // ================= 1. CẤU HÌNH SUPABASE =================
+    const SUPABASE_URL = 'https://renqusdcczlhrglbclhe.supabase.co';
+	const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlbnF1c2RjY3psaHJnbGJjbGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTIyMzUsImV4cCI6MjA4MDU4ODIzNX0.kF960FS-VvAM2rkNo9kVHfmGAkpwrmlZ5Vf9-QFiC2E';
 
-// Nếu URL không có group, thử lấy group chính của user đăng nhập
-if (!currentGroup) {
-    currentGroup = localStorage.getItem("currentGroup") || "";
-}
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Nếu vẫn không có group nào -> Báo lỗi quay về Dashboard
-if (!currentGroup) {
-    alert("Không xác định được nhóm làm việc! Vui lòng chọn nhóm từ Dashboard.");
-    window.location.href = "dashboard.html";
-}
-
-// Hiển thị tên nhóm lên giao diện
-document.getElementById("groupLabel").innerText = "Nhóm: " + currentGroup;
-
-// Các biến toàn cục khác
-const staffTbody     = document.getElementById("staffRows");
-const headerDatesRow = document.getElementById("headerDatesRow");
-const weekRangeEl    = document.getElementById("weekRange");
-
-// Danh sách mã ca (Giữ nguyên của bạn)
-const SHIFTS = [
-  { code:"",   label:"(Trống)",        className:""      },
-  { code:"S",  label:"Ca sáng (S)",    className:"ca-s"  },
-  { code:"S1", label:"Ca S1",          className:"ca-s"  },
-  { code:"S+", label:"Ca sáng (Chào cờ)", className:"ca-s-plus" },
-  { code:"C",  label:"Ca chiều (C)",   className:"ca-c"  },
-  { code:"HC", label:"Hành chính",     className:"ca-hc" },
-  { code:"NB", label:"Nghỉ bù (1.0)",  className:"ca-nb" },
-  { code:"NB/2", label:"Nghỉ bù (0.5)",className:"ca-nb" },
-  { code:"NC", label:"Nghỉ CN",        className:"ca-nc" },
-  { code:"P",  label:"Nghỉ phép (1.0)",className:"ca-p"  },
-  { code:"P/2", label:"Nghỉ phép (0.5)",className:"ca-p"  },
-  { code:"CT", label:"Công tác",       className:"ca-ct" }
-];
-
-let currentEditedCell = null;
-const shiftMenu = document.getElementById("shiftMenu");
-let swapRow1 = null;
-
-// --- INIT ---
-document.addEventListener("DOMContentLoaded", () => {
-    if (!SCRIPT_URL) {
-        alert("Chưa đăng nhập! Vui lòng quay lại trang Login.");
-        window.location.href = "index.html"; 
-        return;
-    }
+    // ================= 2. BIẾN TOÀN CỤC & CẤU HÌNH CA =================
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentGroup = urlParams.get('group') || "Gia dụng";
+    let currentWeekStart = ""; 
+    let employeesData = []; 
     
-    // Tải dữ liệu tuần gần nhất của nhóm này
-    loadLastSavedWeek();
-    
-    // Khởi tạo thông báo (nếu bạn muốn hiện thông báo ở trang này)
-    initNotifications();
-});
+    // BIẾN CHO CHỨC NĂNG ĐẢO
+    let isSwapMode = false;
+    let swapSourceIdx = -1;
 
-/* ===========================================================
-    INIT
-=========================================================== */
-document.addEventListener("DOMContentLoaded", () => {
-    if (!SCRIPT_URL) {
-        alert("Chưa đăng nhập! Vui lòng quay lại trang Login.");
-        window.location.href = "index.html"; 
-        return;
-    }
-    loadLastSavedWeek();
-    
-    // KHỞI TẠO CHECK THÔNG BÁO (MỚI)
-    initNotifications();
-});
-
-/* ===========================================================
-    1) TẠO HEADER NGÀY
-=========================================================== */
-function generateDates(startDate) {
-    const arr = [];
-    const d = new Date(startDate);
-    for (let i = 0; i < 7; i++) {
-        const dd = String(d.getDate()).padStart(2,"0");
-        const mm = String(d.getMonth()+1).padStart(2,"0");
-        arr.push(`${dd}/${mm}`);
-        d.setDate(d.getDate()+1);
-    }
-    return arr;
-}
-
-function initDefaultWeek() {
-    const today = new Date();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); 
-    updateWeekHeader(monday);
-}
-
-function updateWeekHeader(start) {
-    const dates = generateDates(start);
-    headerDatesRow.innerHTML = dates.map(d => `<th>${d}</th>`).join("");
-
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    const d1 = `${String(start.getDate()).padStart(2,"0")}/${String(start.getMonth()+1).padStart(2,"0")}`;
-    const d2 = `${String(end.getDate()).padStart(2,"0")}/${String(end.getMonth()+1).padStart(2,"0")}/${end.getFullYear()}`;
-    weekRangeEl.innerText = `Tuần từ ${d1} đến ${d2}`;
-}
-
-function getCurrentWeekStart() {
-    const firstTh = headerDatesRow.querySelector("th");
-    if (!firstTh) return null;
-    const [dd, mm] = firstTh.innerText.split("/");
-    const yearMatch = weekRangeEl.innerText.match(/(\d{4})\s*$/);
-    const year = yearMatch ? yearMatch[1] : new Date().getFullYear();
-    return `${year}-${mm}-${dd}`;
-}
-
-/* ===========================================================
-    2) HÀNG NHÂN VIÊN & HIỂN THỊ CỘT ĐỘNG
-=========================================================== */
-function appendEmployeeRow(code, name, role, pOld, pNew, bOld, bNew) {
-    const tr = document.createElement("tr");
-    
-    // TÍNH TỔNG SỐ DƯ
-    const valPOld = Number(pOld) || 0;
-    const valPNew = Number(pNew) || 0;
-    const valBOld = Number(bOld) || 0;
-    const valBNew = Number(bNew) || 0;
-    const totalRemaining = valPOld + valPNew + valBOld + valBNew;
-
-    // Đã xóa contenteditable để ReadOnly
-    tr.innerHTML = `
-        <td class="stt"></td>
-        <td class="emp-code">${code || ""}</td>
-        <td class="emp-name">${name || ""}</td>
-        <td class="emp-role">${role || ""}</td>
-        ${[0,1,2,3,4,5,6].map(i => `<td class="shift" data-day="${i}"></td>`).join("")}
+    // DANH SÁCH CA LÀM VIỆC (ĐÃ CẬP NHẬT)
+    const SHIFTS = [
+        {code:"", label:"(Xóa/Trống)", cls:""},
         
-        <td class="col-p-old" style="display:none; font-weight:bold; color:#c0392b;">${valPOld}</td>
-        <td class="col-p-new" style="font-weight:bold; color:#c0392b;">${valPNew}</td>
-        <td class="col-b-old" style="display:none; font-weight:bold; color:#2980b9;">${valBOld}</td>
-        <td class="col-b-new" style="font-weight:bold; color:#2980b9;">${valBNew}</td>
+        // --- Nhóm Làm việc ---
+        {code:"S",  label:"Ca Sáng",     cls:"ca-s"},
+        {code:"S1", label:"Ca S1",       cls:"ca-s"},
+        {code:"S+", label:"Sáng (+CC)",  cls:"ca-s-plus"}, // Ca mới
+        {code:"C",  label:"Ca Chiều",    cls:"ca-c"},
+        {code:"HC", label:"Hành chính",  cls:"ca-hc"},
+        {code:"CT", label:"Công tác",    cls:"ca-ct"},
+
+        // --- Nhóm Nghỉ Phép/Bù ---
+        {code:"P",    label:"Phép (1.0)", cls:"ca-p"},
+        {code:"P/2",  label:"Phép (0.5)", cls:"ca-p"},
+        {code:"NB",   label:"Nghỉ Bù (1.0)", cls:"ca-nb"},
+        {code:"NB/2", label:"Nghỉ Bù (0.5)", cls:"ca-nb"},
+
+        // --- Nhóm Nghỉ Khác (Mới thêm) ---
+        {code:"NC", label:"Nghỉ CN",   cls:"ca-nc"},
+        {code:"Ô",  label:"Con ốm",    cls:"ca-o"},
+        {code:"Te", label:"Nghỉ Tết",  cls:"ca-te"},
+        {code:"L",  label:"Nghỉ Lễ",   cls:"ca-l"},
+        {code:"NM", label:"Nghỉ Mát",  cls:"ca-nm"},
+		
+		// --- NHÓM MỚI ---
+		{code:"KL", label:"Không lương", cls:"ca-kl"}
+    ];
+
+    // ================= 3. KHỞI TẠO =================
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("groupNameDisplay").innerText = currentGroup;
         
-        <td style="font-weight:bold; color:#d35400; background-color: #fff3cd; text-align:center;">
-            ${totalRemaining}
-        </td>
+        // --- [MỚI] KIỂM TRA LỊCH SỬ TRUY CẬP ---
+        const lastViewedWeek = localStorage.getItem("LAST_WEEK_" + currentGroup);
         
-        <td><button class="btn-danger" onclick="deleteEmployee(this)">X</button></td>
-    `;
-    staffTbody.appendChild(tr);
-
-    tr.querySelectorAll(".shift").forEach(td => {
-        td.addEventListener("click", onShiftCellClick);
-    });
-    
-    if (swapRow1) {
-        tr.onclick = onSwapRowClick;
-        tr.style.cursor = 'pointer';
-    }
-    updateStt();
-}
-
-function updateStt() {
-    [...staffTbody.querySelectorAll(".stt")].forEach((td, i) => td.innerText = i + 1);
-}
-
-/* ===========================================================
-    3) LOAD DATA TỪ SERVER
-=========================================================== */
-async function loadLastSavedWeek() {
-    const res = await fetch(`${SCRIPT_URL}?action=getLastSavedWeek&group=${encodeURIComponent(currentGroup)}`);
-    let json;
-    try { json = await res.json(); } catch(e) { console.error(e); }
-
-    if (!json || !json.weekStart) {
-        initDefaultWeek(); 
-        loadScheduleOfCurrentWeek(); 
-        return;
-    }
-
-    const start = new Date(json.weekStart);
-    updateWeekHeader(start);
-    if (json.weekRange) weekRangeEl.innerText = json.weekRange;
-    loadScheduleOfCurrentWeek(json.weekStart);
-}
-
-async function loadScheduleOfCurrentWeek(explicitWeekStart) {
-    const weekStart = explicitWeekStart || getCurrentWeekStart();
-    if (!weekStart) return;
-
-    const res = await fetch(
-        `${SCRIPT_URL}?action=getSchedule`
-        + `&group=${encodeURIComponent(currentGroup)}`
-        + `&weekStart=${encodeURIComponent(weekStart)}`
-    );
-
-    const text = await res.text();
-    let json;
-    try { json = JSON.parse(text); }
-    catch(err) {
-        console.error("JSON ERROR:", err, text);
-        alert("Lỗi dữ liệu từ server.");
-        return;
-    }
-
-    if (json.weekRange) weekRangeEl.innerText = json.weekRange;
-
-    staffTbody.innerHTML = "";
-    
-    // Ẩn hiện cột cũ
-    const prevYear = json.prevYear;
-    const curYear = json.currentYear;
-    const data = json.data || [];
-
-    let showPOld = false;
-    let showBOld = false;
-
-    data.forEach(rec => {
-        if (Number(rec.phep_old) > 0) showPOld = true;
-        if (Number(rec.bu_old) > 0) showBOld = true;
-    });
-
-    document.querySelector(".col-p-old").innerText = `PHÉP ${prevYear}`;
-    document.querySelector(".col-p-new").innerText = `PHÉP ${curYear}`;
-    document.querySelector(".col-b-old").innerText = `BÙ ${prevYear}`;
-    document.querySelector(".col-b-new").innerText = `BÙ ${curYear}`;
-
-    const setDisplay = (cls, isShow) => {
-        document.querySelectorAll(cls).forEach(el => el.style.display = isShow ? "table-cell" : "none");
-    };
-
-    data.forEach(rec => {
-        appendEmployeeRow(rec.code, rec.name, rec.role, rec.phep_old, rec.phep_new, rec.bu_old, rec.bu_new);
-        
-        const tr = staffTbody.lastElementChild;
-        const tds = tr.querySelectorAll(".shift");
-        const shiftsArr = (rec.shifts && rec.shifts.length === 7) ? rec.shifts : ["","","","","","",""];
-
-        shiftsArr.forEach((code, idx) => {
-            if (!tds[idx]) return;
-            const shiftObj = SHIFTS.find(s => s.code === code);
-            const cls = shiftObj ? shiftObj.className : "";
-            setShiftOnCell(tds[idx], code, cls);
-        });
-    });
-
-    setDisplay(".col-p-old", showPOld);
-    setDisplay(".col-b-old", showBOld);
-    setDisplay(".col-p-new", true); 
-    setDisplay(".col-b-new", true);
-    
-    updateStt();
-}
-
-/* ===========================================================
-    4) MENU CHỌN CA
-=========================================================== */
-function onShiftCellClick(e) {
-    if (swapRow1) return; // Đang swap thì không paste
-    e.stopPropagation();
-    
-    const cell = e.target;
-
-    // --- LOGIC MỚI: Đánh dấu ô đang chọn để Paste ---
-    // Xóa class selected cũ
-    if (lastSelectedCell) lastSelectedCell.classList.remove("cell-selected");
-    
-    // Gán ô mới
-    lastSelectedCell = cell;
-    lastSelectedCell.classList.add("cell-selected");
-    // ------------------------------------------------
-
-    currentEditedCell = cell;
-
-    const rect = currentEditedCell.getBoundingClientRect();
-    shiftMenu.style.left = (rect.left + window.scrollX) + "px";
-    shiftMenu.style.top  = (rect.bottom + window.scrollY) + "px";
-
-    shiftMenu.innerHTML = SHIFTS.map(s => `
-        <button onmousedown="selectShift('${s.code}','${s.className}')">
-            ${s.code ? `<b>${s.code}</b> – ` : ""}${s.label}
-        </button>
-    `).join("");
-    shiftMenu.style.display = "block";
-}
-
-// Thêm sự kiện click ra ngoài để bỏ chọn ô
-document.addEventListener("click", (e) => { 
-    shiftMenu.style.display = "none";
-    
-    // Nếu click ra ngoài bảng thì bỏ chọn ô (để tránh paste nhầm)
-    if (!e.target.closest("#scheduleTable")) {
-        if (lastSelectedCell) lastSelectedCell.classList.remove("cell-selected");
-        lastSelectedCell = null;
-    }
-});
-
-function selectShift(code, cls) {
-    setShiftOnCell(currentEditedCell, code, cls);
-    shiftMenu.style.display = "none";
-}
-
-function setShiftOnCell(td, code, className) {
-    td.className = "shift"; 
-    if (className) td.classList.add(className);
-    td.innerText = code || "";
-}
-
-document.addEventListener("click", () => { shiftMenu.style.display = "none"; });
-
-/* ===========================================================
-    5) THÊM/XÓA NHÂN VIÊN
-=========================================================== */
-function openAddEmpPopup() { document.getElementById("addEmpPopup").style.display = "flex"; }
-function closeAddEmpPopup() { document.getElementById("addEmpPopup").style.display = "none"; }
-
-async function saveNewEmployee() {
-    const code = document.getElementById("empCode").value.trim();
-    const name = document.getElementById("empName").value.trim();
-    const role = document.getElementById("empRole").value.trim();
-
-    if (!code || !name || !role) { alert("Vui lòng nhập đủ thông tin."); return; }
-
-    appendEmployeeRow(code, name, role, 0, 0, 0, 0);
-
-    const obj = { group: currentGroup, code, name, role };
-    await fetch(`${SCRIPT_URL}?action=saveEmployee&data=` + encodeURIComponent(JSON.stringify(obj)));
-
-    alert("Đã thêm nhân viên!");
-    closeAddEmpPopup();
-    document.getElementById("empCode").value = "";
-    document.getElementById("empName").value = "";
-    document.getElementById("empRole").value = "";
-}
-
-async function deleteEmployee(btn) {
-    if (swapRow1) return; 
-    if (!confirm("Chắc chắn xóa nhân viên này?")) return;
-    
-    const tr = btn.closest("tr");
-    const code = tr.querySelector(".emp-code").innerText.trim();
-    
-    await fetch(`${SCRIPT_URL}?action=deleteEmployee&group=${encodeURIComponent(currentGroup)}&code=${encodeURIComponent(code)}`);
-    tr.remove();
-    updateStt();
-}
-
-/* ===========================================================
-    6) TẠO TUẦN MỚI & XEM TUẦN CŨ
-=========================================================== */
-function openWeekPopup() { document.getElementById("weekPopup").style.display = "flex"; }
-function closeWeekPopup() { document.getElementById("weekPopup").style.display = "none"; }
-
-/* ===========================================================
-   CẬP NHẬT HÀM TẠO TUẦN MỚI (TẠO XONG TỰ LƯU LUÔN)
-=========================================================== */
-async function applyNewWeek() {
-    const val = document.getElementById("weekStart").value;
-    if (!val) { alert("Chọn ngày!"); return; }
-    
-    const d = new Date(val);
-    if (d.getDay() !== 1) { alert("Phải chọn Thứ 2!"); return; }
-
-    // 1. Cập nhật giao diện ngày tháng (Header)
-    updateWeekHeader(d);
-
-    // 2. Tải dữ liệu của tuần đó về giao diện trước
-    // (Nếu tuần mới chưa có gì, nó sẽ tải danh sách nhân viên mặc định về)
-    // Dùng 'await' để đảm bảo tải xong mới được Lưu
-    await loadScheduleOfCurrentWeek(val);
-
-    // 3. Gọi hàm Lưu lịch ngay lập tức
-    // Hàm này sẽ lấy dữ liệu đang hiển thị và ghi vào Sheet 'weeks' và 'schedule'
-    await saveSchedule();
-
-    closeWeekPopup();
-}
-
-async function openOldWeekPopup() {
-    if (swapRow1) disableSwap();
-    document.getElementById("oldWeekPopup").style.display = "flex";
-    const sel = document.getElementById("weekSelect");
-    sel.innerHTML = "<option>Đang tải...</option>";
-
-    const res = await fetch(`${SCRIPT_URL}?action=listWeeks&group=${encodeURIComponent(currentGroup)}`);
-    const json = await res.json();
-    
-    sel.innerHTML = "";
-    (json.weeks || []).forEach(w => {
-        const opt = document.createElement("option");
-        opt.value = w.weekStart;
-        opt.textContent = `${w.weekRange} (${w.weekStart})`;
-        sel.appendChild(opt);
-    });
-}
-function closeOldWeekPopup() { document.getElementById("oldWeekPopup").style.display = "none"; }
-function loadSelectedWeek() {
-    const ws = document.getElementById("weekSelect").value;
-    if (ws) {
-        updateWeekHeader(new Date(ws));
-        loadScheduleOfCurrentWeek(ws);
-        closeOldWeekPopup();
-    }
-}
-
-/* ===========================================================
-    7) LƯU LỊCH (SAVE)
-=========================================================== */
-function collectScheduleData() {
-    const rows = [...staffTbody.querySelectorAll("tr")];
-    return rows.map(row => {
-        const code = row.querySelector(".emp-code").innerText.trim();
-        const name = row.querySelector(".emp-name").innerText.trim();
-        const role = row.querySelector(".emp-role").innerText.trim();
-        const shifts = [...row.querySelectorAll(".shift")].map(td => td.innerText.trim());
-        return { code, name, role, shifts };
-    });
-}
-
-async function saveSchedule() {
-    if (swapRow1) disableSwap();
-    const weekStart = getCurrentWeekStart();
-    const payload = {
-        group: currentGroup,
-        weekStart: weekStart,
-        weekRange: weekRangeEl.innerText,
-        data: collectScheduleData()
-    };
-
-    const btn = document.querySelector(".btn-warning");
-    const oldText = btn.innerText;
-    btn.innerText = "Đang lưu..."; btn.disabled = true;
-
-    await fetch(`${SCRIPT_URL}?action=saveSchedule&data=` + encodeURIComponent(JSON.stringify(payload)));
-
-    alert("Đã lưu thành công!");
-    btn.innerText = oldText; btn.disabled = false;
-    
-    loadScheduleOfCurrentWeek(weekStart);
-}
-
-/* ===========================================================
-    8) TÍNH NĂNG: ĐẢO VỊ TRÍ (SWAP)
-=========================================================== */
-function enableSwap() {
-    if (swapRow1) { disableSwap(); return; }
-    alert("Chế độ ĐẢO VỊ TRÍ: Chọn người thứ 1, sau đó chọn người thứ 2 để đổi chỗ.");
-    
-    [...staffTbody.querySelectorAll("tr")].forEach(tr => {
-        tr.onclick = onSwapRowClick;
-        tr.style.cursor = 'pointer';
-    });
-    swapRow1 = "ready"; 
-}
-
-function disableSwap() {
-    [...staffTbody.querySelectorAll("tr")].forEach(tr => {
-        tr.onclick = null;
-        tr.style.cursor = 'default';
-        tr.classList.remove("swap-selected");
-    });
-    swapRow1 = null;
-}
-
-function onSwapRowClick(e) {
-    const tr = e.currentTarget;
-    if (swapRow1 === "ready") {
-        swapRow1 = tr;
-        tr.classList.add("swap-selected");
-    } else if (swapRow1 === tr) {
-        tr.classList.remove("swap-selected");
-        swapRow1 = "ready";
-    } else {
-        const tr1 = swapRow1;
-        const tr2 = tr;
-        
-        const parent = tr1.parentNode;
-        const next1 = tr1.nextSibling;
-        const next2 = tr2.nextSibling;
-        
-        if (next1 === tr2) parent.insertBefore(tr2, tr1);
-        else if (next2 === tr1) parent.insertBefore(tr1, tr2);
-        else {
-            parent.insertBefore(tr1, tr2);
-            parent.insertBefore(tr2, next1);
-        }
-        
-        disableSwap();
-        updateStt();
-    }
-}
-
-/* ===========================================================
-    9) TÍNH NĂNG: BULK LEAVE
-=========================================================== */
-function openBulkLeavePopup() {
-    if (swapRow1) disableSwap();
-    const rows = collectScheduleData();
-    const listDiv = document.getElementById("bulkEmployeeList");
-    listDiv.innerHTML = "";
-    
-    rows.forEach(emp => {
-        const div = document.createElement("div");
-        div.innerHTML = `<label><input type="checkbox" value="${emp.code}" checked> ${emp.code} - ${emp.name}</label>`;
-        listDiv.appendChild(div);
-    });
-    document.getElementById("bulkLeavePopup").style.display = "flex";
-}
-function closeBulkLeavePopup() { document.getElementById("bulkLeavePopup").style.display = "none"; }
-
-function toggleCheckAll(checked) {
-    document.querySelectorAll("#bulkEmployeeList input").forEach(cb => cb.checked = checked);
-}
-
-async function saveBulkLeave() {
-    const type = document.getElementById("bulkLeaveType").value;
-    const amount = document.getElementById("bulkLeaveAmount").value;
-    const reason = document.getElementById("bulkLeaveReason").value;
-    
-    const checkboxes = document.querySelectorAll("#bulkEmployeeList input:checked");
-    if (checkboxes.length === 0) { alert("Chưa chọn nhân viên!"); return; }
-    if (!reason) { alert("Chưa nhập lý do!"); return; }
-
-    const payload = [];
-    checkboxes.forEach(cb => {
-        payload.push({ code: cb.value, type: type, amount: amount, reason: reason });
-    });
-
-    await fetch(`${SCRIPT_URL}?action=addBulkLeave&data=` + encodeURIComponent(JSON.stringify(payload)));
-    
-    alert("Đã cập nhật số dư!");
-    closeBulkLeavePopup();
-    loadScheduleOfCurrentWeek(getCurrentWeekStart());
-}
-
-/* ===========================================================
-    10) CÁC TIỆN ÍCH KHÁC
-=========================================================== */
-function autoAssignShifts() {
-    if (swapRow1) disableSwap();
-    const rows = [...staffTbody.querySelectorAll("tr")];
-    const pattern = ["S","C","HC"];
-    rows.forEach((row, rIdx) => {
-        const tds = row.querySelectorAll(".shift");
-        tds.forEach((td, dIdx) => {
-            const code = pattern[(rIdx + dIdx) % 3];
-            let cls = "";
-            if (code==="S") cls="ca-s"; if (code==="C") cls="ca-c"; if (code==="HC") cls="ca-hc";
-            setShiftOnCell(td, code, cls);
-        });
-    });
-}
-
-function exportToExcel() {
-    const table = document.getElementById("scheduleTable");
-    const wb = XLSX.utils.table_to_book(table, {sheet:"LichTuan"});
-    XLSX.writeFile(wb, `Lich_${currentGroup}.xlsx`);
-}
-
-function goBack() { window.location.href = "dashboard.html"; }
-
-/* ===========================================================
-    11) LOGIC THÔNG BÁO & DUYỆT YÊU CẦU (MỚI)
-=========================================================== */
-function initNotifications() {
-    checkPendingRequests();
-    // Tự động check mỗi 60 giây
-    setInterval(checkPendingRequests, 60000);
-}
-
-async function checkPendingRequests() {
-    try {
-        const res = await fetch(`${SCRIPT_URL}?action=getPendingRequests&group=${encodeURIComponent(currentGroup)}`);
-        const json = await res.json();
-        if (json.success) {
-            const count = json.data.length;
-            const badge = document.getElementById("badgeCount");
-            badge.innerText = count;
-            badge.style.display = count > 0 ? "inline-block" : "none";
-            window.pendingReqs = json.data;
-        }
-    } catch(e) { console.error(e); }
-}
-
-function openRequestsPopup() {
-    document.getElementById("requestsPopup").style.display = "flex";
-    renderRequestsTable();
-}
-function closeRequestsPopup() {
-    document.getElementById("requestsPopup").style.display = "none";
-    loadScheduleOfCurrentWeek();
-}
-
-function renderRequestsTable() {
-    const tbody = document.getElementById("reqTableBody");
-    const msg = document.getElementById("noReqMsg");
-    tbody.innerHTML = "";
-    
-    if (!window.pendingReqs || window.pendingReqs.length === 0) {
-        msg.style.display = "block";
-        return;
-    }
-    msg.style.display = "none";
-
-    window.pendingReqs.forEach(req => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${req.time}</td>
-            <td><b>${req.code}</b><br>${req.name}</td>
-            <td><span class="ca-${req.type === 'NB' ? 'nb' : 'p'}" style="padding:2px 5px; border-radius:4px;">${req.type}</span></td>
-            <td style="color:#d35400; font-weight:bold;">${req.displayDate}</td>
-            <td style="max-width:200px; text-align:left;">${req.reason}</td>
-            <td>
-                <button class="btn-success" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.row}, 'APPROVE', this)">✔ Duyệt</button>
-                <button class="btn-danger" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.row}, 'REJECT', this)">✘ Hủy</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-async function processRequest(rowId, action, btn) {
-    if (!confirm(action === 'APPROVE' ? "Duyệt yêu cầu này và tự động xếp lịch?" : "Từ chối yêu cầu này?")) return;
-
-    const parentTd = btn.parentNode;
-    parentTd.innerHTML = "Đang xử lý...";
-
-    try {
-        // CHÚ Ý: Đổi tên tham số cuối cùng thành 'decision'
-        const res = await fetch(`${SCRIPT_URL}?action=handleLeaveAction&group=${encodeURIComponent(currentGroup)}&row=${rowId}&decision=${action}`);
-        const json = await res.json();
-        
-        if (json.success) {
-            alert(json.msg);
-            await checkPendingRequests();
-            renderRequestsTable();
+        if (lastViewedWeek) {
+            // Nếu có lịch sử -> Mở tuần đã làm việc gần nhất
+            currentWeekStart = lastViewedWeek;
         } else {
-            alert("Lỗi: " + json.message);
-            renderRequestsTable();
+            // Nếu chưa có (lần đầu vào) -> Tính tuần hiện tại
+            const d = new Date();
+            const day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1);
+            const monday = new Date(d.setDate(diff));
+            currentWeekStart = formatDateISO(monday);
         }
-    } catch(e) {
-        alert("Lỗi kết nối server!");
-        renderRequestsTable();
-    }
-}
-
-/* ===========================================================
-   TÍNH NĂNG: COPY PASTE TỪ EXCEL (MỚI)
-=========================================================== */
-let lastSelectedCell = null;
-
-// Lắng nghe sự kiện Paste toàn trang
-document.addEventListener('paste', function(e) {
-    // Chỉ xử lý nếu đang có một ô lịch được chọn
-    if (!lastSelectedCell) return;
-    
-    // Ngăn hành động paste mặc định của trình duyệt
-    e.preventDefault();
-    
-    // Lấy dữ liệu từ clipboard
-    const clipboardData = e.clipboardData || window.clipboardData;
-    const pastedData = clipboardData.getData('Text');
-    
-    // Gọi hàm xử lý
-    processExcelPaste(pastedData);
-});
-
-function processExcelPaste(data) {
-    if (!lastSelectedCell) return;
-
-    // 1. Phân tích dữ liệu Excel (Dòng tách bởi \n, Cột tách bởi \t)
-    // Loại bỏ dòng trống ở cuối nếu có
-    const rows = data.split(/\r\n|\n|\r/).filter(row => row.trim() !== "");
-    
-    // 2. Xác định vị trí bắt đầu
-    const startRow = lastSelectedCell.closest("tr");
-    const startRowIndex = Array.from(staffTbody.children).indexOf(startRow);
-    const startColIndex = parseInt(lastSelectedCell.getAttribute("data-day")); // 0-6
-
-    // 3. Duyệt qua dữ liệu và điền vào bảng
-    rows.forEach((rowStr, rIdx) => {
-        const cols = rowStr.split('\t');
         
-        // Tìm dòng tương ứng trên bảng
-        const targetRow = staffTbody.children[startRowIndex + rIdx];
-        if (!targetRow) return; // Hết dòng bảng
+        loadSchedule();
+    });
 
-        cols.forEach((val, cIdx) => {
-            // Tìm ô (cell) tương ứng: data-day = startCol + cIdx
-            const targetDayIndex = startColIndex + cIdx;
+    // ================= 4. TẢI DỮ LIỆU =================
+    async function loadSchedule() {
+        showLoading(true);
+        try {
+            // 1. XÁC ĐỊNH THỜI GIAN
+            const viewDate = new Date(currentWeekStart); // Ngày bắt đầu tuần (Mốc so sánh hạn)
+            const viewYear = viewDate.getFullYear(); 
+            const prevYear = viewYear - 1;           
+
+            // Cập nhật Tiêu đề cột
+            document.getElementById("th_p_old").innerText = `Phép ${prevYear}`;
+            document.getElementById("th_p_new").innerText = `Phép ${viewYear}`;
+            document.getElementById("th_b_old").innerText = `Bù ${prevYear}`;
+            document.getElementById("th_b_new").innerText = `Bù ${viewYear}`;
+
+            // 2. TẢI DỮ LIỆU
+            const { data: schData } = await _supabase.from('schedule').select('*').eq('group_name', currentGroup).eq('week_start', currentWeekStart);
             
-            // Chỉ xử lý nếu nằm trong phạm vi 7 ngày (0-6)
-            if (targetDayIndex <= 6) {
-                const targetCell = targetRow.querySelector(`.shift[data-day="${targetDayIndex}"]`);
-                
-                if (targetCell) {
-                    // Chuẩn hóa dữ liệu (Xóa khoảng trắng thừa, viết hoa để khớp mã)
-                    let cleanVal = val.trim().toUpperCase();
-                    
-                    // Nếu Excel để trống, coi là xóa ca (hoặc giữ nguyên tùy logic)
-                    // Ở đây ta cho phép paste ô trống để xóa ca
-                    if (cleanVal === "") cleanVal = "_"; // Hoặc "" tùy logic save của bạn
+            // [THAY ĐỔI 1] CHỈ LẤY NHÂN VIÊN ĐANG HOẠT ĐỘNG (status = 'active')
+            const { data: allEmps } = await _supabase
+                .from('employees')
+                .select('*')
+                .eq('group_name', currentGroup)
+                .eq('status', 'active'); 
+            
+            // Lấy số dư 
+            const { data: balances } = await _supabase.from('leave_balance').select('*').in('year', [viewYear, prevYear]);
 
-                    // Tìm class màu sắc tương ứng trong SHIFTS
-                    const shiftObj = SHIFTS.find(s => s.code === cleanVal);
+            const balCurrent = {}; 
+            const balPrev = {};    
+            
+            if(balances) {
+                balances.forEach(b => {
+                    if (b.year === viewYear) balCurrent[b.emp_code] = b;
+                    if (b.year === prevYear) balPrev[b.emp_code] = b;
+                });
+            }
+
+            // 3. MAP DỮ LIỆU & XỬ LÝ HẾT HẠN
+            employeesData = [];
+            const processed = new Set();
+
+            // Hàm hỗ trợ tính toán số dư và check hạn
+            const processBalance = (empCode, empProfile) => {
+                let pNew=0, bNew=0, pOld=0, bOld=0;
+
+                // A. Lấy số dư từ DB
+                if (balCurrent[empCode]) {
+                    const b = balCurrent[empCode];
+                    pNew = Number(b.pn_val)||0; 
+                    bNew = Number(b.nb_val)||0;
+                    pOld = Number(b.pn_old_val)||0; 
+                    bOld = Number(b.nb_old_val)||0; 
+                } else if (balPrev[empCode]) {
+                    const bPrev = balPrev[empCode];
+                    pOld = Number(bPrev.pn_val)||0; 
+                    bOld = Number(bPrev.nb_val)||0;
+                }
+
+                // [THAY ĐỔI 2] LOGIC CHECK HẠN (Dựa trên thông tin từng nhân viên)
+                if (empProfile) {
+                    const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
+                    const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
+
+                    // So sánh: Nếu Tuần hiện tại > Ngày hết hạn -> Reset cũ về 0
+                    if (pnExpireDate && viewDate > pnExpireDate) {
+                        pOld = 0; // Hết hạn phép cũ
+                    }
+                    if (nbExpireDate && viewDate > nbExpireDate) {
+                        bOld = 0; // Hết hạn bù cũ
+                    }
+                }
+
+                return { pNew, bNew, pOld, bOld };
+            };
+
+            // A. Ưu tiên lấy từ lịch đã lưu (Schedule Table)
+            if (schData) {
+                schData.forEach(s => {
+                    // Cần tìm info nhân viên để check hạn
+                    const empProfile = allEmps ? allEmps.find(e => e.code === s.emp_code) : null;
                     
-                    // Nếu mã không hợp lệ (ví dụ nhập bậy), có thể bỏ qua hoặc điền text thô
-                    // Ở đây ta ưu tiên điền text thô nhưng không có màu
-                    const className = shiftObj ? shiftObj.className : "";
+                    // Lấy số dư đã lưu trong bảng schedule, nhưng cần check lại hạn
+                    let pOld = Number(s.pn_old)||0;
+                    let bOld = Number(s.nb_old)||0;
+
+                    // Check hạn lại một lần nữa (đề phòng lịch lưu cũ chưa cập nhật hạn)
+                    if (empProfile) {
+                        const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
+                        const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
+                        if (pnExpireDate && viewDate > pnExpireDate) pOld = 0;
+                        if (nbExpireDate && viewDate > nbExpireDate) bOld = 0;
+                    }
+
+                    employeesData.push({
+                        code: s.emp_code, name: s.emp_name, role: s.emp_role,
+                        shifts: s.shifts || Array(7).fill(""),
+                        pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
+                        pn_old: pOld, nb_old: bOld
+                    });
+                    processed.add(s.emp_code);
+                });
+            }
+
+            // B. Nhân viên chưa có lịch (Lấy từ danh sách Active)
+            if (allEmps) {
+                allEmps.forEach(e => {
+                    if (!processed.has(e.code)) {
+                        const bal = processBalance(e.code, e); // Truyền thông tin e để check hạn
+                        employeesData.push({
+                            code: e.code, name: e.name, role: e.role,
+                            shifts: Array(7).fill(""),
+                            pn: bal.pNew, nb: bal.bNew,
+                            pn_old: bal.pOld, nb_old: bal.bOld
+                        });
+                    }
+                });
+            }
+            
+            employeesData.sort((a,b) => a.code.localeCompare(b.code));
+            renderTable();
+            updateHeaderDates();
+
+        } catch (e) { console.error(e); alert("Lỗi: " + e.message); }
+        showLoading(false);
+    }
+
+    // ================= 5. RENDER UI =================
+    function updateHeaderDates() {
+        const row = document.getElementById("headerDatesRow");
+        row.innerHTML = "";
+        const start = new Date(currentWeekStart);
+        let txt = "";
+        for(let i=0; i<7; i++) {
+            const d = new Date(start); d.setDate(start.getDate() + i);
+            const s = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+            row.innerHTML += `<th>${s}</th>`;
+            if(i==0) txt += "Tuần từ " + s; if(i==6) txt += " đến " + s + "/" + d.getFullYear();
+        }
+        document.getElementById("weekRangeDisplay").innerText = txt;
+    }
+
+    // ================= 5. RENDER UI (ĐÃ CẬP NHẬT ẨN/HIỆN P.MỚI, B.MỚI) =================
+    function renderTable() {
+        const tbody = document.getElementById("scheduleBody");
+        tbody.innerHTML = "";
+        
+        // --- 1. LOGIC KIỂM TRA ĐIỀU KIỆN HIỂN THỊ ---
+        // Chỉ hiện cột nếu có ít nhất 1 nhân viên có số dư > 0
+        const showPOld = employeesData.some(e => e.pn_old > 0);
+        const showPNew = employeesData.some(e => e.pn > 0);     // [MỚI] Check P.Mới
+        const showBOld = employeesData.some(e => e.nb_old > 0);
+        const showBNew = employeesData.some(e => e.nb > 0);     // [MỚI] Check B.Mới
+
+        // --- 2. ẨN/HIỆN TIÊU ĐỀ CỘT (THEADER) ---
+        // (Lưu ý: Header P.Old và B.Old có class riêng để xử lý nếu cần, nhưng ở đây ta dùng ID để chắc chắn)
+        if(document.getElementById("th_p_old")) document.getElementById("th_p_old").style.display = showPOld ? "table-cell" : "none";
+        if(document.getElementById("th_p_new")) document.getElementById("th_p_new").style.display = showPNew ? "table-cell" : "none";
+        
+        if(document.getElementById("th_b_old")) document.getElementById("th_b_old").style.display = showBOld ? "table-cell" : "none";
+        if(document.getElementById("th_b_new")) document.getElementById("th_b_new").style.display = showBNew ? "table-cell" : "none";
+
+        // --- 3. VẼ DÒNG DỮ LIỆU ---
+        employeesData.forEach((emp, rIdx) => {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-code", emp.code);
+            tr.onclick = () => handleRowClick(rIdx);
+            if(isSwapMode) tr.classList.add("swap-mode-hover");
+            if(isSwapMode && rIdx === swapSourceIdx) tr.classList.add("row-swap-selected");
+
+            let html = `
+                <td style="text-align:center;">${rIdx+1}</td>
+                <td class="emp-code" style="font-weight:600; font-family:monospace; color:#555; font-size:20px;">${emp.code}</td>
+                <td class="emp-name" style="text-align:left; padding-left:10px; font-weight:600; font-size:20px;">${emp.name}</td>
+                <td><span style="background:#eef2ff; color:#4f46e5; padding:2px 6px; border-radius:4px; font-size:20px; font-weight:600;">${emp.role||""}</span></td>
+            `;
+            
+            emp.shifts.forEach((s, cIdx) => {
+                const conf = SHIFTS.find(x => x.code === s) || {cls:""};
+                html += `<td class="shift ${conf.cls}" onclick="openMenu(this, ${rIdx}, ${cIdx})">${s}</td>`;
+            });
+            
+            const total = parseFloat((emp.pn + emp.nb + emp.pn_old + emp.nb_old).toFixed(2));
+
+            // --- RENDER CÁC Ô SỐ LIỆU (ẨN/HIỆN THEO BIẾN FLAG Ở BƯỚC 1) ---
+            html += `
+                <td style="color:#7f8c8d; background:#f8f9fa; font-weight:500; display: ${showPOld ? 'table-cell' : 'none'}">
+                    ${emp.pn_old}
+                </td>
+                
+                <td style="color:#d35400; font-weight:bold; display: ${showPNew ? 'table-cell' : 'none'}">
+                    ${emp.pn}
+                </td>
+                
+                <td style="color:#7f8c8d; background:#f8f9fa; font-weight:500; display: ${showBOld ? 'table-cell' : 'none'}">
+                    ${emp.nb_old}
+                </td>
+                
+                <td style="color:#2980b9; font-weight:bold; display: ${showBNew ? 'table-cell' : 'none'}">
+                    ${emp.nb}
+                </td>
+                
+                <td style="background-color:#fffcf5; color:#c0392b; font-weight:900;">${total}</td>
+                <td><button class="btn-d" style="padding:2px 6px;" onclick="removeRow(${rIdx}); event.stopPropagation();">X</button></td>
+            `;
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ================= 6. TÍNH NĂNG ĐẢO (SWAP) =================
+    function toggleSwapMode() {
+        isSwapMode = !isSwapMode;
+        swapSourceIdx = -1; // Reset
+        
+        const btn = document.getElementById("btnSwap");
+        if(isSwapMode) {
+            btn.classList.add("btn-swap-active");
+            alert("Đã bật chế độ ĐẢO VỊ TRÍ.\n\nCách dùng: Bấm vào người thứ 1, sau đó bấm vào người thứ 2 để đổi chỗ.");
+        } else {
+            btn.classList.remove("btn-swap-active");
+        }
+        renderTable();
+    }
+
+    function handleRowClick(idx) {
+        if(!isSwapMode) return;
+
+        if (swapSourceIdx === -1) {
+            // Chọn người thứ 1
+            swapSourceIdx = idx;
+            renderTable(); // Để hiển thị highlight
+        } else if (swapSourceIdx === idx) {
+            // Bấm lại người đó -> Bỏ chọn
+            swapSourceIdx = -1;
+            renderTable();
+        } else {
+            // Chọn người thứ 2 -> THỰC HIỆN ĐẢO
+            // Đảo dữ liệu trong mảng
+            const temp = employeesData[swapSourceIdx];
+            employeesData[swapSourceIdx] = employeesData[idx];
+            employeesData[idx] = temp;
+
+            // Tắt chế độ đảo
+            swapSourceIdx = -1;
+            isSwapMode = false;
+            document.getElementById("btnSwap").classList.remove("btn-swap-active");
+            
+            renderTable();
+        }
+    }
+
+    // ================= 6. LƯU LỊCH (CÓ TRỪ PHÉP/BÙ KHI SỬ DỤNG) =================
+	const LEAVE_CODES_LIST = ["P", "P/2", "NB", "NB/2", "0.5NB", "NC", "Ô", "Te", "L", "NM"];
+
+	async function saveSchedule(isSilent = false) {
+		// --- [MỚI] KIỂM TRA CẢNH BÁO LÀM VIỆC LIÊN TỤC ---
+		// Chỉ hiện cảnh báo khi người dùng bấm Lưu thủ công (không phải Auto-save)
+		if (!isSilent) { 
+			const warningList = checkContinuousWorkWarning();
+			
+			if (warningList.length > 0) {
+				const msg = "⚠️ CẢNH BÁO QUÁ SỨC!\n\n" +
+							"Các nhân viên sau đang làm việc 7 ngày liên tục không có ngày nghỉ (NC/KL...):\n" +
+							warningList.join("\n") + 
+							"\n\nBạn có chắc chắn muốn lưu không?";
+				
+				// Nếu người dùng bấm Cancel -> Dừng lại, không lưu
+				if (!confirm(msg)) return; 
+			}
+		}
+		
+		// ---------------------------------------------------
+		
+		if (!isSilent) showLoading(true);
+		const statusSpan = document.getElementById("autoSaveStatus");
+		if (statusSpan) statusSpan.innerText = "⏳ Đang đồng bộ...";
+
+		try {
+			console.log("--- BẮT ĐẦU LƯU ---");
+
+			// 1. Tải dữ liệu tham chiếu
+			const [y, m, d] = currentWeekStart.split('-').map(Number);
+			const currentYear = y;
+			const prevYear = currentYear - 1;
+			
+			const nextYear = currentYear + 1;
+			const pnExpireDate = `${nextYear}-03-31`; 
+			const nbExpireDate = `${nextYear}-06-30`;
+
+			const [holidaysRes, historyRes, oldScheduleRes, prevBalRes] = await Promise.all([
+				_supabase.from('holidays').select('*'),
+				_supabase.from('supplemental_leave').select('reason, emp_code, type'),
+				_supabase.from('schedule').select('emp_code, shifts').eq('week_start', currentWeekStart).eq('group_name', currentGroup),
+				_supabase.from('leave_balance').select('*').eq('year', prevYear)
+			]);
+
+			const holidays = holidaysRes.data || [];
+			const history = historyRes.data || [];
+			const oldScheduleData = oldScheduleRes.data || [];
+			
+			// Map số dư năm ngoái
+			const prevBalMap = {};
+			if(prevBalRes.data) prevBalRes.data.forEach(b => prevBalMap[b.emp_code] = b);
+
+			// Map Ngày lễ
+			const hMap = {};
+			holidays.forEach(h => {
+				const parts = h.date.split('-'); 
+				const d = parseInt(parts[2], 10);
+				const m = parseInt(parts[1], 10);
+				hMap[`${d}/${m}`] = { val: Number(h.value)||1, note: h.note };
+			});
+
+			// Check ngày 15
+			let autoPhepReason = null; 
+			for(let i=0; i<7; i++) {
+				const dLoop = new Date(y, m - 1, d + i); 
+				if (dLoop.getDate() === 15) {
+					autoPhepReason = `Phép tháng ${dLoop.getMonth()+1}/${dLoop.getFullYear()}`;
+					break; 
+				}
+			}
+
+			const schUpsert = [], supInsert = [], balUpsert = [];
+			const requestsToCancel = [];
+
+			// 3. DUYỆT TỪNG NHÂN VIÊN
+			employeesData.forEach(emp => {
+				let addedNB = 0, addedPN = 0;
+				let detailsNB = [];
+
+				// --- [SỬA LỖI 1] KHAI BÁO BIẾN CŨ Ở ĐÂY ĐỂ DÙNG CHO CẢ 2 LOGIC ---
+				const oldRec = oldScheduleData.find(x => x.emp_code === emp.code);
+				const oldShifts = oldRec ? oldRec.shifts : [];
+
+				// --- A. LOGIC CỘNG ---
+				if (autoPhepReason) {
+					const hasMonthlyLeave = history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(autoPhepReason));
+					if (!hasMonthlyLeave) {
+						addedPN += 1.0;
+						supInsert.push({ emp_code: emp.code, type: 'PN', amount: 1.0, reason: autoPhepReason, date: new Date() });
+					}
+				}
+
+				// --- [THÊM MỚI] LOGIC PHÁT HIỆN HỦY PHÉP TRÊN GRID ---
+				emp.shifts.forEach((newS, idx) => {
+					const oldS = oldShifts[idx] || ""; // Giờ biến oldShifts đã tồn tại
+
+					// Kiểm tra: Nếu CŨ là Nghỉ, mà MỚI khác CŨ
+					const wasLeave = LEAVE_CODES_LIST.some(c => oldS === c || oldS.startsWith(c));
+					
+					if (wasLeave && newS !== oldS) {
+						const dObj = new Date(y, m - 1, d + idx);
+						// Format YYYY-MM-DD
+						const dateISO = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+
+						console.log(`Phát hiện hủy phép: ${emp.code} ngày ${dateISO} (${oldS} -> ${newS})`);
+
+						requestsToCancel.push({ 
+							emp_code: emp.code, 
+							date: dateISO 
+						});
+					}
+				});
+
+				emp.shifts.forEach((s, idx) => {
+					const dObj = new Date(y, m - 1, d + idx);
+					const key = `${dObj.getDate()}/${dObj.getMonth()+1}`;
+					const fullDateStr = `${String(dObj.getDate()).padStart(2,'0')}/${String(dObj.getMonth()+1).padStart(2,'0')}/${dObj.getFullYear()}`;
+
+					if(hMap[key] && ["S","C","HC","S1","CT","S+","NC"].includes(s)) {
+						const hInfo = hMap[key];
+						const reasonCheck = `(${fullDateStr})-(${hInfo.note})`; 
+						const isPaid = history.some(h => h.emp_code === emp.code && h.type === 'NB' && h.reason && h.reason.includes(reasonCheck));
+						if(!isPaid) {
+							addedNB += hInfo.val;
+							//detailsNB.push(`(${fullDateStr})-(${hInfo.note})-(${hInfo.val} ngày)`);
+							detailsNB.push(`(${fullDateStr})-(${hInfo.note})`);
+						}
+					}
+				});
+
+				if(addedNB > 0) {
+					detailsNB.forEach(detailStr => {
+							let amt = detailStr.includes("(0.5 ngày)") ? 0.5 : 1.0;
+							supInsert.push({ emp_code: emp.code, type: 'NB', amount: amt, reason: `Bù Ngày Lễ ${detailStr}`, date: new Date() });
+					});
+				}
+
+				// --- B. LOGIC TRỪ ---
+				// (Đã xóa khai báo oldRec ở đây vì đã khai báo ở đầu vòng lặp)
+				
+				const calcUsed = (shiftsArr) => {
+					let p = 0, b = 0;
+					if(Array.isArray(shiftsArr)) {
+						shiftsArr.forEach(s => {
+							if(s === "P") p += 1.0; if(s === "P/2") p += 0.5;
+							if(s === "NB") b += 1.0; if(s === "NB/2") b += 0.5;
+						});
+					}
+					return { p, b };
+				};
+
+				const usedOld = calcUsed(oldShifts); 
+				const usedNew = calcUsed(emp.shifts);
+
+				const diffPN = usedNew.p - usedOld.p;
+				const diffNB = usedNew.b - usedOld.b;
+
+				// Chuẩn bị biến số dư
+				let currentPN = Number(emp.pn || 0);
+				let currentNB = Number(emp.nb || 0);
+				let currentPNOld = Number(emp.pn_old || 0);
+				let currentNBOld = Number(emp.nb_old || 0);
+
+				// Lấy giới hạn trần năm ngoái
+				const prevData = prevBalMap[emp.code];
+				const maxPNOld = prevData ? (Number(prevData.pn_val) || 0) : 0;
+				const maxNBOld = prevData ? (Number(prevData.nb_val) || 0) : 0;
+
+				// 1. Xử lý Phép (PN)
+				currentPN += addedPN;
+
+				if (diffPN > 0) { 
+					if (currentPNOld >= diffPN) {
+						currentPNOld -= diffPN;
+					} else {
+						const remain = diffPN - currentPNOld;
+						currentPNOld = 0;
+						currentPN -= remain;
+					}
+				} else { 
+					// HOÀN TRẢ
+					const refund = Math.abs(diffPN);
+					const spaceInOld = maxPNOld - currentPNOld;
+					
+					if (spaceInOld > 0) {
+						if (refund <= spaceInOld) currentPNOld += refund;
+						else { currentPNOld += spaceInOld; currentPN += (refund - spaceInOld); }
+					} else {
+						currentPN += refund;
+					}
+				}
+
+				// 2. Xử lý Bù (NB) - Logic tương tự
+				currentNB += addedNB;
+
+				if (diffNB > 0) { 
+					if (currentNBOld >= diffNB) { currentNBOld -= diffNB; } 
+					else { const r = diffNB - currentNBOld; currentNBOld = 0; currentNB -= r; }
+				} else { 
+					const refund = Math.abs(diffNB);
+					const spaceInOld = maxNBOld - currentNBOld;
+					if (spaceInOld > 0) {
+						if (refund <= spaceInOld) currentNBOld += refund;
+						else { currentNBOld += spaceInOld; currentNB += (refund - spaceInOld); }
+					} else { currentNB += refund; }
+				}
+
+				// Cập nhật lại object
+				emp.pn = parseFloat(currentPN.toFixed(2));
+				emp.nb = parseFloat(currentNB.toFixed(2));
+				emp.pn_old = parseFloat(currentPNOld.toFixed(2));
+				emp.nb_old = parseFloat(currentNBOld.toFixed(2));
+
+				schUpsert.push({
+					week_start: currentWeekStart, group_name: currentGroup,
+					emp_code: emp.code, emp_name: emp.name, emp_role: emp.role,
+					shifts: emp.shifts, 
+					nb_new: emp.nb, pn_new: emp.pn,
+					nb_old: emp.nb_old, pn_old: emp.pn_old
+				});
+
+				balUpsert.push({ 
+					emp_code: emp.code, year: currentYear, 
+					nb_val: emp.nb, pn_val: emp.pn,
+					pn_old_val: emp.pn_old, nb_old_val: emp.nb_old,
+					pn_expire: pnExpireDate, nb_expire: nbExpireDate
+				});
+			});
+
+			const promises = [
+				_supabase.from('weeks').upsert({ group_name: currentGroup, week_start: currentWeekStart, week_range: document.getElementById("weekRangeDisplay").innerText }, { onConflict: 'group_name, week_start' }),
+				_supabase.from('schedule').upsert(schUpsert, { onConflict: 'week_start, emp_code' }),
+				_supabase.from('leave_balance').upsert(balUpsert, { onConflict: 'emp_code, year' })
+			];
+
+			if (supInsert.length > 0) promises.push(_supabase.from('supplemental_leave').insert(supInsert));
+
+			await Promise.all(promises);
+
+			// ============================================================
+			// [SỬA LỖI 2] THỰC HIỆN HỦY ĐƠN TRONG DB (ĐÃ THÊM NGOẶC VÀ AWAIT)
+			// ============================================================
+			if (requestsToCancel.length > 0) {
+				const cancelPromises = requestsToCancel.map(req => 
+					_supabase.from('leave_requests')
+						.update({ 
+							status: 'Hủy bởi Admin',
+							reason: `Admin sửa lịch trực tiếp (Hủy)`
+						})
+						.eq('emp_code', req.emp_code)
+						.eq('date', req.date)
+						.in('status', ['Chờ duyệt', 'Đã duyệt']) 
+				);
+				
+				// QUAN TRỌNG: Phải đợi thực thi xong
+				await Promise.all(cancelPromises);
+			}
+
+			if (statusSpan) {
+				statusSpan.innerText = "✅ Đã lưu tự động";
+				setTimeout(() => statusSpan.innerText = "", 3000);
+			}
+
+			if (!isSilent) {
+				let msg = "Đã lưu thành công!";
+				if (autoPhepReason) msg += `\n(+1.0 Phép tháng 15)`;
+				alert(msg);
+			}
+			
+			localStorage.setItem("LAST_WEEK_" + currentGroup, currentWeekStart);
+			if (!isSilent) loadSchedule(); 
+
+		} catch(e) { 
+			console.error(e); 
+			if (statusSpan) statusSpan.innerText = "❌ Lỗi lưu!";
+			if (!isSilent) alert("Lỗi lưu: " + e.message); 
+		}
+		if (!isSilent) showLoading(false);
+		
+		// Cập nhật bảng tổng hợp (nếu đang mở)
+        const container = document.getElementById("summaryContainer");
+        if (container && container.style.display !== 'none') {
+            updateDetailSummary();
+        }
+	}
+
+    // ================= 8. MENU & KEYBOARD =================
+    let currentCell = null, selectedR = -1, selectedC = -1;
+    let copiedVal = null;
+
+    function openMenu(cell, r, c) {
+        if(isSwapMode) return; // Đang đảo thì không hiện menu
+
+        currentCell = cell; selectedR = r; selectedC = c;
+        if(document.querySelector('.selected')) document.querySelector('.selected').classList.remove('selected');
+        cell.classList.add('selected');
+
+        const menu = document.getElementById("shiftMenu");
+        menu.innerHTML = SHIFTS.map(s => 
+            `<button onclick="setShift('${s.code}', '${s.cls}')">
+                <span class="menu-badge ${s.cls}">${s.code||'X'}</span> ${s.label}
+            </button>`
+        ).join("");
+        
+        const rect = cell.getBoundingClientRect();
+        menu.style.left = rect.left + "px";
+        menu.style.top = (rect.bottom + window.scrollY) + "px";
+        menu.style.display = "block";
+        menu.querySelector("button").focus();
+    }
+
+
+	// chọn ca
+	
+	// Thêm các biến tạm để lưu trạng thái khi mở popup
+	let pendingNbCode = "";
+	let pendingNbCls = "";
+	let pendingNbDateStr = "";
+	
+    // Danh sách các mã cần cảnh báo khi bị thay đổi
+    const WARN_CODES = ["NB", "NB/2", "P", "P/2"];
+
+    function setShift(code, cls) {
+		if(!currentCell) return;
+
+        // [MỚI] BƯỚC 0: KIỂM TRA SỐ DƯ TRƯỚC KHI GÁN
+        // Nếu chọn P hoặc NB thì check xem có đủ không
+        const safetyCheck = checkBalanceSafe(selectedR, code);
+        if (!safetyCheck.ok) {
+            // Hiện cảnh báo. Nếu user bấm Cancel (Hủy) thì dừng lại.
+            if (!confirm(safetyCheck.msg + "\n\nBạn có chắc chắn muốn gán không?")) {
+                return; // Dừng, không làm gì cả
+            }
+        }
+
+		// --- BƯỚC 1: TÍNH TOÁN NGÀY ĐANG CHỌN ---
+		const wDate = new Date(currentWeekStart);
+		const targetDate = new Date(wDate);
+		targetDate.setDate(wDate.getDate() + selectedC);
+		pendingNbDateStr = formatDateISO(targetDate); 
+
+		// Cập nhật bảng tổng hợp (nếu đang mở)
+        const container = document.getElementById("summaryContainer");
+        if (container && container.style.display !== 'none') {
+            updateDetailSummary();
+        }
+
+		// --- BƯỚC 2: PHÂN LOẠI XỬ LÝ ---
+		if (code.includes("NB")) {
+			pendingNbCode = code;
+			pendingNbCls = cls;
+			const emp = employeesData[selectedR];
+			openNbSourcePopup(emp.code, emp.name, pendingNbDateStr, code);
+			document.getElementById("shiftMenu").style.display = "none";
+			return; 
+		}
+
+		if (code.includes("P")) {
+			const val = (code.includes("/2") || code.includes("0.5")) ? 0.5 : 1.0;
+			const reason = "Admin nhập trực tiếp (Phép năm)";
+			applyShiftToCell(code, cls, reason, val);
+			document.getElementById("shiftMenu").style.display = "none";
+			return;
+		}
+
+		applyShiftToCell(code, cls);
+		document.getElementById("shiftMenu").style.display = "none";
+	}
+
+	// ================= TÍNH NĂNG CHỌN NGUỒN BÙ (ADMIN) =================
+
+	async function openNbSourcePopup(empCode, empName, dateStr, type) {
+		console.log("--- BẮT ĐẦU MỞ POPUP NGUỒN BÙ ---");
+		console.log("1. Thông tin đầu vào:", { empCode, empName, dateStr, type });
+
+		const popup = document.getElementById("nbSourcePopup");
+		const listDiv = document.getElementById("nbSourceList");
+		
+		// Reset giao diện
+		document.getElementById("nbTargetCode").innerText = `${empName} (${empCode})`;
+		document.getElementById("nbTargetDate").innerText = dateStr.split('-').reverse().join('/');
+		document.getElementById("nbTargetType").innerText = type;
+		document.getElementById("nbCalcStatus").innerText = "...";
+		
+		popup.style.display = "flex";
+		listDiv.innerHTML = '<div style="padding:10px; text-align:center;">⏳ Đang tải dữ liệu từ Supabase...</div>';
+
+		try {
+			// --- QUERY 1: Lấy danh sách nguồn ---
+			console.log("2. Đang gọi bảng 'supplemental_leave'...");
+			const resSource = await _supabase
+				.from('supplemental_leave')
+				.select('*')
+				.eq('emp_code', empCode)
+				.eq('type', 'NB'); // Bỏ .gt('amount', 0) tạm thời để xem có data ko đã
+
+			if (resSource.error) {
+				console.error("❌ Lỗi Supabase (Nguồn):", resSource.error);
+				listDiv.innerHTML = `<div style="color:red; padding:10px;">Lỗi tải nguồn: ${resSource.error.message}</div>`;
+				return;
+			}
+			console.log("✅ Dữ liệu nguồn tải được:", resSource.data);
+
+			// --- QUERY 2: Lấy lịch sử đã dùng ---
+			console.log("3. Đang gọi bảng 'leave_requests'...");
+			const resHistory = await _supabase
+				.from('leave_requests')
+				.select('reason, type, status')
+				.eq('emp_code', empCode);
+
+			if (resHistory.error) {
+				console.error("❌ Lỗi Supabase (Lịch sử):", resHistory.error);
+			}
+			console.log("✅ Dữ liệu lịch sử tải được:", resHistory.data);
+
+			// --- XỬ LÝ DỮ LIỆU ---
+			listDiv.innerHTML = "";
+			const sources = resSource.data || [];
+			const history = resHistory.data || [];
+
+			if (sources.length === 0) {
+				listDiv.innerHTML = '<div style="padding:15px; color:#999; text-align:center;">Nhân viên này không có dữ liệu nguồn (supplemental_leave).</div>';
+				return;
+			}
+
+			let countAvailable = 0;
+
+			sources.forEach(src => {
+				// Tính toán số đã dùng
+				let used = 0;
+				const d = new Date(src.date);
+				const dKey = `${d.getDate()}/${d.getMonth()+1}`;
+				const signature = `${dKey} (${src.reason})`; // Key để đối chiếu
+
+				history.forEach(h => {
+					if (h.status !== 'Từ chối' && h.reason && h.reason.includes(signature)) {
+						if (h.type === 'NB/2' || h.type === '0.5NB') used += 0.5;
+						else if (h.type === 'NB') used += 1.0;
+					}
+				});
+
+				const remaining = parseFloat(src.amount) - used;
+				console.log(`- Nguồn: ${signature} | Tổng: ${src.amount} | Đã dùng: ${used} | Còn: ${remaining}`);
+
+				// Chỉ hiện những cái còn dư > 0
+				if (remaining > 0) {
+					countAvailable++;
+					const div = document.createElement("div");
+					div.className = "src-item-row";
+					div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee; cursor:pointer;";
+					
+					div.onclick = (e) => {
+						if (e.target.type !== 'checkbox') {
+							const cb = div.querySelector('input');
+							cb.checked = !cb.checked;
+							calcNbSelection();
+						}
+					};
+
+					div.innerHTML = `
+						<div style="display:flex; align-items:center;">
+							<input type="checkbox" class="nb-src-cb" value="${signature}" data-amt="${remaining}" onchange="calcNbSelection()" style="margin:0 10px 0 0;">
+							<div>
+								<div style="font-weight:600; font-size:13px;">${signature}</div>
+								<div style="font-size:11px; color:#666;">Ngày gốc: ${dKey}</div>
+							</div>
+						</div>
+						<div style="font-weight:bold; color:${remaining<1?'#e67e22':'#27ae60'}; font-size:13px;">
+							Còn: ${remaining}
+						</div>
+					`;
+					listDiv.appendChild(div);
+				}
+			});
+
+			if (countAvailable === 0) {
+				listDiv.innerHTML = '<div style="padding:15px; color:#e67e22; text-align:center;">Có nguồn nhưng đã dùng hết sạch!</div>';
+			}
+
+			// Reset trạng thái tính toán
+			calcNbSelection();
+
+		} catch (e) {
+			console.error("❌ Lỗi Crash Javascript:", e);
+			listDiv.innerHTML = '<div style="color:red; padding:10px;">Lỗi xử lý JS (Xem Console)</div>';
+		}
+	}
+
+	// Hàm tính toán Realtime (Đủ/Thiếu)
+	function calcNbSelection() {
+		const statusDiv = document.getElementById("nbCalcStatus");
+		
+		// 1. Xác định lượng cần
+		let needed = 1.0;
+		if (pendingNbCode.includes("/2") || pendingNbCode.includes("0.5")) needed = 0.5;
+
+		// 2. Tính lượng đã tick
+		let selected = 0;
+		document.querySelectorAll(".nb-src-cb:checked").forEach(cb => {
+			selected += parseFloat(cb.getAttribute("data-amt"));
+		});
+
+		// 3. Hiển thị
+		if (selected === needed) {
+			statusDiv.innerHTML = `✅ Đã chọn: ${selected} / Cần: ${needed} (Hợp lệ)`;
+			statusDiv.className = "status-ok";
+		} else if (selected > needed) {
+			statusDiv.innerHTML = `⚠️ Dư: ${selected} / Cần: ${needed} (Vui lòng bỏ bớt)`;
+			statusDiv.className = "status-lack";
+		} else {
+			statusDiv.innerHTML = `❌ Thiếu: ${selected} / Cần: ${needed} (Vui lòng chọn thêm)`;
+			statusDiv.className = "status-lack";
+		}
+	}
+
+	// Hàm xác nhận và Lưu
+	async function confirmNbSelection() {
+		// 1. Validate lại lần cuối
+		let needed = 1.0;
+		if (pendingNbCode.includes("/2")) needed = 0.5;
+
+		let selected = 0;
+		let reasons = [];
+		document.querySelectorAll(".nb-src-cb:checked").forEach(cb => {
+			selected += parseFloat(cb.getAttribute("data-amt"));
+			reasons.push(cb.value);
+		});
+
+		if (selected !== needed) {
+			return alert(`Bạn chưa chọn đúng số lượng!\n- Cần: ${needed}\n- Đang chọn: ${selected}`);
+		}
+
+		// 2. Tạo lý do chi tiết
+		// VD: "[Bù cho: 01/05 (Trực lễ)] Admin nhập trực tiếp"
+		const finalReason = `[Bù cho: ${reasons.join(", ")}] Được xếp bởi Admin`;
+
+		// 3. Đóng Popup
+		closePopup('nbSourcePopup');
+
+		// 4. GỌI HÀM LƯU CHÍNH THỨC (Cập nhật UI + DB)
+		applyShiftToCell(pendingNbCode, pendingNbCls, finalReason, needed);
+	}
+
+	// Hàm cập nhật vào ô (Đã nâng cấp để xử lý tạo Leave Request)
+	async function applyShiftToCell(code, cls, customReason = null, customVal = null) {
+		if (!currentCell) return;
+
+		// A. Cập nhật UI ngay lập tức
+		currentCell.className = `shift ${cls} selected`;
+		currentCell.innerText = code;
+		employeesData[selectedR].shifts[selectedC] = code;
+		
+		// Vẽ lại bảng (để cập nhật cột Tổng)
+		renderTable();
+
+		// B. Nếu là NB/P -> TỰ ĐỘNG TẠO LEAVE REQUEST (Đã duyệt)
+		// Việc này giúp hệ thống trừ kho quỹ chính xác vào nguồn đã chọn
+		if ((code.includes("NB") || code.includes("P")) && customReason) {
+			
+			const emp = employeesData[selectedR];
+			const val = customVal || (code.includes("/2") ? 0.5 : 1.0);
+
+			// Hiển thị loading nhỏ
+			const oldText = document.getElementById("autoSaveStatus")?.innerText;
+			if(document.getElementById("autoSaveStatus")) document.getElementById("autoSaveStatus").innerText = "⏳ Đang tạo đơn...";
+
+			try {
+				// Insert vào bảng leave_requests
+				const { error } = await _supabase.from('leave_requests').insert({
+					emp_code: emp.code,
+					emp_name: emp.name,
+					type: code,
+					date: pendingNbDateStr, // Ngày tính toán ở setShift
+					reason: customReason,
+					val: val,
+					status: 'Đã duyệt' // Duyệt luôn vì Admin nhập
+				});
+
+				if (error) throw error;
+				
+				// Thông báo nhỏ
+				showToastNotification(`✅ Đã tạo đơn ${code} thành công!`);
+
+			} catch (e) {
+				console.error("Lỗi tạo đơn:", e);
+				alert("Lỗi khi lưu đơn nghỉ: " + e.message);
+			}
+		}
+
+		// C. Lưu lịch chính (Schedule Table)
+		triggerAutoSave();
+	}
+
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest('.shift') && !e.target.closest('#shiftMenu')) {
+            document.getElementById("shiftMenu").style.display = "none";
+        }
+    });
+
+    // ================= 9. POPUP UTILS =================
+    function formatDateISO(date) {
+        const offset = date.getTimezoneOffset(); 
+        const d = new Date(date.getTime() - (offset*60*1000)); 
+        return d.toISOString().split('T')[0];
+    }
+    function showLoading(x) { document.getElementById("loading").style.display = x ? "block" : "none"; }
+    function closePopup(id) { document.getElementById(id).style.display='none'; }
+    
+    // --- 1. MỞ POPUP VÀ TẢI DANH SÁCH TUẦN ---
+    async function openWeekPopup() {
+        document.getElementById("weekPopup").style.display = "flex";
+        
+        // Reset các ô nhập liệu
+        const sel = document.getElementById("weekSelect");
+        document.getElementById("newWeekPicker").value = "";
+        sel.innerHTML = '<option value="">⏳ Đang tải danh sách...</option>';
+
+        try {
+            // Lấy danh sách tuần từ Supabase (Sắp xếp mới nhất lên đầu)
+            const { data, error } = await _supabase
+                .from('weeks')
+                .select('*')
+                .eq('group_name', currentGroup)
+                .order('week_start', { ascending: false });
+
+            if (error) throw error;
+
+            sel.innerHTML = '<option value="">-- Chọn tuần có sẵn --</option>';
+
+            if (data && data.length > 0) {
+                data.forEach(w => {
+                    // Format ngày cho đẹp (yyyy-mm-dd -> dd/mm/yyyy)
+                    const d = new Date(w.week_start);
+                    const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
                     
-                    // Cập nhật giao diện
-                    setShiftOnCell(targetCell, cleanVal, className);
+                    const opt = document.createElement("option");
+                    opt.value = w.week_start;
+                    // Hiển thị: "Tuần từ 01/12... (01/12/2025)"
+                    opt.text = `${w.week_range} [Start: ${dateStr}]`;
+                    sel.appendChild(opt);
+                });
+            } else {
+                sel.innerHTML = '<option value="">(Chưa có tuần nào được lưu)</option>';
+            }
+
+        } catch (e) {
+            console.error(e);
+            sel.innerHTML = '<option value="">❌ Lỗi tải dữ liệu</option>';
+        }
+    }
+
+    // --- 2. XÁC NHẬN CHỌN TUẦN ---
+    function confirmWeekSelection() {
+        const selVal = document.getElementById("weekSelect").value;     
+        const newVal = document.getElementById("newWeekPicker").value;  
+        
+        let finalDate = selVal || newVal;
+
+        if (!finalDate) {
+            return alert("Vui lòng chọn một tuần từ danh sách HOẶC chọn ngày để tạo mới!");
+        }
+        
+        if (newVal && !selVal) {
+            const d = new Date(newVal);
+            if (d.getDay() !== 1) {
+                return alert("⚠️ Ngày bắt đầu tuần mới phải là Thứ 2!");
+            }
+        }
+
+        currentWeekStart = finalDate;
+        
+        // --- [MỚI] LƯU LẠI KHI CHUYỂN TUẦN ---
+        localStorage.setItem("LAST_WEEK_" + currentGroup, currentWeekStart);
+
+        closePopup('weekPopup');
+        loadSchedule();
+    }
+
+    function openAddEmpPopup() {
+        document.getElementById("newEmpCode").value = "";
+        document.getElementById("newEmpName").value = "";
+        document.getElementById("newEmpRole").value = "";
+        document.getElementById("addEmpPopup").style.display = "flex";
+        document.getElementById("newEmpCode").focus();
+    }
+    
+    async function confirmAddEmployee() {
+        const code = document.getElementById("newEmpCode").value.trim().toUpperCase(); // Viết hoa mã
+        const name = document.getElementById("newEmpName").value.trim();
+        const role = document.getElementById("newEmpRole").value.trim();
+
+        if(!code || !name) return alert("Vui lòng nhập đủ thông tin!");
+        
+        // Check trùng trong danh sách hiện tại
+        if(employeesData.some(e => e.code === code)) return alert("Mã NV đã hiển thị trên bảng!");
+
+        showLoading(true);
+        try {
+            // [THAY ĐỔI] Thêm status: 'active'
+            const { error } = await _supabase.from('employees').upsert({
+                code: code, 
+                name: name, 
+                role: role, 
+                group_name: currentGroup,
+                status: 'active' // <--- Luôn set là active khi thêm mới/khôi phục
+            }, { onConflict: 'code' });
+
+            if(error) throw error;
+
+            // Thêm vào mảng hiển thị ngay lập tức
+            employeesData.push({ 
+                code, name, role, 
+                shifts: Array(7).fill(""), 
+                pn: 0, nb: 0, pn_old: 0, nb_old: 0 
+            });
+            
+            renderTable();
+            closePopup('addEmpPopup');
+            alert("✅ Đã thêm nhân viên thành công!");
+            
+        } catch(e) { console.error(e); alert("Lỗi: " + e.message); }
+        showLoading(false);
+    }
+
+    function openBulkLeavePopup() {
+        const listDiv = document.getElementById("blEmpList");
+        listDiv.innerHTML = "";
+        document.getElementById("checkAllBox").checked = true;
+        employeesData.forEach(e => {
+            listDiv.innerHTML += `
+            <div class="emp-item">
+                <label style="display:flex;align-items:center;width:100%;cursor:pointer;margin:0;">
+                    <input type="checkbox" value="${e.code}" checked class="emp-checkbox">
+                    <span><b>${e.code}</b> - ${e.name}</span>
+                </label>
+            </div>`;
+        });
+        document.getElementById("bulkLeavePopup").style.display = "flex";
+    }
+
+    function toggleCheckAll(source) {
+        document.querySelectorAll(".emp-checkbox").forEach(cb => cb.checked = source.checked);
+    }
+
+    async function submitBulkLeave() {
+        const type = document.getElementById("blType").value;
+        const amount = document.getElementById("blAmount").value;
+        const reason = document.getElementById("blReason").value;
+        const checks = document.querySelectorAll(".emp-checkbox:checked");
+        
+        if(checks.length === 0 || !amount || !reason) return alert("Thiếu thông tin!");
+
+        showLoading(true);
+        const payload = [];
+        checks.forEach(cb => {
+            payload.push({ emp_code: cb.value, type, amount, reason, date: new Date() });
+            const emp = employeesData.find(e => e.code === cb.value);
+            if(emp) {
+                if(type==='NB') emp.nb += Number(amount);
+                else emp.pn += Number(amount);
+            }
+        });
+
+        await _supabase.from('supplemental_leave').insert(payload);
+        
+        const upserts = employeesData.map(e => ({
+            emp_code: e.code, year: new Date(currentWeekStart).getFullYear(), nb_val: e.nb, pn_val: e.pn
+        }));
+        await _supabase.from('leave_balance').upsert(upserts, { onConflict: 'emp_code, year' });
+
+        alert("Đã cộng thành công!");
+        closePopup('bulkLeavePopup');
+        renderTable();
+        showLoading(false);
+    }
+
+    // XÓA NHÂN VIÊN VĨNH VIỄN
+    async function removeRow(idx) {
+        const emp = employeesData[idx];
+        if(!emp) return;
+        
+        // Hỏi xác nhận kỹ hơn
+        if(confirm(`⚠️ XÁC NHẬN:\n\nĐánh dấu nhân viên [${emp.name}] là ĐÃ NGHỈ VIỆC?\n\n- Nhân viên sẽ bị ẩn khỏi lịch tuần sau.\n- Dữ liệu lịch sử cũ vẫn được giữ lại.`)) {
+            showLoading(true);
+            try {
+                // 1. Xóa khỏi lịch tuần hiện tại (để dòng biến mất ngay)
+                await _supabase.from('schedule').delete().eq('week_start', currentWeekStart).eq('emp_code', emp.code);
+                
+                // 2. Cập nhật trạng thái 'inactive' trong bảng employees (Thay vì delete)
+                const { error } = await _supabase
+                    .from('employees')
+                    .update({ status: 'inactive' }) 
+                    .eq('code', emp.code);
+                
+                if(error) throw error;
+                
+                alert(`✅ Đã cập nhật trạng thái nhân viên ${emp.name} thành "Đã nghỉ".`);
+                
+                employeesData.splice(idx, 1);
+                renderTable();
+            } catch(e) { console.error(e); alert("Lỗi cập nhật: "+e.message); }
+            showLoading(false);
+        }
+    }
+
+    // ================= CẤU HÌNH DỮ LIỆU BẢNG NOTE (THỐNG KÊ) =================
+	// Bạn có thể sửa đổi text hiển thị ở đây
+	const EXPORT_SUMMARY_CONFIG = [
+		{ title: "Thứ 2 Ca S+: Chào cờ", codes: ["S+", "S"] }, // Dòng 1: Tính cả S và S+ vào Thứ 2
+		{ title: "Ca S1: (06h30-14h30). Nghỉ giữa ca 45 phút", codes: ["S1"] },
+		{ title: "Ca S: (8h00-16h00). Nghỉ giữa ca 45 phút", codes: ["S"] },
+		{ title: "Ca C: (15h00-23h00). Nghỉ giữa ca 45 phút", codes: ["C"] },
+		{ title: "Ca HC: (8h00-17h00). Nghỉ giữa ca 60 phút", codes: ["HC"] },
+		{ title: "Nghỉ nữa ca, buổi: P/2, NB/2", codes: ["P/2", "NB/2", "0.5"] },
+		{ title: "Nghỉ ca: NC", codes: ["NC"] },
+		{ title: "Nghỉ phép: P, NB", codes: ["P", "NB"] },
+		{ title: "Nghỉ không lương: KL", codes: ["KL"] },
+		{ title: "Nghỉ Lễ: L", codes: ["L"] },
+		{ title: "Nghỉ: Ốm, Con ốm: Ô", codes: ["Ô", "CO"] }
+	];
+
+	async function exportToExcel() {
+        // 1. ĐỊNH NGHĨA BẢNG MÀU
+        const LOCAL_COLOR_MAP = {
+            "ca-s": "FFFFFF", "ca-s1": "FFFFFF", "ca-s-plus": "F8CBAD",
+            "ca-c": "92D050", "ca-hc": "FFFFFF", "ca-nc": "FFFF00",
+            "ca-p": "FF0000", "ca-nb": "FF0000", "ca-ct": "9BC2E6",
+            "ca-kl": "9BC2E6", "ca-o": "9BC2E6", "ca-te": "FF0000",
+            "ca-l": "FF0000", "ca-nm": "9BC2E6"
+        };
+
+        const configs = (typeof EXPORT_SUMMARY_CONFIG !== 'undefined') ? EXPORT_SUMMARY_CONFIG : [
+             { title: "Ca S", codes: ["S"] }, { title: "Ca C", codes: ["C"] } 
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const wsData = []; 
+
+        // --- PHẦN 1: TIÊU ĐỀ LỚN ---
+        //wsData.push(["LỊCH LÀM VIỆC"]);
+		
+		const LLVTUAN = document.getElementById("groupNameDisplay");
+
+		const LLVTUANText = LLVTUAN ? LLVTUAN.innerText.toUpperCase() : "";
+
+		wsData.push([`LỊCH LÀM VIỆC ${LLVTUANText}`.trim()]);
+		
+        const weekEl = document.getElementById("weekRange") || document.getElementById("weekRangeDisplay");
+        const weekText = weekEl ? weekEl.innerText : "Tuần làm việc";
+        wsData.push([weekText]);        
+        wsData.push([]);                
+
+        // --- [QUAN TRỌNG] XÁC ĐỊNH CỘT SỐ DƯ CẦN HIỂN THỊ ---
+		const pOldEl = document.getElementById("cardPOld") || document.getElementById("lblPOld"); 
+		const bOldEl = document.getElementById("cardBOld") || document.getElementById("lblBOld");
+		
+		// Kiểm tra xem thẻ có bị ẩn (display: none) không
+		const showPOld = employeesData.some(e => e.pn_old > 0); // Check theo dữ liệu thực tế giống hàm renderTable
+		const showBOld = employeesData.some(e => e.nb_old > 0); // Check theo dữ liệu thực tế giống hàm renderTable
+
+        // 1. Lấy nội dung chữ từ các thẻ tiêu đề trên bảng (để lấy được số năm 2024, 2025...)
+		// Sử dụng trim() để loại bỏ khoảng trắng thừa nếu có
+		const txtPOld = document.getElementById("th_p_old") ? document.getElementById("th_p_old").innerText.trim() : "PHÉP CŨ";
+		const txtPNew = document.getElementById("th_p_new") ? document.getElementById("th_p_new").innerText.trim() : "PHÉP MỚI";
+		const txtBOld = document.getElementById("th_b_old") ? document.getElementById("th_b_old").innerText.trim() : "BÙ CŨ";
+		const txtBNew = document.getElementById("th_b_new") ? document.getElementById("th_b_new").innerText.trim() : "BÙ MỚI";
+
+		// 2. Xây dựng danh sách cột động dựa trên text vừa lấy
+		let balanceHeaders = [];
+		if (showPOld) balanceHeaders.push(txtPOld); // Sẽ là "PHÉP 2024"
+		balanceHeaders.push(txtPNew);               // Sẽ là "PHÉP 2025"
+		if (showBOld) balanceHeaders.push(txtBOld); // Sẽ là "BÙ 2024"
+		balanceHeaders.push(txtBNew);               // Sẽ là "BÙ 2025"
+		balanceHeaders.push("TỔNG");
+
+        // Tổng số cột = 11 cột cố định (STT..CN) + số cột balance động
+        const totalCols = 11 + balanceHeaders.length;
+
+        // --- PHẦN 2: HEADER BẢNG CHÍNH ---
+        const headerThs = document.querySelectorAll("#headerDatesRow th");
+        const dateHeaders = headerThs.length > 0 
+            ? Array.from(headerThs).map(th => th.innerText) 
+            : ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+        
+        const headerRow = [
+            "STT", "MÃ NV", "HỌ TÊN", "CHỨC VỤ", 
+            "T2", "T3", "T4", "T5", "T6", "T7", "CN", 
+            ...balanceHeaders // Chèn các cột động vào đây
+        ];
+        wsData.push(headerRow);
+        
+        // Dòng ngày tháng: Cần thêm ô trống tương ứng số cột balance
+        const emptyBalanceCells = new Array(balanceHeaders.length).fill("");
+        wsData.push(["", "", "", "", ...dateHeaders, ...emptyBalanceCells]);
+
+        // --- PHẦN 3: DỮ LIỆU NHÂN VIÊN ---
+        let maxRoleLength = 15; 
+
+        if (typeof employeesData !== 'undefined' && Array.isArray(employeesData)) {
+            employeesData.forEach((emp, index) => {
+                const pNew = Number(emp.pn) || 0;
+                const bNew = Number(emp.nb) || 0;
+                const pOld = Number(emp.pn_old) || 0; 
+                const bOld = Number(emp.nb_old) || 0; 
+                const total = pNew + bNew + pOld + bOld;
+                
+                // Tính độ rộng cột chức vụ
+                if (emp.role) {
+                    const len = emp.role.toString().length;
+                    if (len > maxRoleLength) maxRoleLength = len;
+                }
+
+                // Xây dựng dữ liệu số dư động
+                let balanceValues = [];
+                if (showPOld) balanceValues.push(pOld);
+                balanceValues.push(pNew);
+                if (showBOld) balanceValues.push(bOld);
+                balanceValues.push(bNew);
+                balanceValues.push(total);
+
+                wsData.push([index + 1, emp.code, emp.name, emp.role, ...emp.shifts, ...balanceValues]);
+            });
+        }
+        maxRoleLength += 2;
+
+        // --- PHẦN 4: TIÊU ĐỀ NOTE ---
+        wsData.push([]); 
+        wsData.push(["", "NOTE :"]); 
+
+        // --- PHẦN 5: TÍNH TOÁN DỮ LIỆU NOTE ---
+        let countMap = Array(configs.length).fill(0).map(() => Array(7).fill(0));
+
+        if (typeof employeesData !== 'undefined' && Array.isArray(employeesData)) {
+            employeesData.forEach(emp => {
+                emp.shifts.forEach((code, dayIdx) => {
+                    if (dayIdx >= 0 && dayIdx < 7 && code) {
+                        const cleanCode = code.trim().toUpperCase();
+                        configs.forEach((cfg, rIdx) => {
+                            if (rIdx === 0 && dayIdx === 0 && (cleanCode === 'S' || cleanCode === 'S+')) {
+                                countMap[rIdx][dayIdx]++;
+                            }
+                            else if (cfg.codes.includes(cleanCode)) {
+                                if (rIdx === 2 && dayIdx === 0 && cleanCode === 'S') return;
+                                countMap[rIdx][dayIdx]++;
+                            }
+                        });
+                    }
+                });
+            });
+        }
+
+        configs.forEach((cfg, idx) => {
+            const counts = countMap[idx];
+            wsData.push(["", "", cfg.title, "", ...counts]); 
+        });
+
+        // ================= TẠO SHEET & STYLE =================
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // --- STYLE & MERGE ---
+        const lastRowIdx = wsData.length - 1;
+        const startNoteIdx = wsData.length - configs.length;
+        const lastColIdx = totalCols - 1; // Chỉ số cột cuối cùng
+
+        ws['!merges'] = [
+            { s: {r:0, c:0}, e: {r:0, c:lastColIdx} }, // Merge Title
+            { s: {r:1, c:0}, e: {r:1, c:lastColIdx} }, 
+            
+            { s: {r:3, c:0}, e: {r:4, c:0} }, 
+            { s: {r:3, c:1}, e: {r:4, c:1} }, 
+            { s: {r:3, c:2}, e: {r:4, c:2} }, 
+            { s: {r:3, c:3}, e: {r:4, c:3} }, 
+            
+            // Merge Header Balance (Động)
+            ...Array.from({length: balanceHeaders.length}, (_, i) => ({
+                s: {r:3, c: 11 + i}, e: {r:4, c: 11 + i}
+            })),
+
+            { s: {r: startNoteIdx - 1, c:1}, e: {r: startNoteIdx - 1, c:3} }
+        ];
+
+        for(let i=0; i<configs.length; i++) {
+            ws['!merges'].push({ s: {r: startNoteIdx+i, c:2}, e: {r: startNoteIdx+i, c:3} });
+        }
+
+        // --- STYLE CHI TIẾT ---
+        const borderStyle = {
+            top: {style: "thin"}, bottom: {style: "thin"},
+            left: {style: "thin"}, right: {style: "thin"}
+        };
+        const centerStyle = { horizontal: "center", vertical: "center" };
+        const fontBase = { name: "Times New Roman", sz: 11 };
+        const fontBold = { name: "Times New Roman", sz: 11, bold: true };
+        const fontTitle = { name: "Times New Roman", sz: 18, bold: true };
+        const fontSubTitle = { name: "Times New Roman", sz: 14, bold: true };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({r: R, c: C});
+                if (!ws[cellRef]) ws[cellRef] = {v: "", t: "s"};
+                const cell = ws[cellRef];
+
+                if (!cell.s) cell.s = {};
+                cell.s.font = fontBase;
+
+                // Title
+                if (R === 0) cell.s = { font: fontTitle, alignment: centerStyle };
+                if (R === 1) cell.s = { font: fontSubTitle, alignment: centerStyle };
+
+                // Main Table
+                const startMainRow = 3;
+                const endMainRow = startNoteIdx - 3; 
+                
+                if (R >= startMainRow && R <= endMainRow) {
+                    cell.s.border = borderStyle;
+                    cell.s.alignment = centerStyle;
+                    cell.s.font = fontBase;
+
+                    if (R <= 4) { 
+                        cell.s.fill = { fgColor: { rgb: "FFFFFF" } };
+                        cell.s.font = fontBold; 
+                    }
+                    if (C === 2 && R > 4) cell.s.alignment = { horizontal: "left", vertical: "center" };
+                    
+					// tô màu cho ô từ 11 trở đi
+					if (R <= 4 && C >= 11) {
+						cell.s.fill = { fgColor: { rgb: "F4B084" } };
+						//cell.s.font = fontBold;
+						cell.s.alignment = { wrapText: "true", horizontal: "center", vertical: "center" };
+					}
+					
+                    // Tô màu các cột số dư (Từ cột 11 trở đi)
+                    if (R > 4 && C >= 11) {
+						cell.s.fill = { fgColor: { rgb: "EEEEEE" } };
+						cell.s.font = fontBold;
+					}
+
+                    // Tô màu ô ca làm việc (Cột 4 -> 10)
+                    if (R > 4 && C >= 4 && C <= 10) {
+                        cell.s.font = fontBold;
+                        const val = String(cell.v).trim().toUpperCase();
+                        const shiftInfo = SHIFTS.find(s => s.code.toUpperCase() === val);
+                        if (shiftInfo && LOCAL_COLOR_MAP[shiftInfo.cls]) {
+                            cell.s.fill = { fgColor: { rgb: LOCAL_COLOR_MAP[shiftInfo.cls] } };
+                        }
+                    }
+                }
+
+                // Note Title
+                if (R === startNoteIdx - 1 && C === 1) {
+                    cell.s = { font: { name: "Times New Roman", sz: 12, bold: true, underline: true } };
+                }
+
+                // Note Table
+                if (R >= startNoteIdx) {
+                    if (C >= 2 && C <= 10) {
+                        if (!cell.s) cell.s = {};
+                        cell.s.border = borderStyle;
+                        cell.s.font = fontBase;
+
+                        if (C === 2) { 
+                            cell.s.alignment = { horizontal: "left", vertical: "center" };
+                        } else if (C >= 4) { 
+                            cell.s.alignment = centerStyle;
+                            if (typeof cell.v === 'number' && cell.v > 0) cell.s.font = fontBold; 
+                        }
+                    }
                 }
             }
-        });
+        }
+
+        // --- C. ĐỘ RỘNG CỘT ---
+        let colWidths = [
+            {wch: 5}, {wch: 10}, {wch: 25}, {wch: maxRoleLength}, 
+            {wch: 6}, {wch: 6}, {wch: 6}, {wch: 6}, {wch: 6}, {wch: 6}, {wch: 6}
+        ];
+        // Thêm độ rộng cho các cột balance
+        for(let i=0; i<balanceHeaders.length; i++) {
+            colWidths.push({wch: 7.15});
+        }
+        ws['!cols'] = colWidths;
+
+        XLSX.utils.book_append_sheet(wb, ws, "LichLamViec");
+        //const fileName = weekText.replace(/[^a-zA-Z0-9]/g, "_") || "Lich_Lam_Viec";
+        //XLSX.writeFile(wb, `${fileName}.xlsx`);
+
+		// 1. Lấy tất cả các cụm số trong chuỗi ra một mảng
+		const numbers = weekText.match(/\d+/g); 
+		// Kết quả numbers sẽ là: ["08", "12", "14", "12", "2025"]
+
+		let fileName = "Lich_Lam_Viec"; // Tên mặc định
+		
+		let fileNameClean = LLVTUANText
+			.normalize("NFD")                   // 1. Tách dấu ra khỏi chữ cái (ví dụ: ụ -> u + dấu nặng)
+			.replace(/[\u0300-\u036f]/g, "")    // 2. Xóa các ký tự dấu vừa tách
+			.replace(/đ/g, "d").replace(/Đ/g, "D") // 3. Xử lý riêng chữ đ/Đ (vì hàm trên không bắt được)
+			.replace(/\s+/g, "_");
+
+		// 2. Nếu tìm thấy đủ dữ liệu ngày tháng
+		if (numbers && numbers.length >= 5) {
+			// numbers[0]: Ngày đầu (08)
+			// numbers[2]: Ngày cuối (14)
+			// numbers[3]: Tháng cuối (12)
+			// numbers[4]: Năm (2025)
+			
+			// Ghép lại
+			fileName = `${numbers[0]}.${numbers[1]} - ${numbers[2]}.${numbers[3]}.${numbers[4]}`;
+		}
+
+		// 3. Lưu file
+		XLSX.writeFile(wb, `LLV-${fileNameClean}_${fileName}.xlsx`);
+    }
+	
+	// ================= 10. TÍNH NĂNG DUYỆT YÊU CẦU =================
+    
+    // Gọi hàm này ngay khi tải trang để check thông báo
+    document.addEventListener("DOMContentLoaded", () => {
+        checkPendingRequests();
+        // ... (các code khởi tạo cũ giữ nguyên)
     });
-    
-    alert(`Đã dán dữ liệu từ Excel (${rows.length} dòng)! Nhớ bấm LƯU.`);
-}
 
-/* ===========================================================
-   TÍNH NĂNG: QUÉT CHUỘT NHIỀU Ô & XÓA (MULTI-SELECT DELETE)
-=========================================================== */
-let isDragging = false;
-let startCell = null;
+    async function checkPendingRequests() {
+        try {
+            const { data, error } = await _supabase
+                .from('leave_requests')
+                .select('*')
+                .eq('status', 'Chờ duyệt')
+                .order('created_at', { ascending: false });
 
-// 1. Gắn sự kiện chuột vào bảng
-const tableGrid = document.getElementById("scheduleTable");
-
-tableGrid.addEventListener("mousedown", function(e) {
-    // Chỉ bắt sự kiện nếu click vào ô lịch (.shift)
-    const cell = e.target.closest(".shift");
-    if (!cell) {
-        clearSelection(); // Click ra ngoài thì bỏ chọn
-        return;
-    }
-
-    // Nếu click chuột trái
-    if (e.button === 0) {
-        isDragging = true;
-        startCell = cell;
-        clearSelection(); // Xóa vùng chọn cũ
-        toggleCellSelection(cell, true); // Chọn ô bắt đầu
-        document.body.classList.add("noselect"); // Chặn bôi đen văn bản
-    }
-});
-
-tableGrid.addEventListener("mouseover", function(e) {
-    if (!isDragging) return;
-    
-    const currentCell = e.target.closest(".shift");
-    if (currentCell && startCell) {
-        selectRange(startCell, currentCell);
-    }
-});
-
-document.addEventListener("mouseup", function() {
-    isDragging = false;
-    document.body.classList.remove("noselect");
-});
-
-// 2. Hàm tính toán vùng chọn (Hình chữ nhật)
-function selectRange(start, end) {
-    clearSelection();
-
-    // Lấy tọa độ (Row Index và Cell Index trong row)
-    const startRow = start.closest("tr").rowIndex;
-    const endRow = end.closest("tr").rowIndex;
-    
-    // Index của ô shift tính theo data-day (0-6)
-    const startCol = parseInt(start.getAttribute("data-day"));
-    const endCol = parseInt(end.getAttribute("data-day"));
-
-    // Tìm giới hạn hình chữ nhật (Min/Max)
-    const minRow = Math.min(startRow, endRow);
-    const maxRow = Math.max(startRow, endRow);
-    const minCol = Math.min(startCol, endCol);
-    const maxCol = Math.max(startCol, endCol);
-
-    // Duyệt qua các dòng trong phạm vi
-    const rows = tableGrid.rows;
-    for (let r = minRow; r <= maxRow; r++) {
-        const row = rows[r];
-        // Tìm các ô .shift trong dòng này
-        // Lưu ý: Cấu trúc HTML của bạn có các ô stt, code, name... trước
-        // Nên ta querySelectorAll bên trong row để an toàn
-        const cells = row.querySelectorAll(".shift");
-        
-        cells.forEach(cell => {
-            const colIdx = parseInt(cell.getAttribute("data-day"));
-            if (colIdx >= minCol && colIdx <= maxCol) {
-                toggleCellSelection(cell, true);
+            if (data) {
+                // 1. Cập nhật Badge (Số đỏ)
+                const count = data.length;
+                const badge = document.getElementById("badgeReq");
+                if (count > 0) {
+                    badge.innerText = count;
+                    badge.style.display = "inline-block";
+                    // Thêm hiệu ứng rung lắc cho nút chuông để gây chú ý
+                    badge.parentElement.style.animation = "pulseBtn 1s"; 
+                    setTimeout(() => badge.parentElement.style.animation = "", 1000);
+                } else {
+                    badge.style.display = "none";
+                }
+                
+                // 2. QUAN TRỌNG: Lưu dữ liệu vào biến toàn cục để Popup dùng
+                window.pendingRequests = data; 
+                
+                // 3. Nếu Popup đang mở -> Vẽ lại luôn
+                const popup = document.getElementById("approvalPopup");
+                if(popup && popup.style.display === "flex") {
+                    renderRequestList();
+                }
             }
-        });
+        } catch (e) { console.error("Lỗi check yêu cầu:", e); }
     }
-}
 
-// Helper: Bật/Tắt class chọn
-function toggleCellSelection(cell, isSelected) {
-    if (isSelected) cell.classList.add("cell-multi-selected");
-    else cell.classList.remove("cell-multi-selected");
-}
+    function openApprovalPopup() {
+        document.getElementById("approvalPopup").style.display = "flex";
+        renderRequestList();
+    }
 
-// Helper: Xóa toàn bộ vùng chọn
-function clearSelection() {
-    const selected = document.querySelectorAll(".cell-multi-selected");
-    selected.forEach(cell => toggleCellSelection(cell, false));
-}
-
-// 3. Gắn sự kiện phím DELETE / BACKSPACE
-document.addEventListener("keydown", function(e) {
-    // Nếu đang nhập liệu trong ô input/textarea thì không xóa lịch
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-
-    if (e.key === "Delete" || e.key === "Backspace") {
-        const selectedCells = document.querySelectorAll(".cell-multi-selected");
+    function renderRequestList() {
+        const tbody = document.getElementById("reqListBody");
+        const msg = document.getElementById("noReqMsg");
+        tbody.innerHTML = "";
         
-        if (selectedCells.length > 0) {
-            e.preventDefault(); // Ngăn backspace quay lại trang
-            
-            if (confirm(`Bạn muốn xóa ${selectedCells.length} ô đã chọn?`)) {
-                selectedCells.forEach(cell => {
-                    // Đặt về "_" theo logic chuẩn hóa của bạn
-                    setShiftOnCell(cell, "_", ""); 
-                });
-                // clearSelection(); // Có thể giữ vùng chọn hoặc xóa tùy thích
-            }
+        const list = window.pendingRequests || [];
+        
+        if (list.length === 0) {
+            msg.style.display = "block";
+        } else {
+            msg.style.display = "none";
+            list.forEach(req => {
+                const d = new Date(req.date);
+                const dateStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                
+                // Badge Class
+                const badgeType = req.type.includes("P") ? "P" : "NB";
+
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td style="text-align:center; font-weight:700; color:var(--primary); font-family:monospace;">
+                        ${req.emp_code}
+                    </td>
+                    <td style="text-align:left; padding-left:10px; font-weight:600;">
+                        ${req.emp_name}
+                    </td>
+                    <td style="text-align:center;">${dateStr}</td>
+                    <td style="text-align:center;">
+                        <span class="bg-badge ${badgeType}">${req.type}</span>
+                    </td>
+                    <td style="text-align:left; padding-left:10px; color:#555; font-style:italic;">
+                        ${req.reason || '-'}
+                    </td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; justify-content:center; gap:5px;">
+                            <button class="btn-s" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.id}, 'APPROVE', '${req.emp_code}', '${req.type}', '${req.date}')">✔ Duyệt</button>
+                            <button class="btn-d" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.id}, 'REJECT', null, null, null)">✘ Huỷ</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
     }
-});
 
-/* ===========================================================
-   TÍNH NĂNG: XUẤT EXCEL THEO KHOẢNG THỜI GIAN
-=========================================================== */
-function openExportRangePopup() {
-    document.getElementById("exportRangePopup").style.display = "flex";
-    // Mặc định chọn ngày 1 đến cuối tháng hiện tại
-    const date = new Date();
-    const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    // --- XỬ LÝ DUYỆT / TỪ CHỐI ---
+    async function processRequest(id, action, empCode, type, dateStr) {
+        const msg = action === 'APPROVE' 
+            ? "Duyệt yêu cầu này? \n(Hệ thống sẽ tự động cập nhật lịch và LƯU lại ngay lập tức)" 
+            : "Từ chối yêu cầu này?";
+            
+        if (!confirm(msg)) return;
+
+        showLoading(true);
+        try {
+            const status = action === 'APPROVE' ? 'Đã duyệt' : 'Từ chối';
+            
+            // 1. Cập nhật trạng thái đơn trong bảng leave_requests
+            const { error } = await _supabase
+                .from('leave_requests')
+                .update({ status: status })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // 2. NẾU DUYỆT -> Cập nhật lịch và TỰ ĐỘNG LƯU
+            if (action === 'APPROVE') {
+                // Dùng await để đợi lưu xong mới tải lại danh sách
+                await updateAndAutoSave(empCode, type, dateStr);
+            } else {
+                alert("Đã từ chối yêu cầu!");
+            }
+
+            // 3. Tải lại danh sách yêu cầu
+            await checkPendingRequests();
+            renderRequestList();
+            
+        } catch(e) {
+            console.error(e);
+            alert("Lỗi xử lý: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // --- HÀM CẬP NHẬT VÀ TỰ ĐỘNG LƯU ---
+    async function updateAndAutoSave(empCode, type, dateStr) {
+        const reqDate = new Date(dateStr);
+        const weekStart = new Date(currentWeekStart);
+        
+        // Tính khoảng cách ngày
+        const diffTime = reqDate.getTime() - weekStart.getTime(); 
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        // A. Nếu ngày nằm trong tuần hiện tại (0 -> 6)
+        if (diffDays >= 0 && diffDays <= 6) {
+            const empIndex = employeesData.findIndex(e => e.code === empCode);
+            
+            if (empIndex !== -1) {
+                // 1. Cập nhật mảng dữ liệu trong bộ nhớ
+                employeesData[empIndex].shifts[diffDays] = type;
+                
+                // 2. Vẽ lại bảng để user thấy ngay
+                renderTable();
+                
+                // 3. GỌI HÀM LƯU LỊCH (Tự động trừ phép và lưu DB)
+                // Lưu ý: Hàm saveSchedule() sẽ hiện alert "Đã lưu thành công" khi xong
+                await saveSchedule(); 
+                
+            } else {
+                alert(`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động lưu.`);
+            }
+        } 
+        // B. Nếu ngày nằm ở tuần khác
+        else {
+            alert(`✅ Đã duyệt trạng thái đơn cho ngày ${dateStr}.\n(Ngày này không nằm trong tuần hiện tại nên lịch làm việc không thay đổi).`);
+        }
+    }
+
+    // --- HÀM CẬP NHẬT LỊCH TRÊN GIAO DIỆN ---
+    function updateScheduleTable(empCode, type, dateStr) {
+        // A. Kiểm tra ngày được duyệt có nằm trong tuần đang mở không
+        const reqDate = new Date(dateStr);
+        const weekStart = new Date(currentWeekStart);
+        
+        // Tính khoảng cách ngày (reqDate - weekStart)
+        // Kết quả trả về số mili-giây, chia cho (24h*60p*60s*1000ms) để ra số ngày
+        const diffTime = reqDate.getTime() - weekStart.getTime(); 
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        // B. Nếu ngày nằm trong khoảng từ 0 (Thứ 2) đến 6 (Chủ nhật)
+        if (diffDays >= 0 && diffDays <= 6) {
+            
+            // Tìm nhân viên trong mảng dữ liệu
+            const empIndex = employeesData.findIndex(e => e.code === empCode);
+            
+            if (empIndex !== -1) {
+                // 1. Cập nhật dữ liệu trong mảng (Memory)
+                employeesData[empIndex].shifts[diffDays] = type;
+                
+                // 2. Vẽ lại bảng ngay lập tức để thấy thay đổi
+                renderTable();
+                
+                // 3. Thông báo nhắc nhở quan trọng
+                alert(`✅ Đã duyệt thành công!\n\nLịch của [${empCode}] ngày T${diffDays + 2} (hoặc CN) đã chuyển thành [${type}].\n\n⚠️ LƯU Ý: Bạn cần bấm nút "LƯU LỊCH" để áp dụng thay đổi này vĩnh viễn và trừ phép.`);
+            } else {
+                alert(`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động đổi ca.`);
+            }
+        } else {
+            // Ngày nghỉ nằm ở tuần khác (không phải tuần đang mở)
+            alert(`✅ Đã duyệt đơn cho ngày ${dateStr}.\n(Ngày này không nằm trong tuần hiện tại nên không hiển thị trên bảng).`);
+        }
+    }
+
+    function updateScheduleFromRequest(empCode, type, dateStr) {
+        // Kiểm tra xem ngày nghỉ có nằm trong tuần đang mở không
+        const reqDate = new Date(dateStr);
+        const weekStart = new Date(currentWeekStart);
+        
+        // Tính khoảng cách ngày
+        const diffTime = reqDate - weekStart;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        // Nếu ngày nằm trong khoảng từ 0 (T2) đến 6 (CN)
+        if (diffDays >= 0 && diffDays <= 6) {
+            const empIndex = employeesData.findIndex(e => e.code === empCode);
+            if (empIndex !== -1) {
+                // Cập nhật mảng dữ liệu
+                employeesData[empIndex].shifts[diffDays] = type;
+                
+                // Vẽ lại bảng
+                renderTable();
+                alert(`✅ Đã duyệt và cập nhật lịch cho nhân viên ${empCode} vào ngày T${diffDays + 2} (hoặc CN). \n\n👉 Vui lòng bấm "LƯU LỊCH" để hệ thống tính toán trừ phép.`);
+            } else {
+                alert("✅ Đã duyệt! (Nhân viên này không có trong bảng lịch hiện tại)");
+            }
+        } else {
+            alert(`✅ Đã duyệt! \n(Ngày nghỉ ${dateStr} không nằm trong tuần đang mở nên không hiển thị lên lịch ngay lập tức).`);
+        }
+    }
+	
+	// ================= 11. CẤU HÌNH REALTIME (TỰ ĐỘNG ĐỒNG BỘ) =================
     
-    // Format yyyy-MM-dd để gán vào input type=date
-    const toInputStr = (d) => d.toISOString().split('T')[0];
-    
-    if(!document.getElementById("expFrom").value) document.getElementById("expFrom").value = toInputStr(firstDay);
-    if(!document.getElementById("expTo").value) document.getElementById("expTo").value = toInputStr(lastDay);
-}
+    // Đăng ký theo dõi thay đổi trên bảng leave_requests
+    _supabase
+        .channel('realtime-leave-requests') // Tên kênh (đặt gì cũng được)
+        .on(
+            'postgres_changes', 
+            { event: '*', schema: 'public', table: 'leave_requests' }, 
+            (payload) => {
+                console.log('Có thay đổi dữ liệu:', payload);
+                
+                // 1. Nếu có người Gửi mới (INSERT) -> Phát âm thanh thông báo (Tùy chọn)
+                if (payload.eventType === 'INSERT') {
+                    playNotificationSound();
+                    showToastNotification(`🔔 Có yêu cầu mới từ ${payload.new.emp_name || 'Nhân viên'}!`);
+                }
 
-async function doExportRange() {
-    const fromD = document.getElementById("expFrom").value;
-    const toD = document.getElementById("expTo").value;
-    
-    if (!fromD || !toD) return alert("Vui lòng chọn ngày!");
-    if (fromD > toD) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+                // 2. Cập nhật lại số lượng trên chuông
+                checkPendingRequests();
+                
+                // 3. Nếu đang mở Popup duyệt -> Tải lại danh sách luôn để thấy đơn mới
+                const popup = document.getElementById("approvalPopup");
+                if (popup && popup.style.display === "flex") {
+                    renderRequestList(); // (Hàm này cần sửa nhẹ bên dưới để không bị loop, nhưng tạm thời để đây vẫn ổn)
+                    // Lưu ý: checkPendingRequests() ở trên đã cập nhật biến window.pendingRequests rồi
+                }
+            }
+        )
+        .subscribe();
 
-    const btn = document.querySelector("#exportRangePopup .btn-success");
-    const oldText = btn.innerText;
-    btn.innerText = "Đang xử lý..."; btn.disabled = true;
+    // --- Hàm tạo âm thanh "Ding" nhẹ nhàng ---
+    function playNotificationSound() {
+        // Tạo âm thanh tần số cao ngắn (giả lập tiếng chuông)
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(500, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1000, ctx.currentTime + 0.1);
+        
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+    }
 
-    try {
-        const res = await fetch(`${SCRIPT_URL}?action=exportScheduleRange&group=${encodeURIComponent(currentGroup)}&fromDate=${fromD}&toDate=${toD}`);
-        const json = await res.json();
+    // --- Hàm hiện thông báo góc màn hình (Toast) ---
+    function showToastNotification(mess) {
+        // Tạo thẻ div thông báo
+        const div = document.createElement("div");
+        div.style.position = "fixed";
+        div.style.bottom = "20px";
+        div.style.left = "20px"; // Hiện góc trái dưới
+        div.style.background = "#333";
+        div.style.color = "white";
+        div.style.padding = "12px 20px";
+        div.style.borderRadius = "8px";
+        div.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+        div.style.zIndex = "9999";
+        div.style.fontSize = "14px";
+        div.style.animation = "slideInLeft 0.5s forwards";
+        div.innerText = mess;
+        
+        document.body.appendChild(div);
 
-        if (json.success) {
-            // Tạo Workbook mới
+        // Tự biến mất sau 4 giây
+        setTimeout(() => {
+            div.style.opacity = "0";
+            div.style.transition = "opacity 0.5s";
+            setTimeout(() => div.remove(), 500);
+        }, 4000);
+    }
+
+    // Thêm keyframe animation cho Toast
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `@keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+    document.head.appendChild(styleSheet);
+	
+	// ================= TỰ ĐỘNG LƯU (AUTO-SAVE) =================
+    let autoSaveTimer = null;
+
+    function triggerAutoSave() {
+        const statusSpan = document.getElementById("autoSaveStatus");
+        
+        // 1. Báo hiệu cho người dùng biết có thay đổi
+        if (statusSpan) {
+            statusSpan.innerText = "✍️ Đang chờ lưu...";
+            statusSpan.style.color = "#d35400"; // Màu cam
+        }
+
+        // 2. Xóa bộ đếm cũ (nếu người dùng đang thao tác liên tục)
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
+
+        // 3. Đặt bộ đếm mới: Đợi 3 giây (3000ms) rồi mới Lưu
+        autoSaveTimer = setTimeout(() => {
+            // Gọi hàm lưu với chế độ im lặng (true)
+            saveSchedule(true); 
+        }, 3000);
+    }
+	
+	/* ===========================================================
+	   TÍNH NĂNG: XUẤT EXCEL THEO KHOẢNG THỜI GIAN
+	=========================================================== */
+	
+	function openExportRangePopup() {
+		document.getElementById("exportRangePopup").style.display = "flex";
+		
+		// Mặc định chọn ngày 1 đến cuối tháng hiện tại
+		const date = new Date();
+		const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+		const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+		
+		// Hàm format ngày thành yyyy-MM-dd cho input type="date"
+		const toInputStr = (d) => {
+			const offset = d.getTimezoneOffset();
+			const localDate = new Date(d.getTime() - (offset * 60 * 1000));
+			return localDate.toISOString().split('T')[0];
+		};
+		
+		// Chỉ gán nếu ô đang trống
+		if(!document.getElementById("expFrom").value) document.getElementById("expFrom").value = toInputStr(firstDay);
+		if(!document.getElementById("expTo").value) document.getElementById("expTo").value = toInputStr(lastDay);
+	}
+	
+	// --- CẤU HÌNH MÀU SẮC CHO EXCEL ---
+    const EXCEL_COLORS = {
+        "S": "FFFFFF", "S1": "FFFFFF", "S+": "F8CBAD",
+        "C": "92D050", "HC": "FFFFFF",
+        "NB": "FF0000", "NB/2": "FF0000",
+        "P": "FF0000", "P/2": "FF0000",
+        "CT": "9BC2E6", "NC": "FFFF00",
+        "Ô": "9BC2E6", "Te": "FF0000", "L": "FF0000", "NM": "9BC2E6"
+    };
+
+    // Hàm hỗ trợ: Tìm ngày thứ 2 đầu tuần của một ngày bất kỳ
+    function getWeekStartOfDate(dateObj) {
+        const d = new Date(dateObj);
+        const day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday
+        const monday = new Date(d.setDate(diff));
+        return formatDateISO(monday);
+    }
+
+    async function doExportRange() {
+        const fromDStr = document.getElementById("expFrom").value;
+        const toDStr = document.getElementById("expTo").value;
+        
+        if (!fromDStr || !toDStr) return alert("Vui lòng chọn ngày!");
+        if (fromDStr > toDStr) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+
+		const btn = document.querySelector("#exportRangePopup .btn-s");
+        const oldText = btn.innerText;
+        //btn.innerText = "⏳ Đang xử lý..."; btn.disabled = true;
+		showLoading(true);
+
+        try {
+            // 1. TẠO DANH SÁCH NGÀY & DANH SÁCH TUẦN CẦN LẤY
+            const dateHeaders = []; // ["01/10", "02/10",...]
+            const dateList = [];    // [DateObj, DateObj,...]
+            const weeksNeeded = new Set(); // Chứa các ngày thứ 2 cần query DB
+
+            let curr = new Date(fromDStr);
+            const end = new Date(toDStr);
+
+            while (curr <= end) {
+                dateList.push(new Date(curr));
+                
+                // Header hiển thị
+                const dStr = `${String(curr.getDate()).padStart(2,'0')}/${String(curr.getMonth()+1).padStart(2,'0')}`;
+                dateHeaders.push(dStr);
+
+                // Xác định tuần chứa ngày này
+                weeksNeeded.add(getWeekStartOfDate(curr));
+
+                // Tăng 1 ngày
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            // 2. LẤY DỮ LIỆU TỪ SUPABASE
+            // A. Lấy nhân viên (Active)
+            const empRes = await _supabase.from('employees')
+                .select('code, name, role')
+                .eq('group_name', currentGroup)
+                .eq('status', 'active')
+                .order('code');
+
+            if (empRes.error) throw empRes.error;
+            const employees = empRes.data;
+
+            // B. Lấy lịch của các tuần liên quan
+            const weekArray = Array.from(weeksNeeded);
+            const schRes = await _supabase.from('schedule')
+                .select('week_start, emp_code, shifts')
+                .eq('group_name', currentGroup)
+                .in('week_start', weekArray);
+
+            if (schRes.error) throw schRes.error;
+            const schedules = schRes.data;
+
+            // 3. XỬ LÝ MAP DỮ LIỆU (Để tra cứu cho nhanh)
+            // Key: "2025-12-01_NV01" -> Value: ["S", "C", ...]
+            const scheduleMap = {};
+            schedules.forEach(s => {
+                scheduleMap[`${s.week_start}_${s.emp_code}`] = s.shifts;
+            });
+
+            // 4. TẠO DATA CHO EXCEL
+            // Header
+            const wsData = [
+                ["Mã NV", "Họ Tên", "Chức Vụ", ...dateHeaders]
+            ];
+
+            // Body
+            employees.forEach(emp => {
+                const row = [emp.code, emp.name, emp.role];
+
+                // Duyệt qua từng ngày cần xuất
+                dateList.forEach(dObj => {
+                    const wStart = getWeekStartOfDate(dObj);
+                    const key = `${wStart}_${emp.code}`;
+                    
+                    let cellValue = ""; 
+                    
+                    // Nếu có lịch tuần đó
+                    if (scheduleMap[key]) {
+                        // Tính xem ngày này là thứ mấy trong tuần (0=T2, 6=CN)
+                        const mon = new Date(wStart);
+                        // Số ngày lệch so với thứ 2
+                        const diffTime = dObj.getTime() - mon.getTime();
+                        const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+                        
+                        if (diffDays >= 0 && diffDays <= 6) {
+                            cellValue = scheduleMap[key][diffDays] || "";
+                        }
+                    }
+                    row.push(cellValue);
+                });
+
+                wsData.push(row);
+            });
+
+            // 5. TẠO FILE VÀ TÔ MÀU
             const wb = XLSX.utils.book_new();
-            
-            // Gộp Header và Data thành một mảng lớn (Array of Arrays)
-            const wsData = [json.headers, ...json.data];
-            
-            // Tạo Sheet từ mảng
             const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-            // --- TÙY CHỈNH STYLE (Tô màu) ---
-            // Duyệt qua các ô để tô màu nền dựa vào mã ca
-            // (Phần này dùng thư viện xlsx-js-style)
+            // Tô màu (Sử dụng xlsx-js-style)
             const range = XLSX.utils.decode_range(ws['!ref']);
             for (let R = range.s.r; R <= range.e.r; ++R) {
                 for (let C = range.s.c; C <= range.e.c; ++C) {
-                    const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
-                    const cell = ws[cellAddress];
-                    
-                    if (!cell) continue;
+                    const cellRef = XLSX.utils.encode_cell({r: R, c: C});
+                    if (!ws[cellRef]) continue;
 
-                    // Style cho Header (Dòng 0)
+                    const cell = ws[cellRef];
+                    
+                    // Style chung: Viền đen mỏng
+                    const baseStyle = {
+                        border: {
+                            top: { style: "thin" }, bottom: { style: "thin" },
+                            left: { style: "thin" }, right: { style: "thin" }
+                        },
+                        font: { name: "Arial", sz: 11 }
+                    };
+
+                    // HEADER
                     if (R === 0) {
-                        cell.s = { font: { bold: true }, fill: { fgColor: { rgb: "EEEEEE" } }, border: { bottom: { style: "thin" } } };
+                        cell.s = { 
+                            ...baseStyle,
+                            fill: { fgColor: { rgb: "EEEEEE" } },
+                            font: { bold: true }
+                        };
                     } 
-                    // Style cho Data (Các dòng sau)
+                    // DATA
                     else {
-                        // Cột 0,1,2 là thông tin nhân viên, C > 2 là lịch
+                        // 3 cột đầu căn trái, còn lại căn giữa
                         if (C > 2) {
-                            const val = String(cell.v).trim();
-                            // Map màu tương ứng (Lấy từ biến COLOR_MAP có sẵn trong code cũ)
-                            // Lưu ý: COLOR_MAP trong code cũ key là class (ca-s), ta cần map từ Code (S)
-                            // Ta làm map nhanh ở đây:
-                            let color = "FFFFFF"; // Mặc định trắng
-                            if (val === "S" || val === "S1") color = "FFF2AC";
-                            else if (val === "C") color = "B7FF9D";
-                            else if (val === "HC") color = "FFB3B3";
-                            else if (val === "NB" || val.includes("NB")) color = "FF7A7A";
-                            else if (val === "P" || val.includes("P")) color = "FF6666";
+                            baseStyle.alignment = { horizontal: "center" };
+                            const val = String(cell.v).toUpperCase().trim();
                             
-                            // Gán màu nền
-                            if (color !== "FFFFFF") {
-                                cell.s = { fill: { fgColor: { rgb: color } }, border: { top: {style:"thin"}, bottom:{style:"thin"}, left:{style:"thin"}, right:{style:"thin"} } };
-                            } else {
-                                // Viền cho ô thường
-                                cell.s = { border: { top: {style:"thin"}, bottom:{style:"thin"}, left:{style:"thin"}, right:{style:"thin"} } };
-                            }
+                            // Tìm màu trong map
+                            let hexColor = "FFFFFF";
+                            
+                            // Check chính xác hoặc check chứa (cho NB/2...)
+                            if (EXCEL_COLORS[val]) hexColor = EXCEL_COLORS[val];
+                            else if (val.includes("NB")) hexColor = EXCEL_COLORS["NB"];
+                            else if (val.includes("P")) hexColor = EXCEL_COLORS["P"];
+							else if (val.includes("TE")) hexColor = EXCEL_COLORS["TE"] || EXCEL_COLORS["Te"] || "FFC0CB";
+
+                            cell.s = {
+                                ...baseStyle,
+                                fill: { fgColor: { rgb: hexColor } }
+                            };
+                        } else {
+                            cell.s = baseStyle; // Cột thông tin nhân viên không tô màu
                         }
                     }
                 }
             }
 
             // Chỉnh độ rộng cột
-            const wscols = [{wch:10}, {wch:20}, {wch:15}]; // 3 cột đầu
-            // Các cột ngày cho nhỏ lại
-            for(let k=3; k<json.headers.length; k++) wscols.push({wch:5});
+            const wscols = [{wch:10}, {wch:25}, {wch:15}]; // Mã, Tên, CV
+            for(let i=0; i<dateHeaders.length; i++) wscols.push({wch: 5}); // Cột ngày nhỏ lại
             ws['!cols'] = wscols;
 
             XLSX.utils.book_append_sheet(wb, ws, "BaoCaoLich");
-            XLSX.writeFile(wb, `Lich_${fromD}_${toD}.xlsx`);
+            XLSX.writeFile(wb, `Lich_${currentGroup}_${fromDStr}_${toDStr}.xlsx`);
             
             document.getElementById("exportRangePopup").style.display = "none";
+
+        } catch(e) {
+            console.error(e);
+            alert("Lỗi xuất file: " + e.message);
+        } finally {
+            btn.innerText = oldText; btn.disabled = false;
         }
-    } catch(e) {
-        console.error(e);
-        alert("Lỗi khi xuất file!");
-    } finally {
-        btn.innerText = oldText; btn.disabled = false;
+		showLoading(false);
     }
-}
+	
+	// --- HÀM KIỂM TRA SỐ DƯ AN TOÀN ---
+    function checkBalanceSafe(rIdx, code) {
+        const emp = employeesData[rIdx];
+        if (!emp) return { ok: true };
+
+        // 1. Xác định loại và giá trị khấu trừ
+        let cost = 0;
+        let typeLabel = "";
+        let available = 0;
+
+        // Chỉ kiểm tra nếu là Phép (P) hoặc Nghỉ Bù (NB)
+        if (code.includes("P") && !code.includes("S")) { // Tránh nhầm với S+
+            typeLabel = "Phép năm (P)";
+            cost = (code.includes("/2") || code.includes("0.5")) ? 0.5 : 1.0;
+            available = (Number(emp.pn) || 0) + (Number(emp.pn_old) || 0);
+        } 
+        else if (code.includes("NB")) {
+            typeLabel = "Nghỉ bù (NB)";
+            cost = (code.includes("/2") || code.includes("0.5")) ? 0.5 : 1.0;
+            available = (Number(emp.nb) || 0) + (Number(emp.nb_old) || 0);
+        } 
+        else {
+            // Các ca thường (S, C, HC...) không cần check
+            return { ok: true };
+        }
+
+        // 2. So sánh
+        // Làm tròn số để tránh lỗi thập phân (VD: 0.99999 < 1)
+        available = parseFloat(available.toFixed(2));
+
+        if (available < cost) {
+            return { 
+                ok: false, 
+                msg: `⚠️ CẢNH BÁO SỐ DƯ!\n\n- Nhân viên: ${emp.name}\n- Loại: ${typeLabel}\n- Hiện có: ${available}\n- Cần trừ: ${cost}\n\n👉 Nếu tiếp tục, số dư sẽ bị ÂM (${(available - cost).toFixed(1)}).`
+            };
+        }
+
+        return { ok: true };
+    }
+	
+	// ============================================================
+    // BỘ XỬ LÝ SỰ KIỆN DUY NHẤT (FINAL FIXED)
+    // ============================================================
+
+    // Khai báo lại bằng var để tránh lỗi trùng lặp nếu lỡ có
+    var isDragging = false;
+    var startCell = null;
+    var copiedShift = null;
+
+    // 1. XỬ LÝ CHUỘT
+    const tableGrid = document.getElementById("scheduleTable");
+
+    tableGrid.addEventListener("mousedown", (e) => {
+        if (typeof isSwapMode !== 'undefined' && isSwapMode) return; 
+
+        const cell = e.target.closest(".shift");
+        if (!cell) {
+            if (!e.target.closest("#shiftMenu")) clearSelection();
+            return;
+        }
+
+        if (e.button === 0) { // Chuột trái
+            isDragging = true;
+            startCell = cell;
+            if (!e.ctrlKey) clearSelection(); 
+            toggleSelect(cell, true);
+            // Lưu ý: Không dùng e.preventDefault() ở đây để giữ focus cho sự kiện phím
+        }
+    });
+
+    tableGrid.addEventListener("mouseover", (e) => {
+        if (!isDragging || !startCell) return;
+        const currentCell = e.target.closest(".shift");
+        if (currentCell) selectRange(startCell, currentCell);
+    });
+
+    window.addEventListener("mouseup", () => {
+        isDragging = false;
+    });
+
+    // ============================================================
+    // BỘ XỬ LÝ SỰ KIỆN BÀN PHÍM (FINAL - CÓ CẢNH BÁO SỐ DƯ KHI PASTE)
+    // ============================================================
+    document.addEventListener("keydown", async (e) => {
+        if (typeof isSwapMode !== 'undefined' && isSwapMode) return; 
+
+        // --- A. DELETE (XÓA) ---
+        if (e.key === "Delete") {
+            let targets = Array.from(document.querySelectorAll(".cell-multi-selected"));
+            if (targets.length === 0) {
+                const single = document.querySelector(".selected");
+                if (single) targets = [single];
+            }
+
+            if (targets.length > 0) {
+                e.preventDefault();
+                const tbody = document.getElementById("scheduleBody");
+                const allRows = Array.from(tbody.children);
+                let hasChange = false;
+
+                targets.forEach(cell => {
+                    try {
+                        cell.innerText = "";
+                        cell.className = "shift"; 
+                        cell.removeAttribute("style");
+                        if (targets.length > 1) cell.classList.add("cell-multi-selected");
+                        else cell.classList.add("selected");
+
+                        const tr = cell.closest("tr");
+                        if (tr) {
+                            const rIdx = allRows.indexOf(tr);
+                            const cIdx = Array.from(tr.children).indexOf(cell) - 4; 
+                            if (employeesData[rIdx] && cIdx >= 0 && cIdx < 7) {
+                                employeesData[rIdx].shifts[cIdx] = "";
+                                hasChange = true;
+                            }
+                        }
+                    } catch (err) { console.error(err); }
+                });
+                if (hasChange) triggerAutoSave();
+            }
+        }
+
+        // --- B. COPY (CTRL + C) ---
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+            const activeCell = document.querySelector(".selected") || document.querySelector(".cell-multi-selected");
+            if (!activeCell) return;
+
+            if (document.querySelector(".copy-source")) 
+                document.querySelector(".copy-source").classList.remove("copy-source");
+
+            const code = activeCell.innerText.trim();
+            const conf = SHIFTS.find(s => s.code === code) || {cls:""};
+            
+            copiedShift = { code: code, cls: conf.cls };
+            activeCell.classList.add("copy-source");
+            
+            try { await navigator.clipboard.writeText(code); } catch(err) { fallbackCopyTextToClipboard(code); }
+        }
+
+        // --- C. PASTE (CTRL + V) [NÂNG CẤP: FILL + CẢNH BÁO SỐ DƯ] ---
+        if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
+            e.preventDefault();
+            
+            // 1. Xác định vùng đích
+            let targetCells = Array.from(document.querySelectorAll(".cell-multi-selected"));
+            let startCell = document.querySelector(".selected");
+            
+            if (targetCells.length === 0 && startCell) targetCells = [startCell];
+            else if (targetCells.length > 0 && !startCell) startCell = targetCells[0];
+
+            if (targetCells.length === 0) return;
+
+            try {
+                // 2. Lấy dữ liệu
+                let text = "";
+                try { text = await navigator.clipboard.readText(); } catch (err) {}
+                if (!text && copiedShift) text = copiedShift.code;
+                if (!text) return;
+
+                const rowsStr = text.trim().split(/\r?\n/);
+                const isSingleValue = rowsStr.length === 1 && rowsStr[0].split('\t').length === 1;
+                
+                const tbody = document.getElementById("scheduleBody");
+                const allRows = Array.from(tbody.children);
+
+                // --- BƯỚC QUÉT TRƯỚC (PRE-CHECK): TÌM RỦI RO ---
+                let warningList = new Set(); // Dùng Set để tránh báo trùng tên nhân viên
+                let hasBalanceIssue = false;
+
+                // Hàm check nhỏ để dùng lại
+                const checkRisk = (rIdx, val) => {
+                    const cleanVal = val.trim().toUpperCase();
+                    // Chỉ check nếu dán P hoặc NB
+                    if (cleanVal.includes("P") || cleanVal.includes("NB")) {
+                        const check = checkBalanceSafe(rIdx, cleanVal);
+                        if (!check.ok) {
+                            hasBalanceIssue = true;
+                            // Lấy tên nhân viên để báo cáo
+                            const empName = employeesData[rIdx].name;
+                            warningList.add(empName);
+                        }
+                    }
+                }
+
+                // TRƯỜNG HỢP 1: FILL (Copy 1 ô -> Paste nhiều ô)
+                if (isSingleValue && targetCells.length > 1) {
+                    const val = text.trim();
+                    targetCells.forEach(cell => {
+                        const tr = cell.closest("tr");
+                        if(tr) {
+                            const rIdx = allRows.indexOf(tr);
+                            checkRisk(rIdx, val);
+                        }
+                    });
+                } 
+                // TRƯỜNG HỢP 2: PASTE BÌNH THƯỜNG (Paste bảng/dòng)
+                else {
+                    const startTr = startCell.closest("tr");
+                    const startRIdx = allRows.indexOf(startTr);
+                    const startCIdx = Array.from(startTr.children).indexOf(startCell) - 4; 
+
+                    rowsStr.forEach((rowStr, i) => {
+                        const cols = rowStr.split('\t');
+                        const rIdx = startRIdx + i;
+                        if (rIdx >= employeesData.length) return;
+
+                        cols.forEach((val, j) => {
+                            const cIdx = startCIdx + j;
+                            if (cIdx >= 0 && cIdx < 7) {
+                                checkRisk(rIdx, val);
+                            }
+                        });
+                    });
+                }
+
+                // --- HIỂN THỊ CẢNH BÁO NẾU CÓ ---
+                if (hasBalanceIssue) {
+                    const names = Array.from(warningList).join(", ");
+                    const msg = `⚠️ CẢNH BÁO!\n\nCác nhân viên sau KHÔNG ĐỦ phép/bù để thực hiện thao tác này:\n👉 ${names}\n\nNếu tiếp tục, số dư sẽ bị ÂM. Bạn có chắc chắn muốn dán không?`;
+                    
+                    if (!confirm(msg)) return; // Nếu chọn Cancel thì dừng ngay, không dán gì cả
+                }
+
+                // --- THỰC HIỆN PASTE (NẾU QUA ĐƯỢC CẢNH BÁO) ---
+                let hasChange = false;
+
+                // Logic Paste 1: FILL
+                if (isSingleValue && targetCells.length > 1) {
+                    const val = text.trim().toUpperCase();
+                    const conf = SHIFTS.find(s => s.code === val) || { cls: "", code: val };
+
+                    targetCells.forEach(cell => {
+                        try {
+                            const tr = cell.closest("tr");
+                            const rIdx = allRows.indexOf(tr);
+                            const cIdx = Array.from(tr.children).indexOf(cell) - 4;
+
+                            // Cập nhật UI
+                            cell.innerText = conf.code;
+                            cell.className = `shift ${conf.cls} cell-multi-selected`;
+                            cell.removeAttribute("style");
+                            
+                            // Cập nhật Data
+                            if (employeesData[rIdx] && cIdx >= 0 && cIdx < 7) {
+                                employeesData[rIdx].shifts[cIdx] = conf.code;
+                                hasChange = true;
+                            }
+                        } catch (err) { console.error(err); }
+                    });
+                }
+                // Logic Paste 2: NORMAL
+                else {
+                    const startTr = startCell.closest("tr");
+                    const startRIdx = allRows.indexOf(startTr);
+                    const startCIdx = Array.from(startTr.children).indexOf(startCell) - 4; 
+
+                    rowsStr.forEach((rowStr, i) => {
+                        const cols = rowStr.split('\t');
+                        const rIdx = startRIdx + i;
+                        if (rIdx >= employeesData.length) return;
+
+                        cols.forEach((val, j) => {
+                            const cIdx = startCIdx + j;
+                            if (cIdx >= 0 && cIdx < 7) {
+                                let rawVal = val.trim().toUpperCase();
+                                const conf = SHIFTS.find(s => s.code === rawVal) || { cls: "", code: rawVal };
+                                
+                                employeesData[rIdx].shifts[cIdx] = conf.code;
+                                hasChange = true;
+                                
+                                const targetRow = allRows[rIdx];
+                                const targetCell = targetRow.children[cIdx + 4];
+                                if (targetCell) {
+                                    targetCell.innerText = conf.code;
+                                    targetCell.className = `shift ${conf.cls}`;
+                                    targetCell.removeAttribute("style");
+                                    // Giữ selected nếu đang chọn nhiều
+                                    if(targetCells.length > 1) targetCell.classList.add('cell-multi-selected');
+                                    
+                                    targetCell.animate([{ backgroundColor: '#ffffcc' }, { backgroundColor: 'transparent' }], { duration: 500 });
+                                }
+                            }
+                        });
+                    });
+                }
+                
+                if (hasChange) triggerAutoSave();
+
+            } catch (err) { console.error("Lỗi paste:", err); }
+        }
+
+        // --- ESCAPE ---
+        if (e.key === "Escape") {
+            if (document.querySelector(".copy-source")) 
+                document.querySelector(".copy-source").classList.remove("copy-source");
+            clearSelection();
+            document.getElementById("shiftMenu").style.display = "none";
+        }
+    });
+
+    // Hàm hỗ trợ
+    function selectRange(start, end) {
+        clearSelection();
+        const startTr = start.closest("tr");
+        const endTr = end.closest("tr");
+        const tbody = document.getElementById("scheduleBody");
+        const allRows = Array.from(tbody.children);
+        
+        const startR = allRows.indexOf(startTr);
+        const endR = allRows.indexOf(endTr);
+        const getColIdx = (c) => Array.from(c.parentNode.children).indexOf(c);
+        const startC = getColIdx(start);
+        const endC = getColIdx(end);
+
+        const minR = Math.min(startR, endR); const maxR = Math.max(startR, endR);
+        const minC = Math.min(startC, endC); const maxC = Math.max(startC, endC);
+
+        for (let r = minR; r <= maxR; r++) {
+            const row = allRows[r];
+            if (!row) continue;
+            for (let c = minC; c <= maxC; c++) {
+                const cell = row.children[c];
+                if (cell && cell.classList.contains("shift")) toggleSelect(cell, true);
+            }
+        }
+    }
+
+    function toggleSelect(cell, force) {
+        if (force) cell.classList.add("cell-multi-selected");
+        else cell.classList.remove("cell-multi-selected");
+    }
+
+    function clearSelection() {
+        document.querySelectorAll(".cell-multi-selected").forEach(c => c.classList.remove("cell-multi-selected"));
+        document.querySelectorAll(".selected").forEach(c => c.classList.remove("selected"));
+    }
+
+    function fallbackCopyTextToClipboard(text) {
+        try {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; 
+            textArea.style.left = "-9999px"; 
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+        } catch (err) {}
+    }
+	
+	// ============================================================
+    // TÍNH NĂNG HIGHLIGHT DÒNG & CỘT (CROSSHAIR)
+    // ============================================================
+    const tableEl = document.getElementById("scheduleTable");
+    let lastHighlightRow = -1;
+    let lastHighlightCol = -1;
+
+    // 1. Lắng nghe sự kiện di chuột vào bảng
+    tableEl.addEventListener("mouseover", (e) => {
+		// CHỈ CHẠY NẾU TÍNH NĂNG ĐƯỢC BẬT
+        if (!isCrosshairEnabled) return;
+	
+        // Chỉ xử lý nếu chuột chạm vào ô dữ liệu (TD)
+        const cell = e.target.closest("td");
+        if (!cell) return;
+
+        const row = cell.parentElement;
+        const rowIndex = row.rowIndex;
+        const colIndex = cell.cellIndex;
+
+        // Nếu vị trí chuột chưa thay đổi thì không làm gì (Tối ưu hiệu năng)
+        if (rowIndex === lastHighlightRow && colIndex === lastHighlightCol) return;
+
+        // Xóa highlight cũ
+        clearHighlight();
+
+        // Ghi nhận vị trí mới
+        lastHighlightRow = rowIndex;
+        lastHighlightCol = colIndex;
+
+        // --- TÔ MÀU DÒNG (ROW) ---
+        // Thêm class cho tất cả các ô trong dòng hiện tại
+        // (Array.from để duyệt qua HTMLCollection)
+        Array.from(row.children).forEach(td => {
+            td.classList.add("crosshair-highlight");
+        });
+
+        // --- TÔ MÀU CỘT (COLUMN) ---
+        // Duyệt qua tất cả các dòng để tìm ô cùng cột
+        const rows = tableEl.rows;
+        for (let i = 0; i < rows.length; i++) {
+            const cellAtCol = rows[i].cells[colIndex];
+            // Chỉ tô màu nếu ô tồn tại
+            if (cellAtCol) {
+                cellAtCol.classList.add("crosshair-highlight");
+            }
+        }
+
+        // --- TÔ MÀU Ô TRUNG TÂM (CENTER) ---
+        cell.classList.remove("crosshair-highlight"); // Xóa lớp mờ
+        cell.classList.add("crosshair-center");       // Thêm lớp đậm
+    });
+
+    // 2. Khi chuột rời khỏi bảng thì xóa sạch
+    tableEl.addEventListener("mouseleave", () => {
+        clearHighlight();
+        lastHighlightRow = -1;
+        lastHighlightCol = -1;
+    });
+
+    // Hàm dọn dẹp (Xóa class khỏi tất cả các ô)
+    function clearHighlight() {
+        // Tìm các ô đang có class highlight và xóa đi
+        const highlighted = tableEl.querySelectorAll(".crosshair-highlight, .crosshair-center");
+        highlighted.forEach(el => {
+            el.classList.remove("crosshair-highlight");
+            el.classList.remove("crosshair-center");
+        });
+    }
+	
+	// ============================================================
+    // LOGIC CÀI ĐẶT (SETTINGS)
+    // ============================================================
+
+    // 1. Khởi tạo cài đặt khi tải trang
+    function initSettings() {
+        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+        
+        if (savedSettings && savedSettings.isCrosshairEnabled !== undefined) {
+            isCrosshairEnabled = savedSettings.isCrosshairEnabled;
+        } else {
+            // Mặc định là bật nếu chưa từng lưu
+            isCrosshairEnabled = true;
+        }
+
+        // Cập nhật trạng thái switch
+        const toggle = document.getElementById("toggleCrosshair");
+        if (toggle) {
+            toggle.checked = isCrosshairEnabled;
+        }
+    }
+
+    // 2. Hàm xử lý khi người dùng bật/tắt switch
+    function toggleCrosshairFeature(isChecked) {
+        isCrosshairEnabled = isChecked;
+        
+        // Nếu tắt, phải dọn dẹp highlight đang có ngay lập tức
+        if (!isChecked) {
+            clearHighlight();
+        }
+
+        // Lưu trạng thái mới vào localStorage
+        const settings = { isCrosshairEnabled: isChecked };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+        showToast("Đã " + (isChecked ? "Bật" : "Tắt") + " Highlight Dòng & Cột!");
+    }
+	
+	initSettings();
+	
+	// ============================================================
+    // LOGIC BẢNG TỔNG HỢP CHI TIẾT (NOTE)
+    // ============================================================
+
+    // 1. CẤU HÌNH CÁC DÒNG CẦN ĐẾM (Giống hệt trong ảnh)
+    const SUMMARY_ROWS = [
+        { title: "Thứ 2 Ca S+: Chào cờ", codes: ["S+"] }, // Cần có mã S+ trong hệ thống hoặc đếm S vào T2
+        { title: "Ca S1: (06h30-14h30). Nghỉ giữa ca 45 phút", codes: ["S1"] },
+        { title: "Ca S: (8h00-16h00). Nghỉ giữa ca 45 phút", codes: ["S"] },
+        { title: "Ca C: (15h00-23h00). Nghỉ giữa ca 45 phút", codes: ["C"] },
+        { title: "Ca HC: (8h00-17h00). Nghỉ giữa ca 60 phút", codes: ["HC"] },
+        { title: "Nghỉ nữa ca, buổi: P/2, NB/2", codes: ["P/2", "NB/2", "0.5"] },
+        { title: "Nghỉ ca: NC", codes: ["NC"] },
+        { title: "Nghỉ phép: P, NB", codes: ["P", "NB"] },
+        { title: "Nghỉ không lương: KL", codes: ["KL"] },
+        { title: "Nghỉ Lễ: L", codes: ["L"] },
+        { title: "Nghỉ: Ốm, Con ốm: Ô", codes: ["Ô", "CO"] }
+    ];
+
+    // 2. HÀM TÍNH TOÁN VÀ VẼ BẢNG
+    function updateDetailSummary() {
+        const tbody = document.getElementById("summaryBody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        // Khởi tạo bộ đếm: Mảng 2 chiều [Số dòng cấu hình][7 ngày]
+        // countMap[rowIndex][dayIndex] = số lượng
+        let countMap = Array(SUMMARY_ROWS.length).fill(0).map(() => Array(7).fill(0));
+
+        // Duyệt qua dữ liệu nhân viên để đếm
+        employeesData.forEach(emp => {
+            emp.shifts.forEach((code, dayIdx) => {
+                if (dayIdx >= 0 && dayIdx < 7 && code) {
+                    const cleanCode = code.trim().toUpperCase();
+                    
+                    // Tìm xem code này thuộc dòng nào trong cấu hình
+                    SUMMARY_ROWS.forEach((rowConfig, rIdx) => {
+                        // Logic đặc biệt cho dòng 1 (S+ chào cờ thứ 2)
+                        if (rIdx === 0 && dayIdx === 0 && (cleanCode === 'S' || cleanCode === 'S+')) {
+                             countMap[rIdx][dayIdx]++;
+                        }
+                        // Logic các dòng khác
+                        else if (rowConfig.codes.includes(cleanCode)) {
+                             // Trừ trường hợp S vào thứ 2 đã tính cho dòng 1 rồi thì thôi dòng 3
+                             if (rIdx === 2 && dayIdx === 0 && cleanCode === 'S') return; 
+                             
+                             countMap[rIdx][dayIdx]++;
+                        }
+                    });
+                }
+            });
+        });
+
+        // Vẽ dòng ra HTML
+        SUMMARY_ROWS.forEach((rowConfig, rIdx) => {
+            const tr = document.createElement("tr");
+            
+            // Cột tiêu đề
+            let html = `<td style="text-align: left; padding: 8px; border: 1px solid #ddd; font-weight: 500;">${rowConfig.title}</td>`;
+            
+            // 7 cột ngày
+            for (let d = 0; d < 7; d++) {
+                const val = countMap[rIdx][d];
+                // Nếu > 0 thì in đậm cho dễ nhìn, = 0 thì để nhạt
+                const style = val > 0 ? "font-weight:bold; color:#333;" : "color:#ccc;";
+                html += `<td style="text-align: center; border: 1px solid #ddd; ${style}">${val}</td>`;
+            }
+            
+            tr.innerHTML = html;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 3. HÀM BẬT/TẮT XỔ XUỐNG
+    function toggleSummaryTable() {
+        const container = document.getElementById("summaryContainer");
+        const icon = document.getElementById("summaryIcon");
+        
+        if (container.style.display === "none") {
+            container.style.display = "block";
+            icon.innerText = "▲"; // Mũi tên lên
+            // Cập nhật số liệu ngay khi mở ra
+            updateDetailSummary();
+        } else {
+            container.style.display = "none";
+            icon.innerText = "▼"; // Mũi tên xuống
+        }
+    }
+	
+	// --- DANH SÁCH CÁC MÃ ĐƯỢC COI LÀ "NGHỈ" ---
+	// Nếu ca làm việc KHÔNG thuộc nhóm này thì tính là "Làm việc"
+	const REST_CODES = ["NC"];
+
+	function checkContinuousWorkWarning() {
+		const violators = [];
+
+		employeesData.forEach(emp => {
+			let workDaysCount = 0;
+
+			// Duyệt qua 7 ngày trong tuần của nhân viên
+			emp.shifts.forEach(shiftCode => {
+				if (!shiftCode) return; // Ô trống tính là không làm (hoặc tùy bạn)
+
+				// Kiểm tra xem ca này có phải là ca NGHỈ không
+				// Dùng startWith để bắt cả P/2, NB/2...
+				const isRestDay = REST_CODES.some(rest => shiftCode.startsWith(rest));
+
+				// Nếu KHÔNG PHẢI ca nghỉ -> Tính là ngày làm việc (S, C, HC, CT...)
+				if (!isRestDay) {
+					workDaysCount++;
+				}
+			});
+
+			// Nếu làm đủ 7 ngày (Không có ngày nghỉ nào)
+			if (workDaysCount >= 7) {
+				violators.push(`- ${emp.name} (Làm ${workDaysCount} ngày)`);
+			}
+		});
+
+		return violators;
+	}
 </script>
 </body>
 </html>

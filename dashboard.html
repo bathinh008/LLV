@@ -3,201 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard</title>
+<title>HỆ THỐNG QUẢN TRỊ</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-    :root {
-        --primary-color: #4a90e2;
-        --success-color: #2ecc71;
-        --danger-color: #e74c3c;
-        --text-color: #2c3e50;
-        --bg-color: #f0f2f5;
-        --card-bg: #ffffff;
-    }
+    /* ================= STYLE CHUẨN (ĐỒNG BỘ) ================= */
+    :root { --primary: #4a90e2; --success: #2ecc71; --warning: #f39c12; --danger: #e74c3c; --bg: #f0f2f5; --border: #d1d5db; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #2c3e50; margin: 0; padding: 20px; }
 
-    body { 
-        font-family: 'Inter', sans-serif; 
-        background: var(--bg-color); 
-        color: var(--text-color);
-        margin: 0; 
-        padding: 20px; 
-    }
+    /* Khung chính */
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); min-height: 85vh; }
     
-    /* Container chính dạng Card lớn */
-    .container { 
-        max-width: 1200px; 
-        margin: 0 auto; 
-        background: var(--card-bg); 
-        padding: 30px; 
-        border-radius: 16px; 
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
-    }
+    /* Header */
+    .dashboard-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
+    h2 { margin: 0; color: var(--primary); font-weight: 700; font-size: 24px; text-transform: uppercase; }
+    .quick-access { display: flex; gap: 10px; align-items: center; background: #f8f9fa; padding: 8px 15px; border-radius: 10px; border: 1px solid #e5e7eb; }
     
-    /* Header Area */
-    .dashboard-header {
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center;
-        border-bottom: 1px solid #eee; 
-        padding-bottom: 20px; 
-        margin-bottom: 25px;
-    }
-    
-    h2 { 
-        margin: 0; 
-        color: var(--primary-color); 
-        font-weight: 700; 
-        letter-spacing: -0.5px;
-    }
-
-    .user-info-bar { 
-        font-size: 14px; 
-        color: #666; 
-        margin-top: 5px; 
-    }
-    
-    /* Quick Access Toolbar */
-    .quick-access {
-        display: flex; 
-        gap: 10px; 
-        align-items: center; 
-        background: #f8f9fa; 
-        padding: 8px 15px; 
-        border-radius: 10px;
-        border: 1px solid #e1e4e8;
-    }
-    
-    /* Tabs hiện đại */
-    .tabs { 
-        display: flex; 
-        border-bottom: 2px solid #f1f1f1; 
-        margin-bottom: 25px; 
-    }
-    .tab { 
-        padding: 12px 25px; 
-        cursor: pointer; 
-        font-weight: 600; 
-        color: #9ca3af; 
-        transition: 0.3s; 
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-    }
-    .tab:hover { color: var(--primary-color); }
-    .tab.active { 
-        color: var(--primary-color); 
-        border-bottom: 2px solid var(--primary-color); 
-    }
+    /* Tabs */
+    .tabs { display: flex; border-bottom: 2px solid #f1f1f1; margin-bottom: 25px; }
+    .tab { padding: 12px 25px; cursor: pointer; font-weight: 600; color: #9ca3af; transition: 0.3s; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab:hover { color: var(--primary); }
+    .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
     .tab-content { display: none; animation: fadeIn 0.3s; }
     .tab-content.active { display: block; }
 
-    /* Tables Style (Giống Scheduler) */
-    table { 
-        width: 100%; 
-        border-collapse: separate; 
-        border-spacing: 0; 
-        margin-top: 15px; 
-        border: 1px solid #eee;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    th, td { 
-        padding: 12px 15px; 
-        text-align: left; 
-        border-bottom: 1px solid #eee; 
-    }
-    th { 
-        background: #f9fafb; 
-        color: #4b5563; 
-        font-weight: 700; 
-        text-transform: uppercase; 
-        font-size: 12px;
-        border-bottom: 2px solid #eee;
-    }
+    /* Table */
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px solid #f0f0f0; }
+    th { background: #f9fafb; color: #4b5563; font-weight: 700; font-size: 12px; border-bottom: 2px solid var(--border); text-transform: uppercase; }
     tr:last-child td { border-bottom: none; }
+    th:last-child, td:last-child { border-right: none; }
     tr:hover { background: #f9fbfc; }
     
-    /* Buttons & Inputs */
-    button { 
-        padding: 9px 16px; 
-        border: none; 
-        border-radius: 8px; 
-        cursor: pointer; 
-        transition: 0.2s; 
-        font-weight: 600; 
-        font-family: 'Inter', sans-serif;
-        font-size: 13px;
-        display: inline-flex; align-items: center; gap: 5px;
-    }
+    /* UI Elements */
+    button { padding: 9px 16px; border: none; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: 600; font-family: 'Inter'; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
     button:hover { transform: translateY(-1px); filter: brightness(105%); }
+    .btn-p { background: var(--primary); color: white; }
+    .btn-d { background: var(--danger); color: white; }
+    .btn-e { background: #f39c12; color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
     
-    .btn-primary { background: var(--primary-color); color: white; }
-    .btn-success { background: var(--success-color); color: white; }
-    .btn-danger  { background: var(--danger-color); color: white; }
-    .btn-edit    { background: #f39c12; color: white; }
-    .btn-sm      { padding: 6px 12px; font-size: 12px; }
+    input, select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; width: 100%; box-sizing: border-box; margin-bottom: 15px; }
+    label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; }
+
+    /* Popup & List */
+    .popup-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.6); backdrop-filter: blur(2px); z-index: 1000; justify-content: center; align-items: center; }
+    .popup-box { background: white; padding: 0 25px 25px 25px; width: 450px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: slideIn 0.3s; }
+    .popup-box h3 { background: var(--primary); color: white; margin: 0 -25px 20px -25px; padding: 15px 25px; border-radius: 16px 16px 0 0; font-size: 16px; }
     
-    select, input { 
-        padding: 10px; 
-        border: 1px solid #d1d5db; 
-        border-radius: 8px; 
-        font-family: 'Inter', sans-serif;
-    }
-    select:focus, input:focus { outline: none; border-color: var(--primary-color); }
+    /* Danh sách nhóm đẹp */
+    .group-list-container { max-height: 150px; overflow-y: auto; border-top: 1px solid #eee; padding-top: 5px; }
+    .group-item { display: flex; align-items: center; padding: 8px; border-radius: 6px; cursor: pointer; border-bottom: 1px solid #f9f9f9; }
+    .group-item:hover { background: #e0f2fe; }
+    .group-item input { width: 16px; height: 16px; margin: 0 10px 0 0; cursor: pointer; }
 
-    /* === POPUP FIXED (Bản vá lỗi tiêu đề) === */
-    .popup-bg { 
-        display: none; 
-        position: fixed; 
-        top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(44, 62, 80, 0.6); 
-        backdrop-filter: blur(2px);
-        justify-content: center; align-items: center; 
-        z-index: 1000; 
-    }
-    .popup-box { 
-        background: white; 
-        /* Padding top = 0 để tiêu đề sát mép */
-        padding: 0 25px 25px 25px; 
-        width: 450px; 
-        border-radius: 16px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-        animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    }
-    .popup-box h3 { 
-        background: var(--primary-color); 
-        color: white; 
-        /* Kéo tràn sang 2 bên, không kéo lên trên */
-        margin: 0 -25px 20px -25px; 
-        padding: 15px 25px;
-        border-radius: 16px 16px 0 0;
-        font-size: 16px;
-    }
-    
-    @keyframes slideIn {
-        from { transform: translateY(-20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-
-    .popup-box input, .popup-box select { width: 100%; margin: 5px 0 15px; box-sizing: border-box; }
-    .popup-footer { text-align: right; margin-top: 10px; }
-
-    /* Multi-select Style */
-    .multi-select-box { 
-        border: 1px solid #d1d5db; 
-        padding: 10px; 
-        max-height: 120px; 
-        overflow-y: auto; 
-        margin-bottom: 15px; 
-        border-radius: 8px; 
-        background: #f9fafb;
-    }
-    .multi-select-box label { display: block; margin-bottom: 5px; cursor: pointer; font-size: 13px; }
-    .multi-select-box input { width: auto; margin-right: 8px; }
-
-    #loading { display: none; text-align: center; color: #666; margin-top: 20px; font-style: italic; }
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .hidden { display: none !important; }
+    #loading { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 10px 20px; border-radius: 30px; display: none; z-index: 2000; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+	
+	/* --- STYLE CHO BADGE PHÂN QUYỀN (MỚI) --- */
+    .role-badge { 
+        padding: 5px 10px; 
+        border-radius: 20px; /* Bo tròn kiểu viên thuốc */
+        font-weight: 600; 
+        font-size: 11px; 
+        display: inline-flex; 
+        align-items: center; 
+        gap: 5px; 
+        border: 1px solid transparent;
+        min-width: 80px; /* Độ rộng tối thiểu để thẳng hàng */
+        justify-content: center;
+    }
+
+    /* Admin: Màu đỏ quyền lực */
+    .role-admin { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+    
+    /* Manager: Màu xanh dương quản lý */
+    .role-manager { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+    
+    /* User: Màu xám nhẹ nhàng */
+    .role-user { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+	
+	/* 1. Canh giữa tất cả tiêu đề */
+    th { text-align: center; vertical-align: middle; }
+
+    /* 2. Canh giữa nội dung cột cuối cùng (Thao tác) */
+    td:last-child { text-align: center; }
+    
+    /* 3. Canh giữa nội dung cột Vai trò (để Badge đẹp hơn) */
+    td:nth-child(2) { text-align: center; }
 </style>
 </head>
 <body>
@@ -205,330 +100,520 @@
 <div class="container">
     <div class="dashboard-header">
         <div>
-            <h2>HỆ THỐNG QUẢN TRỊ</h2>
-            <div class="user-info-bar">
-                Xin chào, <b id="lblCurrentUser" style="color:var(--text-color)">...</b> 
-                (<span id="lblCurrentRole" style="background:#e0f2fe; color:var(--primary-color); padding:2px 6px; border-radius:4px; font-size:12px;">...</span>)
-            </div>
+            <h2>QUẢN TRỊ HỆ THỐNG</h2>
+            <div style="font-size:14px; color:#666; margin-top:5px; display:flex; align-items:center; gap:5px;">
+				Xin chào, <b id="lblCurrentUser">...</b> 
+				<span id="lblCurrentRole"></span> </div>
         </div>
-        
         <div class="quick-access">
-            <span style="font-weight:600; color:#4b5563; font-size:13px;">⚡ Chọn nhóm:</span>
-            <select id="quickGroupSelect" style="padding:6px; font-size:13px;">
-                <option value="">-- Đang tải --</option>
-            </select>
-            <button class="btn-success" onclick="goToSchedule()">Vào Lịch →</button>
-            <div style="width: 1px; height: 20px; background: #ddd; margin: 0 5px;"></div>
-            <button class="btn-danger" onclick="logout()">Đăng xuất</button>
+            <span>⚡ Chọn nhóm:</span>
+            <select id="quickGroupSelect" style="padding:6px; font-size:13px; width:auto; margin-bottom:0;"><option value="">-- Đang tải --</option></select>
+            <button class="btn-p" onclick="goToSchedule()">Vào Lịch →</button>
+            <button class="btn-d" onclick="logout()">Đăng xuất</button>
         </div>
     </div>
 
     <div class="tabs" id="adminTabs">
-        <div class="tab active" onclick="switchTab('users')">Quản lý Tài khoản</div>
-        <div class="tab" onclick="switchTab('groups')">Quản lý Nhóm</div>
+        <div class="tab active" onclick="switchTab('users')">👤 Quản lý Tài khoản</div>
+        <div class="tab" onclick="switchTab('groups')">🏢 Quản lý Nhóm</div>
+        <div class="tab" onclick="switchTab('holidays')">🎉 Quản lý Ngày lễ</div>
+        <div class="tab" onclick="switchTab('history')">📜 Lịch sử</div>
     </div>
 
     <div id="tab-users" class="tab-content active">
-        <button class="btn-primary" onclick="openUserPopup()">+ Thêm Tài Khoản Mới</button>
+        <button class="btn-p" onclick="openUserPopup()">+ Thêm Tài Khoản</button>
         <table>
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Vai trò</th>
-                    <th>Nhóm Chính</th>
-                    <th>Nhóm Phụ</th>
-                    <th>Thao tác</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Username</th><th>Vai trò</th><th>Nhóm Chính</th><th>Nhóm Phụ</th><th>Thao tác</th></tr></thead>
             <tbody id="userTableBody"></tbody>
         </table>
     </div>
 
     <div id="tab-groups" class="tab-content">
-        <div style="display:flex; gap:10px; align-items: center; margin-bottom: 15px; background: #f9fafb; padding: 15px; border-radius: 12px; border: 1px solid #eee;">
-            <input id="newGroupInput" placeholder="Nhập tên nhóm mới..." style="width: 300px;">
-            <button class="btn-primary" onclick="addGroup()">+ Tạo Nhóm</button>
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input id="newGroupInput" placeholder="Nhập tên nhóm mới..." style="width: 300px; margin-bottom:0;">
+            <button class="btn-p" onclick="addGroup()" style="width:auto;">+ Tạo Nhóm</button>
         </div>
+        <table><thead><tr><th>Tên Nhóm</th><th style="width:150px; text-align:center;">Thao tác</th></tr></thead><tbody id="groupTableBody"></tbody></table>
+    </div>
+
+    <div id="tab-holidays" class="tab-content">
+        <button class="btn-p" onclick="openHolidayPopup()">+ Thêm Ngày Lễ</button>
         <table>
-            <thead><tr><th>Tên Nhóm</th><th style="width: 150px; text-align:center;">Thao tác</th></tr></thead>
-            <tbody id="groupTableBody"></tbody>
+            <thead><tr><th>Ngày</th><th>Tên lễ / Ghi chú</th><th style="text-align:center;">Hệ số</th><th style="text-align:center;">Thao tác</th></tr></thead>
+            <tbody id="holidayTableBody"></tbody>
         </table>
     </div>
-    
-    <div id="userWelcomeMsg" class="hidden" style="text-align:center; padding: 50px; color:#666;">
-        <div style="font-size: 50px; margin-bottom: 20px;">👋</div>
-        <h3>Chào mừng quay trở lại!</h3>
-        <p>Vui lòng chọn nhóm làm việc ở góc trên bên phải để bắt đầu.</p>
+
+    <div id="tab-history" class="tab-content">
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input id="searchHistoryInput" placeholder="Tìm theo Mã NV hoặc Lý do..." style="width: 300px; margin-bottom:0;" onkeyup="filterHistory()">
+            <button class="btn-p" onclick="loadHistoryData()" style="width:auto;">🔄 Làm mới</button>
+        </div>
+        <table>
+            <thead><tr><th>Thời gian</th><th>Mã NV</th><th>Loại</th><th>Số lượng</th><th>Lý do</th></tr></thead>
+            <tbody id="historyTableBody"></tbody>
+        </table>
     </div>
-    
-    <div id="loading">Đang tải dữ liệu...</div>
 </div>
 
 <div id="userPopup" class="popup-bg">
     <div class="popup-box">
         <h3 id="popupTitle">Thêm Tài Khoản</h3>
+        <input type="hidden" id="uId"> 
         
-        <label style="font-size:13px; font-weight:600; color:#555;">Tên đăng nhập:</label>
-        <input id="uUsername" placeholder="Ví dụ: admin">
+        <label>Tên đăng nhập:</label><input id="uUsername">
+        <label>Mật khẩu:</label><input id="uPassword">
         
-        <label style="font-size:13px; font-weight:600; color:#555;">Mật khẩu:</label>
-        <input id="uPassword" type="text">
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1"><label>Vai trò:</label>
+                <select id="uRole"><option value="User">User</option><option value="Manager">Manager</option><option value="Admin">Admin</option></select>
+            </div>
+            <div style="flex:1"><label>Nhóm Chính:</label><select id="uGroup"></select></div>
+        </div>
         
-        <label style="font-size:13px; font-weight:600; color:#555;">Vai trò:</label>
-        <select id="uRole">
-            <option value="Admin">Admin (Toàn quyền)</option>
-            <option value="Manager">Manager (Quản lý)</option>
-            <option value="User">User (Nhân viên)</option>
-        </select>
+        <label>Nhóm Phụ (Xem thêm):</label>
+        <div style="border:1px solid #d1d5db; border-radius:8px; padding:10px; background:white; margin-bottom:20px;">
+            <div style="padding-bottom:5px; border-bottom:1px solid #eee; margin-bottom:5px;">
+                <label style="display:flex; align-items:center; cursor:pointer; font-weight:700; color:var(--primary); margin:0;">
+                    <input type="checkbox" id="checkAllGroups" onchange="toggleCheckAllGroups(this)" style="width:16px; height:16px; margin:0 10px 0 0; margin-bottom:0;"> Chọn tất cả
+                </label>
+            </div>
+            <div id="uGroupsList" class="group-list-container"></div>
+        </div>
         
-        <label style="font-size:13px; font-weight:600; color:#555;">Nhóm Chính (Bắt buộc):</label>
-        <select id="uGroup">
-            <option value="">-- Chọn nhóm chính --</option>
-        </select>
-        
-        <label style="font-size:13px; font-weight:600; color:#555;">Nhóm Phụ (Xem thêm):</label>
-        <div id="uGroupsMulti" class="multi-select-box"></div>
-
-        <div class="popup-footer">
-            <button class="btn-danger" onclick="closeUserPopup()">Hủy</button>
-            <button class="btn-primary" onclick="saveUser()">Lưu lại</button>
+        <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('userPopup')">Hủy</button>
+            <button class="btn-p" onclick="saveUser()">Lưu lại</button>
         </div>
     </div>
 </div>
 
+<div id="holidayPopup" class="popup-bg">
+    <div class="popup-box">
+        <h3 id="hPopupTitle">Thêm Ngày Lễ</h3>
+        <input type="hidden" id="hId">
+        
+        <label>Chọn ngày:</label><input type="date" id="hDate">
+        <label>Tên lễ:</label><input type="text" id="hNote">
+        <label>Hệ số bù:</label>
+        <select id="hValue">
+            <option value="1.0">1.0 Ngày (Full)</option>
+            <option value="0.5">0.5 Ngày (Half)</option>
+        </select>
+        
+        <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('holidayPopup')">Hủy</button>
+            <button class="btn-p" onclick="saveHoliday()">Lưu lại</button>
+        </div>
+    </div>
+</div>
+
+<div id="loading">⏳ Đang xử lý...</div>
+
 <script>
-    const SCRIPT_URL = localStorage.getItem("SCRIPT_URL");
-    
-    const currentUser = localStorage.getItem("currentUser") || "Guest"; 
-    const currentRole = localStorage.getItem("currentRole") || "User"; 
-    const currentGroup = localStorage.getItem("currentGroup") || ""; 
-    const currentGroupsSub = localStorage.getItem("currentGroupsSub") || ""; 
+    // ================= 1. CẤU HÌNH SUPABASE =================
+    const SUPABASE_URL = 'https://renqusdcczlhrglbclhe.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlbnF1c2RjY3psaHJnbGJjbGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTIyMzUsImV4cCI6MjA4MDU4ODIzNX0.kF960FS-VvAM2rkNo9kVHfmGAkpwrmlZ5Vf9-QFiC2E';
 
-    if (!SCRIPT_URL) {
-        alert("Chưa cấu hình URL!");
-    }
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    document.getElementById("lblCurrentUser").innerText = currentUser;
-    document.getElementById("lblCurrentRole").innerText = currentRole;
-
-    let isEditing = false;
+    // ================= 2. BIẾN TOÀN CỤC =================
     let allGroups = [];
+    let fullHistory = [];
+    let currentUserRole = ""; // Lưu vai trò hiện tại
 
-    document.addEventListener("DOMContentLoaded", () => {
-        if (currentRole !== "Admin") {
-            document.getElementById("adminTabs").style.display = "none";
-            document.getElementById("tab-users").classList.remove("active");
-            document.getElementById("tab-groups").classList.remove("active");
-            document.getElementById("userWelcomeMsg").classList.remove("hidden");
+    // ================= 3. KHỞI TẠO & PHÂN QUYỀN =================
+    document.addEventListener("DOMContentLoaded", async () => {
+        const user = localStorage.getItem("currentUser");
+        
+        // Nếu chưa đăng nhập -> Đá về trang login
+        if (!user) {
+            window.location.href = "index.html"; 
+            return;
         }
-        loadData();
+
+        const userData = JSON.parse(user);
+        currentUserRole = userData.role;
+
+        // Hiển thị thông tin header
+        document.getElementById("lblCurrentUser").innerText = userData.username;
+        document.getElementById("lblCurrentRole").innerHTML = getRoleBadge(userData.role);
+        
+        // --- CẤU HÌNH QUYỀN TRUY CẬP ---
+        setupPermissions(currentUserRole);
+
+        // Tải dữ liệu chung (Nhóm)
+        await loadGroups();
+        
+        // Chỉ Admin mới được tải danh sách User
+        if (currentUserRole === 'Admin') {
+            loadUsers();
+        }
     });
 
-    function switchTab(tabName) {
+    // --- HÀM XỬ LÝ PHÂN QUYỀN (MỚI) ---
+    function setupPermissions(role) {
+        const tabUsers = document.querySelector(".tab[onclick=\"switchTab('users')\"]");
+        const tabsContainer = document.getElementById("adminTabs");
+        
+        // TRƯỜNG HỢP 1: USER (ẨN HẾT)
+        if (role === 'User') {
+            // Ẩn thanh Tab
+            tabsContainer.style.display = 'none';
+            
+            // Ẩn tất cả nội dung
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            
+            // Hiển thị thông báo chặn
+            const container = document.querySelector('.container');
+            // Giữ lại Header, xóa phần dưới thay bằng thông báo
+            const headerHTML = document.querySelector('.dashboard-header').outerHTML;
+            container.innerHTML = headerHTML + `
+                <div style="text-align:center; padding: 60px 20px; color:#666;">
+                    <div style="font-size: 50px; margin-bottom: 20px;">⛔</div>
+                    <h3>Bạn không có quyền truy cập trang Quản trị.</h3>
+                    <p>Vui lòng sử dụng chức năng <b>"Vào Lịch"</b> ở góc trên bên phải.</p>
+                </div>
+            `;
+            return;
+        }
+
+        // TRƯỜNG HỢP 2: MANAGER (ẨN TAB USER)
+        if (role === 'Manager') {
+            // Ẩn nút tab User
+            if(tabUsers) tabUsers.style.display = 'none';
+            
+            // Mặc định vào tab Groups (vì tab User bị ẩn)
+            switchTab('groups');
+        }
+
+        // TRƯỜNG HỢP 3: ADMIN (FULL)
+        if (role === 'Admin') {
+            // Mặc định vào tab Users
+            switchTab('users');
+        }
+    }
+
+    function logout() { localStorage.clear(); window.location.href = "index.html"; }
+    function closePopup(id) { document.getElementById(id).style.display = 'none'; }
+    function showLoading(x) { document.getElementById("loading").style.display = x ? "block" : "none"; }
+
+    function goToSchedule() {
+        const g = document.getElementById("quickGroupSelect").value;
+        if(!g) return alert("Chọn nhóm trước!");
+        window.location.href = `scheduler.html?group=${encodeURIComponent(g)}`;
+    }
+
+    function switchTab(name) {
+        // [BẢO MẬT] Nếu Manager cố tình gọi switchTab('users') -> Chặn lại
+        if (name === 'users' && currentUserRole !== 'Admin') return;
+
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
-        if(tabName === 'users') {
-            document.querySelector('.tab:nth-child(1)').classList.add('active');
-            document.getElementById('tab-users').classList.add('active');
-        } else {
-            document.querySelector('.tab:nth-child(2)').classList.add('active');
-            document.getElementById('tab-groups').classList.add('active');
+        const map = { 'users': 1, 'groups': 2, 'holidays': 3, 'history': 4 };
+        const tabIndex = map[name];
+        
+        // Tìm tab button tương ứng để active
+        // Lưu ý: nth-child vẫn đếm cả phần tử ẩn, nên logic này vẫn đúng
+        const tabBtn = document.querySelector(`.tabs .tab:nth-child(${tabIndex})`);
+        if(tabBtn) tabBtn.classList.add('active');
+        
+        document.getElementById(`tab-${name}`).classList.add('active');
+
+        if(name === 'holidays') loadHolidays();
+        if(name === 'history') loadHistoryData();
+    }
+
+    // ================= 4. QUẢN LÝ NHÓM & RENDER FORM =================
+    async function loadGroups() {
+        showLoading(true);
+        const { data, error } = await _supabase.from('groups').select('*').order('created_at');
+        
+        if(error) { 
+            console.error(error); 
+            showLoading(false); 
+            return; 
         }
-    }
+        
+        allGroups = data || [];
+        
+        // Lấy các phần tử giao diện
+        const tbody = document.getElementById("groupTableBody");      // Bảng nhóm (Admin/Manager)
+        const selQuick = document.getElementById("quickGroupSelect"); // Dropdown chọn nhanh (All)
+        const selForm = document.getElementById("uGroup");            // Dropdown trong Popup (Admin)
+        const listMulti = document.getElementById("uGroupsList");     // List checkbox (Admin)
 
-    function logout() {
-        localStorage.clear(); 
-        window.location.href = "index.html";
-    }
+        // 1. Reset nội dung (Chỉ reset nếu phần tử đó tồn tại)
+        if (tbody) tbody.innerHTML = ""; 
+        if (selQuick) selQuick.innerHTML = '<option value="">-- Chọn nhóm --</option>';
+        if (selForm) selForm.innerHTML = '<option value="">-- Chọn nhóm chính --</option>'; 
+        if (listMulti) listMulti.innerHTML = "";
 
-    function goToSchedule() {
-        const group = document.getElementById("quickGroupSelect").value;
-        if (!group) return alert("Vui lòng chọn một nhóm!");
-        window.location.href = `scheduler.html?group=${encodeURIComponent(group)}`;
-    }
+        if (allGroups.length === 0 && tbody) {
+            tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#999;">Chưa có nhóm nào.</td></tr>`;
+        }
 
-    async function loadData() {
-        document.getElementById("loading").style.display = "block";
-        try {
-            const resG = await fetch(`${SCRIPT_URL}?action=listGroups`);
-            const jsonG = await resG.json();
-            if (jsonG.success) {
-                allGroups = jsonG.groups;
-                renderGroups(allGroups);
-                
-                let allowedGroups = [];
-                if (currentRole === "Admin") {
-                    allowedGroups = allGroups; 
-                } else {
-                    if (currentGroup) allowedGroups.push(currentGroup);
-                    if (currentGroupsSub) {
-                        const subs = currentGroupsSub.split(",").map(s => s.trim());
-                        allowedGroups = [...allowedGroups, ...subs];
-                    }
-                    allowedGroups = [...new Set(allowedGroups)].filter(g => allGroups.includes(g));
-                }
-                
-                updateQuickAccess(allowedGroups);
-                updatePopupGroupSelects(allGroups); 
-            }
-
-            if (currentRole === "Admin") {
-                const resU = await fetch(`${SCRIPT_URL}?action=listUsers`);
-                const jsonU = await resU.json();
-                if (jsonU.success) {
-                    renderUsers(jsonU.users);
-                }
-            }
-        } catch(e) { console.error(e); }
-        document.getElementById("loading").style.display = "none";
-    }
-
-    function updateQuickAccess(groups) {
-        const sel = document.getElementById("quickGroupSelect");
-        sel.innerHTML = '<option value="">-- Chọn nhóm làm việc --</option>';
-        groups.forEach(g => {
-            const opt = document.createElement("option");
-            opt.value = g; opt.innerText = g;
-            sel.appendChild(opt);
-        });
-    }
-
-    function updatePopupGroupSelects(groups) {
-        const selUser = document.getElementById("uGroup");
-        selUser.innerHTML = '<option value="">-- Chọn nhóm chính --</option>';
-        groups.forEach(g => {
-            const opt = document.createElement("option");
-            opt.value = g; opt.innerText = g;
-            selUser.appendChild(opt);
-        });
-
-        const divMulti = document.getElementById("uGroupsMulti");
-        divMulti.innerHTML = "";
-        groups.forEach(g => {
-            const lbl = document.createElement("label");
-            lbl.innerHTML = `<input type="checkbox" value="${g}" class="chk-group-sub"> ${g}`;
-            divMulti.appendChild(lbl);
-        });
-    }
-
-    function renderUsers(users) {
-        const tbody = document.getElementById("userTableBody");
-        tbody.innerHTML = "";
-        users.forEach(u => {
-            const tr = document.createElement("tr");
-            let subGroupsDisplay = u.groups ? u.groups : "-";
+        allGroups.forEach(g => {
+            // 2. Render từng phần (Chỉ render nếu phần tử tồn tại)
             
-            tr.innerHTML = `
-                <td style="font-family:monospace; color:#666;">${u.username}</td>
-                <td><span style="background:#e0f2fe; color:#0284c7; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600;">${u.role}</span></td>
-                <td style="color:#d97706; font-weight:600;">${u.group || "-"}</td>
-                <td style="font-size:13px; color:#666;">${subGroupsDisplay}</td>
-                <td>
-                    <button class="btn-edit btn-sm" onclick='editUser(${JSON.stringify(u)})'>✏ Sửa</button>
-                    <button class="btn-danger btn-sm" onclick="deleteUser('${u.username}')">🗑 Xóa</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
+            // a. Bảng quản lý (Cho Admin/Manager)
+            if (tbody) {
+                tbody.innerHTML += `
+                <tr>
+                    <td style="text-align:center; font-weight:600; color:#2c3e50;">🏢 ${g.name}</td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; justify-content:center;">
+                            <button class="btn-d btn-sm" onclick="deleteGroup(${g.id})">🗑 Xóa</button>
+                        </div>
+                    </td>
+                </tr>`;
+            }
+            
+            // b. Dropdown chọn nhanh (Cho tất cả mọi người)
+            if (selQuick) {
+                selQuick.innerHTML += `<option value="${g.name}">${g.name}</option>`;
+            }
+
+            // c. Form thêm user (Cho Admin)
+            if (selForm) {
+                selForm.innerHTML += `<option value="${g.name}">${g.name}</option>`;
+            }
+            
+            if (listMulti) {
+                listMulti.innerHTML += `
+                <div class="group-item">
+                    <label style="display:flex; align-items:center; width:100%; cursor:pointer; margin:0;">
+                        <input type="checkbox" value="${g.name}" class="chk-sub"> 
+                        <span style="font-weight:500;">${g.name}</span>
+                    </label>
+                </div>`;
+            }
         });
-    }
-
-    function openUserPopup() {
-        isEditing = false;
-        document.getElementById("popupTitle").innerText = "Thêm Tài Khoản Mới";
-        document.getElementById("uUsername").value = "";
-        document.getElementById("uUsername").disabled = false;
-        document.getElementById("uPassword").value = "";
-        document.getElementById("uRole").value = "User";
-        document.getElementById("uGroup").value = "";
-        document.querySelectorAll(".chk-group-sub").forEach(c => c.checked = false);
-        document.getElementById("userPopup").style.display = "flex";
-    }
-
-    function editUser(u) {
-        isEditing = true;
-        document.getElementById("popupTitle").innerText = "Sửa: " + u.username;
-        document.getElementById("uUsername").value = u.username;
-        document.getElementById("uUsername").disabled = true; 
-        document.getElementById("uPassword").value = u.password;
-        document.getElementById("uRole").value = u.role;
-        document.getElementById("uGroup").value = u.group || "";
         
-        const subList = (u.groups || "").split(",").map(s => s.trim());
-        document.querySelectorAll(".chk-group-sub").forEach(c => {
-            c.checked = subList.includes(c.value);
-        });
-        document.getElementById("userPopup").style.display = "flex";
+        showLoading(false);
     }
 
-    function closeUserPopup() { document.getElementById("userPopup").style.display = "none"; }
-
-    async function saveUser() {
-        const selectedSubs = [];
-        document.querySelectorAll(".chk-group-sub:checked").forEach(c => selectedSubs.push(c.value));
-        const subGroupsStr = selectedSubs.join(",");
-
-        const u = {
-            username: document.getElementById("uUsername").value.trim(),
-            password: document.getElementById("uPassword").value.trim(),
-            role: document.getElementById("uRole").value,
-            group: document.getElementById("uGroup").value,
-            groups: subGroupsStr 
-        };
-
-        if(!u.username || !u.password) return alert("Thiếu thông tin đăng nhập!");
-
-        const btn = document.querySelector("#userPopup .btn-primary");
-        const oldText = btn.innerText;
-        btn.innerText = "Đang lưu..."; btn.disabled = true;
-        const action = isEditing ? "updateUser" : "createUser";
-        
-        try {
-            await fetch(`${SCRIPT_URL}?action=${action}&data=` + encodeURIComponent(JSON.stringify(u)));
-            alert("Đã lưu thành công!");
-            closeUserPopup();
-            loadData();
-        } catch(e) { alert("Lỗi lưu user!"); }
-        finally { btn.innerText = oldText; btn.disabled = false; }
-    }
-
-    async function deleteUser(username) {
-        if(!confirm(`Xóa tài khoản ${username}?`)) return;
-        try {
-            await fetch(`${SCRIPT_URL}?action=deleteUser&username=${encodeURIComponent(username)}`);
-            loadData();
-        } catch(e) { alert("Lỗi xóa user!"); }
-    }
-
-    function renderGroups(groups) {
-        const tbody = document.getElementById("groupTableBody");
-        tbody.innerHTML = "";
-        groups.forEach(g => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td style="font-weight:600; color:#2c3e50;">${g}</td>
-                <td style="text-align:center;"><button class="btn-danger btn-sm" onclick="deleteGroup('${g}')">🗑 Xóa nhóm</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
+    function toggleCheckAllGroups(source) {
+        document.querySelectorAll(".chk-sub").forEach(cb => cb.checked = source.checked);
     }
 
     async function addGroup() {
         const name = document.getElementById("newGroupInput").value.trim();
         if(!name) return alert("Nhập tên nhóm!");
-        try {
-            await fetch(`${SCRIPT_URL}?action=addGroup&group=${encodeURIComponent(name)}`);
-            document.getElementById("newGroupInput").value = "";
-            loadData();
-        } catch(e) { alert("Lỗi thêm nhóm"); }
+        const { error } = await _supabase.from('groups').insert([{ name: name }]);
+        if(error) alert("Lỗi: " + error.message); else { document.getElementById("newGroupInput").value=""; loadGroups(); }
     }
 
-    async function deleteGroup(name) {
-        if(!confirm(`CẢNH BÁO: Xóa nhóm [${name}]?`)) return;
-        try {
-            await fetch(`${SCRIPT_URL}?action=deleteGroup&group=${encodeURIComponent(name)}`);
-            loadData();
-        } catch(e) { alert("Lỗi xóa nhóm"); }
+    async function deleteGroup(id) {
+        if(!confirm("Xóa nhóm này?")) return;
+        const { error } = await _supabase.from('groups').delete().eq('id', id);
+        if(!error) loadGroups();
+    }
+
+    // ================= 5. QUẢN LÝ USER (CHỈ ADMIN) =================
+    async function loadUsers() {
+        // Bảo vệ lớp 2: Chặn nếu không phải Admin
+        if (currentUserRole !== 'Admin') return;
+
+        showLoading(true);
+        const { data, error } = await _supabase.from('users').select('*').order('username');
+        const tbody = document.getElementById("userTableBody");
+        tbody.innerHTML = "";
+        
+        if(data) {
+            data.forEach(u => {
+                const uString = JSON.stringify(u).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                tbody.innerHTML += `
+                <tr>
+                    <td style="font-family:monospace; color:#666; font-weight:600; text-align:center;">${u.username}</td>
+                    <td style="text-align:center;">${getRoleBadge(u.role)}</td>
+                    <td style="color:#d97706; font-weight:600; text-align:center;">${u.main_group || '-'}</td>
+                    <td style="font-size:13px; color:#666; text-align:center;">${u.sub_groups || '-'}</td>
+                    <td style="text-align:center;">
+                        <div style="display:flex; justify-content:center; gap:5px;">
+                            <button class="btn-e btn-sm" onclick='editUser(${uString})'>✏ Sửa</button>
+                            <button class="btn-d btn-sm" onclick="deleteUser(${u.id})">🗑 Xóa</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        }
+        showLoading(false);
+    }
+
+    function openUserPopup() {
+        document.getElementById("uId").value = "";
+        document.getElementById("uUsername").value = "";
+        document.getElementById("uPassword").value = "";
+        document.getElementById("popupTitle").innerText = "Thêm Tài Khoản";
+        document.querySelectorAll(".chk-sub").forEach(c => c.checked = false);
+        document.getElementById("checkAllGroups").checked = false;
+        document.getElementById("userPopup").style.display = 'flex';
+    }
+
+    function editUser(u) {
+        document.getElementById("uId").value = u.id;
+        document.getElementById("uUsername").value = u.username;
+        document.getElementById("uPassword").value = u.password; 
+        document.getElementById("uRole").value = u.role;
+        document.getElementById("uGroup").value = u.main_group;
+        const subs = (u.sub_groups || "").split(",");
+        document.querySelectorAll(".chk-sub").forEach(c => c.checked = subs.includes(c.value));
+        document.getElementById("popupTitle").innerText = "Sửa User";
+        document.getElementById("userPopup").style.display = 'flex';
+    }
+
+    async function saveUser() {
+        const id = document.getElementById("uId").value;
+        const username = document.getElementById("uUsername").value;
+        const password = document.getElementById("uPassword").value;
+        const role = document.getElementById("uRole").value;
+        const main_group = document.getElementById("uGroup").value;
+        let subs = [];
+        document.querySelectorAll(".chk-sub:checked").forEach(c => subs.push(c.value));
+        const payload = { username, password, role, main_group, sub_groups: subs.join(",") };
+
+        let error;
+        if(id) ({ error } = await _supabase.from('users').update(payload).eq('id', id));
+        else ({ error } = await _supabase.from('users').insert([payload]));
+
+        if(error) alert("Lỗi: " + error.message);
+        else { closePopup('userPopup'); loadUsers(); }
+    }
+
+    async function deleteUser(id) {
+        if(confirm("Xóa user này?")) {
+            await _supabase.from('users').delete().eq('id', id);
+            loadUsers();
+        }
+    }
+
+    // ================= 6. QUẢN LÝ HOLIDAYS =================
+    async function loadHolidays() {
+        showLoading(true);
+        const { data, error } = await _supabase.from('holidays').select('*').order('date');
+        
+        if(error) { console.error(error); showLoading(false); return; }
+
+        const tbody = document.getElementById("holidayTableBody");
+        tbody.innerHTML = "";
+        
+        const list = data || [];
+        if(list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Chưa có ngày lễ nào.</td></tr>`;
+        }
+
+        list.forEach(h => {
+            const dateStr = new Date(h.date).toLocaleDateString('en-GB'); 
+            const hString = JSON.stringify(h).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const displayVal = parseFloat(h.value); 
+            
+            let badgeStyle = "";
+            let badgeText = "";
+            if (displayVal === 0.5) {
+                badgeStyle = "background:#fff7ed; color:#c2410c; border:1px solid #ffedd5";
+                badgeText = `🌗 ${displayVal} Ngày`; 
+            } else {
+                badgeStyle = "background:#ecfdf5; color:#047857; border:1px solid #d1fae5";
+                badgeText = `🌕 ${displayVal} Ngày`; 
+            }
+
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-family:monospace; font-weight:600; color:#333; text-align:center;">${dateStr}</td>
+                <td style="font-weight:500; color:#2c3e50;">${h.note}</td>
+                <td style="text-align:center;"><span style="padding:4px 10px; border-radius:20px; font-weight:600; font-size:11px; ${badgeStyle}">${badgeText}</span></td>
+                <td style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:5px;">
+                        <button class="btn-e btn-sm" onclick='editHoliday(${hString})'>✏ Sửa</button> 
+                        <button class="btn-d btn-sm" onclick="deleteHoliday(${h.id})">🗑 Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+        showLoading(false);
+    }
+
+    function openHolidayPopup() {
+        document.getElementById("hId").value = "";
+        document.getElementById("hDate").value = "";
+        document.getElementById("hNote").value = "";
+        document.getElementById("hPopupTitle").innerText = "Thêm Ngày Lễ";
+        document.getElementById("holidayPopup").style.display = "flex";
+    }
+
+    function editHoliday(h) {
+        document.getElementById("hId").value = h.id;
+        document.getElementById("hDate").value = h.date;
+        document.getElementById("hNote").value = h.note;
+        document.getElementById("hValue").value = h.value;
+        document.getElementById("hPopupTitle").innerText = "Sửa Ngày Lễ";
+        document.getElementById("holidayPopup").style.display = "flex";
+    }
+
+    async function saveHoliday() {
+        const id = document.getElementById("hId").value;
+        const payload = { date: document.getElementById("hDate").value, note: document.getElementById("hNote").value, value: document.getElementById("hValue").value };
+        let error;
+        if(id) ({ error } = await _supabase.from('holidays').update(payload).eq('id', id));
+        else ({ error } = await _supabase.from('holidays').insert([payload]));
+        if(error) alert("Lỗi: " + error.message); else { closePopup('holidayPopup'); loadHolidays(); }
+    }
+
+    async function deleteHoliday(id) {
+        if(confirm("Xóa ngày lễ này?")) { await _supabase.from('holidays').delete().eq('id', id); loadHolidays(); }
+    }
+
+    // ================= 7. LỊCH SỬ GD =================
+    async function loadHistoryData() {
+        showLoading(true);
+        const { data } = await _supabase.from('supplemental_leave').select('*').order('created_at', { ascending: false }).limit(100);
+        showLoading(false);
+        if(data) { fullHistory = data; renderHistory(data); }
+    }
+
+    function renderHistory(list) {
+        const tbody = document.getElementById("historyTableBody");
+        tbody.innerHTML = "";
+        
+        if(!list || list.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">Chưa có dữ liệu lịch sử.</td></tr>`; 
+            return; 
+        }
+
+        list.forEach(item => {
+            const time = new Date(item.created_at).toLocaleString('en-GB');
+            const colorAmt = item.amount > 0 ? "color:#16a34a" : "color:#dc2626";
+            let typeStyle = "background:#f3f4f6; color:#4b5563";
+            if (item.type.includes("P")) typeStyle = "background:#fce4ec; color:#ad1457; border:1px solid #f8bbd0";
+            if (item.type.includes("NB")) typeStyle = "background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd";
+
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-size:12px; color:#666; text-align:center;">${time}</td>
+                <td style="font-weight:600; text-align:center; font-family:monospace; color:#333;">${item.emp_code}</td>
+                <td style="text-align:center;"><span style="padding:4px 8px; border-radius:12px; font-weight:700; font-size:11px; ${typeStyle}">${item.type}</span></td>
+                <td style="text-align:center; font-weight:800; ${colorAmt}">${item.amount > 0 ? '+' + item.amount : item.amount}</td>
+                <td style="text-align:left; padding-left:15px; color:#444;">${item.reason}</td>
+            </tr>`;
+        });
+    }
+
+    function filterHistory() {
+        const term = document.getElementById("searchHistoryInput").value.toLowerCase();
+        const filtered = fullHistory.filter(i => (i.emp_code && i.emp_code.toLowerCase().includes(term)) || (i.reason && i.reason.toLowerCase().includes(term)));
+        renderHistory(filtered);
+    }
+    
+    function getRoleBadge(role) {
+        const config = {
+            'Admin':   { cls: 'role-admin',   icon: '👑', label: 'Admin' },
+            'Manager': { cls: 'role-manager', icon: '🛡️', label: 'Quản lý' },
+            'User':    { cls: 'role-user',    icon: '👤', label: 'Nhân viên'}
+        };
+        const conf = config[role] || config['User'];
+        return `<span class="role-badge ${conf.cls}"><span>${conf.icon}</span> ${conf.label}</span>`;
     }
 </script>
 

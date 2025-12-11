@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Đăng nhập Hệ thống</title>
+<title>CỔNG ĐĂNG NHẬP</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
     body {
@@ -30,11 +31,10 @@
 
     .login-header h2 {
         margin: 0 0 10px 0;
-        color: #4a90e2; /* Màu chủ đạo giống Scheduler */
+        color: #4a90e2; 
         font-weight: 700;
         font-size: 24px;
         text-transform: uppercase;
-        letter-spacing: -0.5px;
     }
     
     .login-header p {
@@ -43,18 +43,8 @@
         font-size: 14px;
     }
 
-    .input-group {
-        margin-bottom: 20px;
-        text-align: left;
-    }
-    
-    label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 500;
-        font-size: 14px;
-        color: #374151;
-    }
+    .input-group { margin-bottom: 20px; text-align: left; }
+    label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px; color: #374151; }
 
     input[type="text"], input[type="password"] {
         width: 100%;
@@ -68,20 +58,9 @@
         font-family: 'Inter', sans-serif;
     }
 
-    input:focus {
-        outline: none;
-        border-color: #4a90e2;
-        background: #fff;
-        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
-    }
+    input:focus { outline: none; border-color: #4a90e2; background: #fff; box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1); }
 
-    .remember {
-        display: flex;
-        align-items: center;
-        margin-bottom: 25px;
-        font-size: 13px;
-        color: #6b7280;
-    }
+    .remember { display: flex; align-items: center; margin-bottom: 25px; font-size: 13px; color: #6b7280; }
     .remember input { margin-right: 8px; cursor: pointer; }
 
     button {
@@ -96,11 +75,9 @@
         cursor: pointer;
         transition: background 0.2s, transform 0.1s;
     }
-
     button:hover { background-color: #357abd; }
     button:active { transform: scale(0.98); }
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-
 </style>
 </head>
 <body>
@@ -113,7 +90,7 @@
 
     <div class="input-group">
         <label>Tên đăng nhập</label>
-        <input id="inputUser" type="text" placeholder="Nhập mã nhân viên">
+        <input id="inputUser" type="text" placeholder="Nhập tên đăng nhập">
     </div>
 
     <div class="input-group">
@@ -131,12 +108,14 @@
 
 <script>
 /* =============================
-    CẤU HÌNH API
+    CẤU HÌNH SUPABASE
 ============================= */
-// Bạn hãy dán Link Web App Script mới nhất của bạn vào đây
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRJeVTiI0g1yp-ehdX_HCQpNog0aZ--HlYyqZ7qy6UWebJDVpwkqjLg3NDK56MwNSl/exec";
+// Thay thông tin dự án của bạn vào đây
+const SUPABASE_URL = 'https://renqusdcczlhrglbclhe.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlbnF1c2RjY3psaHJnbGJjbGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTIyMzUsImV4cCI6MjA4MDU4ODIzNX0.kF960FS-VvAM2rkNo9kVHfmGAkpwrmlZ5Vf9-QFiC2E';
 
-localStorage.setItem("SCRIPT_URL", SCRIPT_URL);
+// [SỬA LỖI 1] Phải dùng supabase.createClient
+const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* =============================
     LOAD USERNAME (nếu có)
@@ -156,6 +135,7 @@ window.onload = function() {
             LOGIN
 ============================= */
 async function login() {
+    // [SỬA LỖI 2] Lấy đúng ID là inputUser và inputPass
     const username = document.getElementById("inputUser").value.trim();
     const password = document.getElementById("inputPass").value.trim();
     const btn = document.getElementById("btnLogin");
@@ -164,6 +144,7 @@ async function login() {
         return alert("Vui lòng nhập đủ tài khoản & mật khẩu!");
     }
 
+    // Xử lý ghi nhớ
     if (document.getElementById("rememberMe").checked) {
         localStorage.setItem("remember_username", username);
     } else {
@@ -173,35 +154,41 @@ async function login() {
     btn.disabled = true;
     btn.innerHTML = "⏳ Đang kiểm tra...";
 
-    const api = `${SCRIPT_URL}?action=login`
-        + `&username=${encodeURIComponent(username)}`
-        + `&password=${encodeURIComponent(password)}`;
-
     try {
-        const res = await fetch(api);
-        const json = await res.json();
+        // Truy vấn Supabase: Tìm user trong bảng 'users'
+        const { data, error } = await _supabase
+            .from('users')
+            .select('*')
+            .eq('username', username)
+            .eq('password', password) // Lưu ý: Nên mã hóa password sau này
+            .single(); // Lấy 1 dòng duy nhất
 
-        if (!json.success) {
+        if (error || !data) {
             btn.disabled = false;
             btn.innerHTML = "Đăng nhập";
-            return alert(json.message || "Sai tài khoản hoặc mật khẩu!");
+            return alert("Sai tài khoản hoặc mật khẩu!");
         }
 
-        localStorage.setItem("currentUser", json.username);
-        localStorage.setItem("currentRole", json.role);
-        localStorage.setItem("currentGroup", json.group);       
-        localStorage.setItem("currentGroupsSub", json.groups);  
+        // Đăng nhập thành công -> Lưu session
+        localStorage.setItem("currentUser", JSON.stringify({
+            username: data.username,
+            role: data.role,
+            group: data.main_group,
+            groupsSub: data.sub_groups
+        }));
 
+        // Chuyển trang
         window.location.href = "dashboard.html";
-    }
-    catch (err) {
+        
+    } catch (err) {
         console.error(err);
-        alert("Lỗi kết nối! Vui lòng kiểm tra đường truyền hoặc Script URL.");
+        alert("Lỗi kết nối!");
         btn.disabled = false;
         btn.innerHTML = "Đăng nhập";
     }
 }
 
+// Bắt sự kiện phím Enter
 document.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
         if (document.activeElement.id === "inputUser") {
