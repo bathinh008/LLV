@@ -508,6 +508,16 @@
         <label>Đến ngày:</label>
         <input type="date" id="expTo">
         
+        <div style="margin-top:15px; background:#f9f9f9; padding:10px; border-radius:8px; border:1px solid #eee;">
+            <label style="display:flex; align-items:center; cursor:pointer; font-weight:normal; margin-bottom:0; color:#333;">
+                <input type="checkbox" id="chkIncludeInactive" style="width:18px; height:18px; margin-right:8px; margin-bottom:0;">
+                Xuất cả nhân viên đã nghỉ (Inactive)
+            </label>
+            <div style="font-size:11px; color:#888; margin-top:4px; padding-left:26px;">
+                (Dùng để tính lương cho người nghỉ việc giữa chừng)
+            </div>
+        </div>
+        
         <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
             <button class="btn-d" onclick="document.getElementById('exportRangePopup').style.display='none'">Đóng</button>
             <button class="btn-s" onclick="doExportRange()">Tải về</button>
@@ -634,7 +644,7 @@
         loadSchedule();
     });
 
-    // ================= 4. TẢI DỮ LIỆU =================
+    // ================= 4. TẢI DỮ LIỆU (ĐÃ CẬP NHẬT LOGIC ƯU TIÊN) =================
     async function loadSchedule() {
         showLoading(true);
         try {
@@ -654,30 +664,29 @@
             if(elBOld) elBOld.innerText = `Bù ${prevYear}`;
             if(elBNew) elBNew.innerText = `Bù ${viewYear}`;
 
-            // 2. TẢI DỮ LIỆU
-            // [SỬA 1] Thêm .order('id') để giữ đúng thứ tự dòng đã lưu trong DB
+            // 2. TẢI DỮ LIỆU TỪ CÁC BẢNG
             const { data: schData } = await _supabase
-                .from('schedule')
-                .select('*')
-                .eq('group_name', currentGroup)
-                .eq('week_start', currentWeekStart)
-                .order('id', { ascending: true }); // Lấy theo thứ tự insert (lưu trước hiện trước)
+				.from('schedule')
+				.select('*')
+				.eq('group_name', currentGroup)
+				.eq('week_start', currentWeekStart)
+				.order('stt', { ascending: true });
             
-            // [SỬA 2] Thêm .order('created_at') (hoặc 'id') để lấy danh sách nhân viên theo thứ tự thêm vào
             const { data: allEmps } = await _supabase
                 .from('employees')
                 .select('*')
                 .eq('group_name', currentGroup)
                 .eq('status', 'active')
-				.order('stt', { ascending: true })
-                .order('created_at', { ascending: true }); // Nhân viên cũ lên trên, mới xuống dưới
+				.order('stt', { ascending: true });
             
-            // Lấy số dư 
-            const { data: balances } = await _supabase.from('leave_balance').select('*').in('year', [viewYear, prevYear]);
+            const { data: balances } = await _supabase
+                .from('leave_balance')
+                .select('*')
+                .in('year', [viewYear, prevYear]);
 
+            // Map số dư để tra cứu nhanh
             const balCurrent = {}; 
             const balPrev = {};    
-            
             if(balances) {
                 balances.forEach(b => {
                     if (b.year === viewYear) balCurrent[b.emp_code] = b;
@@ -685,12 +694,13 @@
                 });
             }
 
-            // 3. MAP DỮ LIỆU
+            // 3. XỬ LÝ DỮ LIỆU
             employeesData = [];
-            const processed = new Set();
+            const processedCodes = new Set();
+            const hasSchedule = schData && schData.length > 0;
 
-            // Hàm hỗ trợ tính toán số dư và check hạn
-            const processBalance = (empCode, empProfile) => {
+            // Hàm hỗ trợ lấy số dư (dùng cho trường hợp chưa có lịch)
+            const getFreshBalance = (empCode, empProfile) => {
                 let pNew=0, bNew=0, pOld=0, bOld=0;
                 if (balCurrent[empCode]) {
                     const b = balCurrent[empCode];
@@ -700,6 +710,7 @@
                     const bPrev = balPrev[empCode];
                     pOld = Number(bPrev.pn_val)||0; bOld = Number(bPrev.nb_val)||0;
                 }
+                // Check hạn phép/bù
                 if (empProfile) {
                     const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
                     const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
@@ -709,51 +720,68 @@
                 return { pNew, bNew, pOld, bOld };
             };
 
-            // [LOGIC MỚI] 
-            // - Nếu có dữ liệu Lịch (schData): Ưu tiên dùng vòng lặp schData trước để giữ thứ tự đã lưu.
-            // - Nếu không có: Dùng vòng lặp allEmps để giữ thứ tự danh sách nhân viên.
-            
-            const hasSchedule = schData && schData.length > 0;
+            // --- A. TRƯỜNG HỢP 1: TUẦN NÀY ĐÃ ĐƯỢC LƯU (LOAD TỪ SCHEDULE) ---
+			if (hasSchedule) {
+				schData.forEach(s => {
+					// Lấy thông tin nhân viên mới nhất (để lấy STT chuẩn và ngày tạo)
+					const empProfile = allEmps ? allEmps.find(e => e.code === s.emp_code) : null;
+					
+					// ... (đoạn tính toán pOld, bOld giữ nguyên) ...
+					let pOld = Number(s.pn_old)||0;
+					let bOld = Number(s.nb_old)||0;
+					
+					// Check lại hạn expired... (giữ nguyên)
+					if (empProfile) {
+						const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
+						const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
+						if (pnExpireDate && viewDate > pnExpireDate) pOld = 0;
+						if (nbExpireDate && viewDate > nbExpireDate) bOld = 0;
+					}
 
-            // A. NẾU CÓ LỊCH -> LOAD THEO THỨ TỰ LỊCH
-            if (hasSchedule) {
-                schData.forEach(s => {
-                    // Tìm thông tin nhân viên trong danh sách allEmps
-                    const empProfile = allEmps ? allEmps.find(emp => emp.code === s.emp_code) : null;
-                    
-                    let pOld = Number(s.pn_old)||0;
-                    let bOld = Number(s.nb_old)||0;
+					employeesData.push({
+						code: s.emp_code, 
+						name: s.emp_name, 
+						role: s.emp_role, 
+						
+						// [SỬA LẠI DÒNG NÀY] 
+						join_date: empProfile ? empProfile.created_at : null,
 
-                    if (empProfile) {
-                        const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
-                        const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
-                        if (pnExpireDate && viewDate > pnExpireDate) pOld = 0;
-                        if (nbExpireDate && viewDate > nbExpireDate) bOld = 0;
-                    }
+						// [MỚI] Ưu tiên lấy stt từ lịch sử...
+						stt: (s.stt !== null && s.stt !== undefined) ? s.stt : (empProfile ? (empProfile.stt || 9999) : 9999),
 
-                    employeesData.push({
-                        code: s.emp_code, name: s.emp_name, role: s.emp_role,
-                        
-                        // [ĐÃ SỬA LỖI TẠI ĐÂY]
-                        // Thay "e.stt" bằng "empProfile.stt"
-                        stt: (empProfile ? empProfile.stt : 0),
+						shifts: s.shifts || Array(7).fill(""),
+						pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
+						pn_old: pOld, nb_old: bOld
+					});
+					processedCodes.add(s.emp_code);
+				});
+			}
 
-                        shifts: s.shifts || Array(7).fill(""),
-                        pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
-                        pn_old: pOld, nb_old: bOld
-                    });
-                    processed.add(s.emp_code);
-                });
-            }
-
-            // B. LOAD CÁC NHÂN VIÊN CÒN LẠI (Hoặc toàn bộ nếu chưa có lịch)
-            // (Giữ nguyên thứ tự của allEmps đã sort theo created_at ở trên)
+            // --- B. TRƯỜNG HỢP 2: CHECK NHÂN VIÊN MỚI (CÓ LỌC NGÀY VÀO LÀM) ---
             if (allEmps) {
+                // Tính ngày cuối của tuần đang xem
+                const weekEndDate = new Date(currentWeekStart);
+                weekEndDate.setDate(weekEndDate.getDate() + 7); // Cộng thêm 7 ngày (hết tuần)
+
                 allEmps.forEach(e => {
-                    if (!processed.has(e.code)) {
-                        const bal = processBalance(e.code, e);
+                    // 1. Nếu nhân viên này chưa có trong lịch đã lưu
+                    if (!processedCodes.has(e.code)) {
+                        
+                        // 2. [MỚI] KIỂM TRA NGÀY VÀO LÀM
+                        // Nếu ngày tạo tài khoản (created_at) LỚN HƠN ngày cuối tuần đang xem
+                        // => Tức là lúc đó nhân viên này chưa vào làm => KHÔNG HIỂN THỊ
+                        const joinDate = new Date(e.created_at);
+                        if (joinDate > weekEndDate) {
+                            return; // Bỏ qua, không thêm vào bảng
+                        }
+
+                        // Nếu thỏa mãn (đã vào làm tại thời điểm đó) -> Thêm vào bảng
+                        const bal = getFreshBalance(e.code, e);
                         employeesData.push({
-                            code: e.code, name: e.name, role: e.role,
+                            code: e.code, 
+                            name: e.name, 
+                            role: e.role,
+                            stt: e.stt || 0,
                             shifts: Array(7).fill(""),
                             pn: bal.pNew, nb: bal.bNew,
                             pn_old: bal.pOld, nb_old: bal.bOld
@@ -762,8 +790,25 @@
                 });
             }
             
-            // [QUAN TRỌNG] ĐÃ XÓA DÒNG SORT Ở ĐÂY 
-            // employeesData.sort((a,b) => a.code.localeCompare(b.code)); <--- Đã xóa
+            // --- C. BƯỚC CUỐI: SẮP XẾP LẠI TOÀN BỘ THEO STT ---
+            // Đây là bước quan trọng nhất để đảm bảo thứ tự luôn đúng
+            employeesData.sort((a, b) => {
+				const sttA = (a.stt !== undefined && a.stt !== null) ? a.stt : 9999;
+				const sttB = (b.stt !== undefined && b.stt !== null) ? b.stt : 9999;
+				
+				// Ưu tiên 1: Sắp xếp theo STT cài đặt
+				if (sttA !== sttB) {
+					return sttA - sttB;
+				}
+				
+				// Ưu tiên 2: Nếu STT bằng nhau (ví dụ cùng là 0), thì sắp xếp theo Mã NV (A->Z)
+				// Việc này giúp danh sách luôn cố định, không bị nhảy lung tung khi refresh
+				if (a.code && b.code) {
+					return a.code.localeCompare(b.code);
+				}
+				
+				return 0;
+			});
             
             renderTable();
             updateHeaderDates();
@@ -899,54 +944,67 @@
             swapSourceIdx = -1;
             renderTable();
         } else {
-            // --- CHỌN NGƯỜI THỨ 2 -> THỰC HIỆN ĐẢO ---
-            
-            const emp1 = employeesData[swapSourceIdx];
-            const emp2 = employeesData[idx];
+			// --- CHỌN NGƯỜI THỨ 2 -> THỰC HIỆN ĐẢO ---
+			
+			const emp1 = employeesData[swapSourceIdx];
+			const emp2 = employeesData[idx];
 
-            // 1. Đổi vị trí trong mảng hiển thị (Local)
-            // (Đảo toàn bộ dữ liệu dòng để user thấy ngay)
-            employeesData[swapSourceIdx] = emp2;
-            employeesData[idx] = emp1;
+			// 1. Đổi vị trí trong mảng hiển thị (Local - để UI cập nhật ngay)
+			employeesData[swapSourceIdx] = emp2;
+			employeesData[idx] = emp1;
 
-            // 2. Cập nhật STT vào Database (Server)
-            // Lấy giá trị stt của nhau
-            const stt1 = emp1.stt || 0;
-            const stt2 = emp2.stt || 0;
+			// 2. Tính toán STT cần tráo đổi
+			// (Nếu stt bị null thì gán tạm bằng index để không bị lỗi)
+			const stt1 = (emp1.stt !== null && emp1.stt !== undefined) ? emp1.stt : swapSourceIdx;
+			const stt2 = (emp2.stt !== null && emp2.stt !== undefined) ? emp2.stt : idx;
 
-            // Hiển thị trạng thái đang lưu
-            const btn = document.getElementById("btnSwap");
-            const oldText = btn.innerText;
-            btn.innerText = "⏳ Đang lưu...";
+			// Hiển thị trạng thái đang lưu
+			const btn = document.getElementById("btnSwap");
+			const oldText = btn.innerText;
+			btn.innerText = "⏳ Đang lưu...";
 
-            try {
-                // Cập nhật người 1 thành stt của người 2
-                const p1 = _supabase.from('employees').update({ stt: stt2 }).eq('code', emp1.code);
-                // Cập nhật người 2 thành stt của người 1
-                const p2 = _supabase.from('employees').update({ stt: stt1 }).eq('code', emp2.code);
+			try {
+				// --- CẬP NHẬT ĐỒNG THỜI CẢ 2 BẢNG ---
+				
+				// A. Cập nhật bảng Gốc (Employees) -> Để tuần sau tạo mới sẽ đúng thứ tự này
+				const p1 = _supabase.from('employees').update({ stt: stt2 }).eq('code', emp1.code);
+				const p2 = _supabase.from('employees').update({ stt: stt1 }).eq('code', emp2.code);
 
-                await Promise.all([p1, p2]);
+				// B. Cập nhật bảng Lịch (Schedule) -> Để tuần hiện tại F5 lại vẫn đúng
+				// Quan trọng: Phải có điều kiện .eq('week_start', currentWeekStart)
+				const p3 = _supabase.from('schedule')
+					.update({ stt: stt2 })
+					.eq('week_start', currentWeekStart)
+					.eq('emp_code', emp1.code);
+					
+				const p4 = _supabase.from('schedule')
+					.update({ stt: stt1 })
+					.eq('week_start', currentWeekStart)
+					.eq('emp_code', emp2.code);
 
-                // Cập nhật lại stt trong biến cục bộ để dùng cho lần sau
-                emp1.stt = stt2;
-                emp2.stt = stt1;
+				// Chạy tất cả song song để tốc độ nhanh nhất
+				await Promise.all([p1, p2, p3, p4]);
 
-                showToastNotification("✅ Đã đảo vị trí và lưu thành công!");
+				// Cập nhật lại stt trong biến cục bộ (RAM)
+				emp1.stt = stt2;
+				emp2.stt = stt1;
 
-            } catch (e) {
-                console.error(e);
-                alert("Lỗi khi lưu vị trí: " + e.message);
-                // Nếu lỗi thì load lại bảng để hoàn tác
-                loadSchedule();
-            } finally {
-                // Reset trạng thái
-                swapSourceIdx = -1;
-                isSwapMode = false;
-                btn.classList.remove("btn-swap-active");
-                btn.innerText = oldText; // Trả lại chữ cũ
-                renderTable();
-            }
-        }
+				showToastNotification("✅ Đã đảo vị trí và lưu thành công!");
+
+			} catch (e) {
+				console.error(e);
+				alert("Lỗi khi lưu vị trí: " + e.message);
+				// Nếu lỗi DB thì load lại bảng để hoàn tác giao diện về cũ (tránh sai lệch)
+				loadSchedule();
+			} finally {
+				// Reset trạng thái
+				swapSourceIdx = -1;
+				isSwapMode = false;
+				btn.classList.remove("btn-swap-active");
+				btn.innerText = oldText; 
+				renderTable();
+			}
+		}
     }
 
     // ================= 6. LƯU LỊCH (CÓ TRỪ PHÉP/BÙ KHI SỬ DỤNG) =================
@@ -1015,9 +1073,18 @@
 			let autoPhepReason = null; 
 			for(let i=0; i<7; i++) {
 				const dLoop = new Date(y, m - 1, d + i); 
-				if (dLoop.getDate() === 15) {
-					autoPhepReason = `Phép tháng ${dLoop.getMonth()+1}/${dLoop.getFullYear()}`;
-					break; 
+				// --- 1. XÁC ĐỊNH NGÀY 15 CỦA THÁNG ---
+				let autoPhepReason = null; 
+				let target15Date = null; // [MỚI] Biến lưu ngày 15 cụ thể để so sánh
+
+				for(let i=0; i<7; i++) {
+					const dLoop = new Date(y, m - 1, d + i); 
+					if (dLoop.getDate() === 15) {
+						autoPhepReason = `Phép tháng ${dLoop.getMonth()+1}/${dLoop.getFullYear()}`;
+						target15Date = new Date(dLoop); // Copy ngày 15 ra
+						target15Date.setHours(0,0,0,0); // Reset giờ để tính ngày cho chuẩn
+						break; 
+					}
 				}
 			}
 
@@ -1033,12 +1100,41 @@
 				const oldRec = oldScheduleData.find(x => x.emp_code === emp.code);
 				const oldShifts = oldRec ? oldRec.shifts : [];
 
-				// --- A. LOGIC CỘNG ---
-				if (autoPhepReason) {
-					const hasMonthlyLeave = history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(autoPhepReason));
-					if (!hasMonthlyLeave) {
-						addedPN += 1.0;
-						supInsert.push({ emp_code: emp.code, type: 'PN', amount: 1.0, reason: autoPhepReason, date: new Date() });
+				// --- A. LOGIC CỘNG PHÉP (CÓ KIỂM TRA THÂM NIÊN) ---
+				if (autoPhepReason && target15Date) {
+					let isEligible = true; // Mặc định là ĐƯỢC cộng
+
+					// Kiểm tra thâm niên nếu có ngày vào làm
+					if (emp.join_date) {
+						const joinDate = new Date(emp.join_date);
+						joinDate.setHours(0,0,0,0);
+
+						// Tính khoảng cách: (Ngày 15 hiện tại) - (Ngày vào làm)
+						// Chia cho (1000ms * 60s * 60m * 24h) để ra số ngày
+						const diffTime = target15Date - joinDate;
+						const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+						// Nếu tính đến ngày 15 mà số ngày làm việc < 15 ngày -> KHÔNG CỘNG
+						if (diffDays < 15) {
+							isEligible = false;
+							console.log(`NV ${emp.code} không được cộng phép: Mới làm được ${diffDays} ngày (tính đến 15).`);
+						}
+					}
+
+					// Nếu đủ điều kiện thì mới kiểm tra lịch sử và cộng
+					if (isEligible) {
+						const hasMonthlyLeave = history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(autoPhepReason));
+
+						if (!hasMonthlyLeave) {
+							addedPN += 1.0;
+							supInsert.push({ 
+								emp_code: emp.code, 
+								type: 'PN', 
+								amount: 1.0, 
+								reason: autoPhepReason, 
+								date: new Date() 
+							});
+						}
 					}
 				}
 
@@ -1164,11 +1260,19 @@
 				emp.nb_old = parseFloat(currentNBOld.toFixed(2));
 
 				schUpsert.push({
-					week_start: currentWeekStart, group_name: currentGroup,
-					emp_code: emp.code, emp_name: emp.name, emp_role: emp.role,
+					week_start: currentWeekStart, 
+					group_name: currentGroup,
+					emp_code: emp.code, 
+					emp_name: emp.name, 
+					emp_role: emp.role,
 					shifts: emp.shifts, 
-					nb_new: emp.nb, pn_new: emp.pn,
-					nb_old: emp.nb_old, pn_old: emp.pn_old
+					nb_new: emp.nb, 
+					pn_new: emp.pn,
+					nb_old: emp.nb_old, 
+					pn_old: emp.pn_old,
+					
+					// --- [QUAN TRỌNG] THÊM DÒNG NÀY ĐỂ LƯU VỊ TRÍ ---
+					stt: (emp.stt !== undefined && emp.stt !== null) ? emp.stt : 9999
 				});
 
 				balUpsert.push({ 
@@ -1258,7 +1362,10 @@
         menu.style.left = rect.left + "px";
         menu.style.top = (rect.bottom + window.scrollY) + "px";
         menu.style.display = "block";
-        menu.querySelector("button").focus();
+        
+		// [QUAN TRỌNG] Focus vào nút đầu tiên ngay khi mở
+		const firstBtn = menu.querySelector("button");
+		if(firstBtn) firstBtn.focus();
     }
 
 
@@ -1335,7 +1442,7 @@
 		document.getElementById("nbCalcStatus").innerText = "...";
 		
 		popup.style.display = "flex";
-		listDiv.innerHTML = '<div style="padding:10px; text-align:center;">⏳ Đang tải dữ liệu từ Supabase...</div>';
+		listDiv.innerHTML = '<div style="padding:10px; text-align:center;">⏳ Đang tải dữ liệu...</div>';
 
 		try {
 			// --- QUERY 1: Lấy danh sách nguồn ---
@@ -1382,7 +1489,7 @@
 				let used = 0;
 				const d = new Date(src.date);
 				const dKey = `${d.getDate()}/${d.getMonth()+1}`;
-				const signature = `${dKey} (${src.reason})`; // Key để đối chiếu
+				const signature = `${dKey} - ${src.reason}`; // Key để đối chiếu
 
 				history.forEach(h => {
 					if (h.status !== 'Từ chối' && h.reason && h.reason.includes(signature)) {
@@ -1410,17 +1517,26 @@
 					};
 
 					div.innerHTML = `
-						<div style="display:flex; align-items:center;">
-							<input type="checkbox" class="nb-src-cb" value="${signature}" data-amt="${remaining}" onchange="calcNbSelection()" style="margin:0 10px 0 0;">
-							<div>
-								<div style="font-weight:600; font-size:13px;">${signature}</div>
-								<div style="font-size:11px; color:#666;">Ngày gốc: ${dKey}</div>
+						<div style="display:flex; align-items:center; width: 100%;">
+							
+							<input type="checkbox" class="nb-src-cb" value="${signature}" data-amt="${remaining}" onchange="calcNbSelection()" 
+								style="margin: 0 12px 0 0; cursor: pointer; width: 18px; height: 18px; flex-shrink: 0;">
+							
+							<div style="display:flex; flex-direction: column;">
+								
+								<span style="font-weight:600; font-size:14px; color:#2c3e50; line-height: 1.4;">
+									${signature}
+								</span>
+
+								<span style="font-weight:500; color:${remaining < 1 ? '#e67e22' : '#27ae60'}; font-size:12px;">
+									(Còn: ${remaining} ngày)
+								</span>
+
 							</div>
-						</div>
-						<div style="font-weight:bold; color:${remaining<1?'#e67e22':'#27ae60'}; font-size:13px;">
-							Còn: ${remaining}
+
 						</div>
 					`;
+					
 					listDiv.appendChild(div);
 				}
 			});
@@ -1438,58 +1554,91 @@
 		}
 	}
 
-	// Hàm tính toán Realtime (Đủ/Thiếu)
+	// Hàm tính toán Realtime (Đủ/Thiếu) - ĐÃ CẬP NHẬT TỰ ĐỘNG CHIA
 	function calcNbSelection() {
 		const statusDiv = document.getElementById("nbCalcStatus");
 		
-		// 1. Xác định lượng cần
+		// 1. Xác định lượng cần (Needed)
 		let needed = 1.0;
 		if (pendingNbCode.includes("/2") || pendingNbCode.includes("0.5")) needed = 0.5;
 
 		// 2. Tính lượng đã tick
 		let selected = 0;
-		document.querySelectorAll(".nb-src-cb:checked").forEach(cb => {
+		const checkedBoxes = document.querySelectorAll(".nb-src-cb:checked");
+		checkedBoxes.forEach(cb => {
 			selected += parseFloat(cb.getAttribute("data-amt"));
 		});
+		
+		// Làm tròn số để tránh lỗi thập phân
+		selected = parseFloat(selected.toFixed(2));
 
-		// 3. Hiển thị
+		// 3. HIỂN THỊ TRẠNG THÁI (LOGIC MỚI)
+		
+		// Trường hợp A: Chọn vừa đủ (Hoàn hảo)
 		if (selected === needed) {
 			statusDiv.innerHTML = `✅ Đã chọn: ${selected} / Cần: ${needed} (Hợp lệ)`;
 			statusDiv.className = "status-ok";
-		} else if (selected > needed) {
+		} 
+		// Trường hợp B: Chọn 1 nguồn lớn hơn nhu cầu (Hệ thống sẽ tự cắt)
+		// Ví dụ: Cần 0.5 nhưng chọn nguồn 1.0 -> OK
+		else if (checkedBoxes.length === 1 && selected > needed) {
+			const remain = selected - needed;
+			statusDiv.innerHTML = `✂️ Tự động cắt: Dùng ${needed}, còn dư ${remain} (Hợp lệ)`;
+			statusDiv.className = "status-ok"; // Cho phép màu xanh
+		}
+		// Trường hợp C: Chọn nhiều nguồn bị dư (Không cho phép vì khó kiểm soát)
+		else if (checkedBoxes.length > 1 && selected > needed) {
 			statusDiv.innerHTML = `⚠️ Dư: ${selected} / Cần: ${needed} (Vui lòng bỏ bớt)`;
 			statusDiv.className = "status-lack";
-		} else {
+		} 
+		// Trường hợp D: Thiếu
+		else {
 			statusDiv.innerHTML = `❌ Thiếu: ${selected} / Cần: ${needed} (Vui lòng chọn thêm)`;
 			statusDiv.className = "status-lack";
 		}
 	}
 
-	// Hàm xác nhận và Lưu
+	// Hàm xác nhận và Lưu - ĐÃ CẬP NHẬT
 	async function confirmNbSelection() {
-		// 1. Validate lại lần cuối
+		// 1. Xác định lại lượng cần
 		let needed = 1.0;
-		if (pendingNbCode.includes("/2")) needed = 0.5;
+		if (pendingNbCode.includes("/2") || pendingNbCode.includes("0.5")) needed = 0.5;
 
+		// 2. Tính lượng đã chọn
 		let selected = 0;
 		let reasons = [];
-		document.querySelectorAll(".nb-src-cb:checked").forEach(cb => {
+		const checkedBoxes = document.querySelectorAll(".nb-src-cb:checked");
+		
+		checkedBoxes.forEach(cb => {
 			selected += parseFloat(cb.getAttribute("data-amt"));
 			reasons.push(cb.value);
 		});
+		
+		selected = parseFloat(selected.toFixed(2));
 
-		if (selected !== needed) {
-			return alert(`Bạn chưa chọn đúng số lượng!\n- Cần: ${needed}\n- Đang chọn: ${selected}`);
+		// 3. VALIDATE (KIỂM TRA)
+		let isValid = false;
+		
+		// Chấp nhận nếu bằng nhau
+		if (selected === needed) isValid = true;
+		// Chấp nhận nếu chọn 1 cái lớn hơn (Logic tự chia)
+		if (checkedBoxes.length === 1 && selected > needed) isValid = true;
+
+		if (!isValid) {
+			return alert(`Lựa chọn chưa hợp lệ!\n- Cần: ${needed}\n- Đang chọn: ${selected}\n\n(Chỉ được phép chọn DƯ khi tích vào đúng 1 ô nguồn).`);
 		}
 
-		// 2. Tạo lý do chi tiết
+		// 4. Tạo lý do chi tiết
 		// VD: "[Bù cho: 01/05 (Trực lễ)] Admin nhập trực tiếp"
 		const finalReason = `[Bù cho: ${reasons.join(", ")}] Được xếp bởi Admin`;
 
-		// 3. Đóng Popup
+		// 5. Đóng Popup
 		closePopup('nbSourcePopup');
 
-		// 4. GỌI HÀM LƯU CHÍNH THỨC (Cập nhật UI + DB)
+		// 6. GỌI HÀM LƯU CHÍNH THỨC
+		// Quan trọng: Truyền tham số 'needed' (vd: 0.5) vào hàm lưu.
+		// Hệ thống sẽ tạo đơn nghỉ 0.5. 
+		// Vì lý do (finalReason) có chứa tên nguồn (VD: 01/05), nên lần sau hệ thống tự biết nguồn đó đã bị trừ 0.5.
 		applyShiftToCell(pendingNbCode, pendingNbCls, finalReason, needed);
 	}
 
@@ -1637,45 +1786,55 @@
     }
     
     async function confirmAddEmployee() {
-        const code = document.getElementById("newEmpCode").value.trim().toUpperCase(); // Viết hoa mã
-        const name = document.getElementById("newEmpName").value.trim();
-        const role = document.getElementById("newEmpRole").value.trim();
+		const code = document.getElementById("newEmpCode").value.trim().toUpperCase(); 
+		const name = document.getElementById("newEmpName").value.trim();
+		const role = document.getElementById("newEmpRole").value.trim();
 
-        if(!code || !name) return alert("Vui lòng nhập đủ thông tin!");
-        
-        // Check trùng trong danh sách hiện tại
-        if(employeesData.some(e => e.code === code)) return alert("Mã NV đã hiển thị trên bảng!");
+		if(!code || !name) return alert("Vui lòng nhập đủ thông tin!");
+		
+		if(employeesData.some(e => e.code === code)) return alert("Mã NV đã hiển thị trên bảng!");
 
-        showLoading(true);
-        try {
-            // [THAY ĐỔI] Thêm status: 'active'
-            const { error } = await _supabase.from('employees').upsert({
-                code: code, 
-                name: name, 
-                role: role, 
-                group_name: currentGroup,
-                status: 'active' // <--- Luôn set là active khi thêm mới/khôi phục
-            }, { onConflict: 'code' });
+		// --- [MỚI] TÍNH TOÁN STT TIẾP THEO ---
+		// Tìm số STT lớn nhất hiện có trong danh sách
+		let maxStt = 0;
+		if (employeesData.length > 0) {
+			// Lấy danh sách STT, chuyển null/undefined thành 0
+			const sttList = employeesData.map(e => (e.stt !== null && e.stt !== undefined) ? e.stt : 0);
+			maxStt = Math.max(...sttList);
+		}
+		// Nhân viên mới sẽ có STT = Max hiện tại + 1
+		const nextStt = maxStt + 1;
 
-            if(error) throw error;
+		showLoading(true);
+		try {
+			const { error } = await _supabase.from('employees').upsert({
+				code: code, 
+				name: name, 
+				role: role, 
+				group_name: currentGroup,
+				status: 'active',
+				stt: nextStt // <--- QUAN TRỌNG: Lưu STT mới vào Database ngay
+			}, { onConflict: 'code' });
 
-            // Thêm vào mảng hiển thị ngay lập tức
-            employeesData.push({ 
-                code, name, role, 
-                
-                stt: 0,
-                
-                shifts: Array(7).fill(""), 
-                pn: 0, nb: 0, pn_old: 0, nb_old: 0 
-            });
-            
-            renderTable();
-            closePopup('addEmpPopup');
-            alert("✅ Đã thêm nhân viên thành công!");
-            
-        } catch(e) { console.error(e); alert("Lỗi: " + e.message); }
-        showLoading(false);
-    }
+			if(error) throw error;
+
+			// Thêm vào mảng hiển thị ngay lập tức
+			employeesData.push({ 
+				code, name, role, 
+				
+				stt: nextStt, // <--- Cập nhật STT cho biến local để hiển thị đúng ngay
+				
+				shifts: Array(7).fill(""), 
+				pn: 0, nb: 0, pn_old: 0, nb_old: 0 
+			});
+			
+			renderTable();
+			closePopup('addEmpPopup');
+			alert("✅ Đã thêm nhân viên thành công!");
+			
+		} catch(e) { console.error(e); alert("Lỗi: " + e.message); }
+		showLoading(false);
+	}
 
     function openBulkLeavePopup() {
         const listDiv = document.getElementById("blEmpList");
@@ -2479,14 +2638,25 @@
 
             // 2. LẤY DỮ LIỆU TỪ SUPABASE
             // A. Lấy nhân viên (Active)
-            const empRes = await _supabase.from('employees')
-                .select('code, name, role')
-                .eq('group_name', currentGroup)
-                .eq('status', 'active')
-                .order('code');
+            // [MỚI 1] Kiểm tra xem có tích chọn lấy Inactive không
+			const includeInactive = document.getElementById("chkIncludeInactive").checked;
 
-            if (empRes.error) throw empRes.error;
-            const employees = empRes.data;
+			// A. Xây dựng Query lấy nhân viên
+			let empQuery = _supabase.from('employees')
+				.select('code, name, role, stt') // Lấy thêm stt
+				.eq('group_name', currentGroup);
+
+			// [MỚI 2] Nếu KHÔNG tích checkbox -> Chỉ lấy nhân viên Active
+			// (Ngược lại nếu tích -> Lấy tất cả, không lọc status)
+			if (!includeInactive) {
+				empQuery = empQuery.eq('status', 'active');
+			}
+
+			// [MỚI 3] Sắp xếp theo STT (Để giống màn hình Lịch) thay vì Code
+			const empRes = await empQuery.order('stt', { ascending: true });
+
+			if (empRes.error) throw empRes.error;
+			const employees = empRes.data;
 
             // B. Lấy lịch của các tuần liên quan
             const weekArray = Array.from(weeksNeeded);
@@ -2700,6 +2870,55 @@
     // BỘ XỬ LÝ SỰ KIỆN BÀN PHÍM (FINAL - CÓ CẢNH BÁO SỐ DƯ KHI PASTE)
     // ============================================================
     document.addEventListener("keydown", async (e) => {
+	
+		if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+		if (typeof isSwapMode !== 'undefined' && isSwapMode) return;
+		
+		const menu = document.getElementById("shiftMenu");
+		const isMenuOpen = menu.style.display === "block";
+	
+		// ================= [PHẦN 1] XỬ LÝ KHI MENU ĐANG MỞ =================
+		if (isMenuOpen) {
+			// Lấy danh sách tất cả các nút trong menu
+			const buttons = Array.from(menu.querySelectorAll("button"));
+			const activeBtn = document.activeElement; // Nút đang được chọn
+			let idx = buttons.indexOf(activeBtn);
+
+			// A. ĐIỀU HƯỚNG LÊN / XUỐNG
+			if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+				e.preventDefault(); // Chặn cuộn trang
+
+				// Nếu chưa focus vào nút nào thì chọn nút đầu tiên
+				if (idx === -1) {
+					buttons[0].focus();
+					return;
+				}
+
+				if (e.key === "ArrowDown") {
+					idx++;
+					if (idx >= buttons.length) idx = 0; // Vòng về đầu
+				} else {
+					idx--;
+					if (idx < 0) idx = buttons.length - 1; // Vòng xuống cuối
+				}
+
+				buttons[idx].focus(); // Chuyển focus sang nút mới
+				return; // Dừng, không chạy logic bên dưới
+			}
+
+			// B. PHÍM ENTER (CHỌN CA)
+			if (e.key === "Enter") {
+				// Mặc định trình duyệt: Button đang focus + Enter = Click
+				// Ta chỉ cần return để không kích hoạt logic "Mở menu" ở dưới
+				return; 
+			}
+
+			// C. PHÍM ESC (ĐÓNG MENU) -> Để nó chạy xuống logic ESC chung ở dưới
+			if (e.key !== "Escape") return; 
+		}
+		
+		// ======================================
+	
 		if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") {
 			return;
 		}
@@ -2762,7 +2981,7 @@
             try { await navigator.clipboard.writeText(code); } catch(err) { fallbackCopyTextToClipboard(code); }
         }
 
-        // --- C. PASTE (CTRL + V) [NÂNG CẤP: FILL + CẢNH BÁO SỐ DƯ] ---
+        // --- C. PASTE (CTRL + V) [FINAL V4: DÁN CA THƯỜNG - BỎ QUA NB] ---
         if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
             e.preventDefault();
             
@@ -2771,156 +2990,306 @@
             let startCell = document.querySelector(".selected");
             
             if (targetCells.length === 0 && startCell) targetCells = [startCell];
-            else if (targetCells.length > 0 && !startCell) startCell = targetCells[0];
-
             if (targetCells.length === 0) return;
 
             try {
-                // 2. Lấy dữ liệu
+                // 2. Lấy dữ liệu clipboard
                 let text = "";
                 try { text = await navigator.clipboard.readText(); } catch (err) {}
                 if (!text && copiedShift) text = copiedShift.code;
+                
                 if (!text) return;
-
+                
+                // 3. PHÂN TÍCH DỮ LIỆU
                 const rowsStr = text.trim().split(/\r?\n/);
-                const isSingleValue = rowsStr.length === 1 && rowsStr[0].split('\t').length === 1;
+                // Mảng phẳng để check nhanh
+                const allValues = rowsStr.map(row => row.split('\t')).flat().map(v => v.trim().toUpperCase());
+                
+                const containsNB = allValues.some(v => v === 'NB' || v === 'NB/2' || v === '0.5NB');
+                const isMultiValue = allValues.length > 1;
+
+                // ============================================================
+                // XỬ LÝ LOGIC NB
+                // ============================================================
+                if (containsNB) {
+                    // TRƯỜNG HỢP 1: Chỉ dán đúng 1 ô NB -> MỞ POPUP (Giữ nguyên tiện ích này)
+                    if (!isMultiValue && targetCells.length === 1) {
+                        const cell = targetCells[0]; 
+                        const tr = cell.closest("tr");
+                        const tbody = document.getElementById("scheduleBody");
+                        const allRows = Array.from(tbody.children);
+                        
+                        const rIdx = allRows.indexOf(tr);
+                        const cIdx = Array.from(tr.children).indexOf(cell) - 4;
+
+                        if (employeesData[rIdx] && cIdx >= 0 && cIdx < 7) {
+                            selectedR = rIdx; selectedC = cIdx; currentCell = cell;
+                            
+                            const wDate = new Date(currentWeekStart);
+                            wDate.setDate(wDate.getDate() + cIdx);
+                            pendingNbDateStr = formatDateISO(wDate); 
+
+                            const val = allValues[0];
+                            pendingNbCode = val;
+                            const conf = SHIFTS.find(s => s.code === val) || {cls:""};
+                            pendingNbCls = conf.cls;
+
+                            const emp = employeesData[rIdx];
+                            openNbSourcePopup(emp.code, emp.name, pendingNbDateStr, val);
+                        }
+                        return; // Dừng, chuyển sang Popup
+                    }
+
+                    // TRƯỜNG HỢP 2: Dán nhiều ô -> CẢNH BÁO & LỌC BỎ NB
+                    if (isMultiValue) {
+                        if (!confirm("⚠️ PHÁT HIỆN MÃ [NB]!\n\nDo mỗi ngày nghỉ bù cần chọn nguồn riêng, hệ thống sẽ:\n- ✅ Dán các ca thường (S, C, P...)\n- ⚪ ĐỂ TRỐNG các ô [NB]\n\nBạn có muốn tiếp tục không?")) {
+                            return; // Hủy dán nếu user không chịu
+                        }
+                        // Nếu OK -> Code sẽ chạy xuống dưới, nhưng ta cần cờ để biết là phải filter
+                    }
+                }
+                
+                // ============================================================
+                // LOGIC DÁN (CÓ LỌC NB THÀNH RỖNG)
+                // ============================================================
                 
                 const tbody = document.getElementById("scheduleBody");
                 const allRows = Array.from(tbody.children);
 
-                // --- BƯỚC QUÉT TRƯỚC (PRE-CHECK): TÌM RỦI RO ---
-                let warningList = new Set(); // Dùng Set để tránh báo trùng tên nhân viên
+                // ... (Logic Pre-check số dư P giữ nguyên) ...
+                let warningList = new Set();
                 let hasBalanceIssue = false;
-
-                // Hàm check nhỏ để dùng lại
                 const checkRisk = (rIdx, val) => {
-                    const cleanVal = val.trim().toUpperCase();
-                    // Chỉ check nếu dán P hoặc NB
-                    if (cleanVal.includes("P") || cleanVal.includes("NB")) {
-                        const check = checkBalanceSafe(rIdx, cleanVal);
-                        if (!check.ok) {
-                            hasBalanceIssue = true;
-                            // Lấy tên nhân viên để báo cáo
-                            const empName = employeesData[rIdx].name;
-                            warningList.add(empName);
-                        }
+                    const v = val.trim().toUpperCase();
+                    // Chỉ check P (NB sẽ bị xóa rỗng nên không cần check dư)
+                    if (v.includes("P")) { 
+                        const check = checkBalanceSafe(rIdx, v);
+                        if (!check.ok) { hasBalanceIssue = true; warningList.add(employeesData[rIdx].name); }
                     }
                 }
 
-                // TRƯỜNG HỢP 1: FILL (Copy 1 ô -> Paste nhiều ô)
-                if (isSingleValue && targetCells.length > 1) {
+                // Chạy check rủi ro
+                if (!isMultiValue && targetCells.length > 1) {
                     const val = text.trim();
-                    targetCells.forEach(cell => {
-                        const tr = cell.closest("tr");
-                        if(tr) {
-                            const rIdx = allRows.indexOf(tr);
-                            checkRisk(rIdx, val);
-                        }
-                    });
-                } 
-                // TRƯỜNG HỢP 2: PASTE BÌNH THƯỜNG (Paste bảng/dòng)
-                else {
-                    const startTr = startCell.closest("tr");
-                    const startRIdx = allRows.indexOf(startTr);
-                    const startCIdx = Array.from(startTr.children).indexOf(startCell) - 4; 
-
-                    rowsStr.forEach((rowStr, i) => {
-                        const cols = rowStr.split('\t');
-                        const rIdx = startRIdx + i;
-                        if (rIdx >= employeesData.length) return;
-
-                        cols.forEach((val, j) => {
-                            const cIdx = startCIdx + j;
-                            if (cIdx >= 0 && cIdx < 7) {
-                                checkRisk(rIdx, val);
-                            }
-                        });
-                    });
+                    targetCells.forEach(cell => { const tr=cell.closest("tr"); if(tr) checkRisk(Array.from(tbody.children).indexOf(tr), val); });
+                } else {
+                     const startTr = startCell.closest("tr");
+                     const startRIdx = Array.from(tbody.children).indexOf(startTr);
+                     const startCIdx = Array.from(startTr.children).indexOf(startCell) - 4; 
+                     rowsStr.forEach((rowStr, i) => {
+                        const cols = rowStr.split('\t'); const rIdx = startRIdx + i; if(rIdx>=employeesData.length)return;
+                        cols.forEach((val, j) => { checkRisk(rIdx, val); });
+                     });
                 }
 
-                // --- HIỂN THỊ CẢNH BÁO NẾU CÓ ---
                 if (hasBalanceIssue) {
                     const names = Array.from(warningList).join(", ");
-                    const msg = `⚠️ CẢNH BÁO!\n\nCác nhân viên sau KHÔNG ĐỦ phép/bù để thực hiện thao tác này:\n👉 ${names}\n\nNếu tiếp tục, số dư sẽ bị ÂM. Bạn có chắc chắn muốn dán không?`;
-                    
-                    if (!confirm(msg)) return; // Nếu chọn Cancel thì dừng ngay, không dán gì cả
+                    if (!confirm(`⚠️ CẢNH BÁO SỐ DƯ PHÉP (P)!\nNhân viên: ${names}\nSố dư sẽ bị ÂM. Bạn có chắc chắn muốn dán không?`)) return;
                 }
 
-                // --- THỰC HIỆN PASTE (NẾU QUA ĐƯỢC CẢNH BÁO) ---
+                // --- THỰC HIỆN PASTE ---
                 let hasChange = false;
+                const newRequests = []; 
+                const getDateByColIndex = (cIdx) => {
+                    const wDate = new Date(currentWeekStart); wDate.setDate(wDate.getDate() + cIdx); return formatDateISO(wDate);
+                };
 
-                // Logic Paste 1: FILL
-                if (isSingleValue && targetCells.length > 1) {
+                const processPasteCell = (cell, rawInput, rIdx, cIdx) => {
+                    // [QUAN TRỌNG] Xử lý lọc mã
+                    let codeToPaste = rawInput;
+                    
+                    // Nếu là NB thì chuyển thành rỗng ""
+                    if (codeToPaste === 'NB' || codeToPaste === 'NB/2' || codeToPaste === '0.5NB') {
+                        codeToPaste = ""; 
+                    }
+
+                    const conf = SHIFTS.find(s => s.code === codeToPaste) || { cls: "", code: codeToPaste };
+                    
+                    // Cập nhật UI
+                    cell.innerText = conf.code; 
+                    cell.className = `shift ${conf.cls}`; 
+                    cell.removeAttribute("style");
+                    if (targetCells.length > 1) cell.classList.add('cell-multi-selected'); else cell.classList.add('selected');
+
+                    // Cập nhật Data
+                    if (employeesData[rIdx] && cIdx >= 0 && cIdx < 7) {
+                        const oldVal = employeesData[rIdx].shifts[cIdx];
+                        employeesData[rIdx].shifts[cIdx] = conf.code;
+                        
+                        // Nếu là Phép (P) -> Tạo request
+                        if (conf.code.includes("P") && oldVal !== conf.code) {
+                             newRequests.push({
+                                emp_code: employeesData[rIdx].code, emp_name: employeesData[rIdx].name,
+                                type: conf.code, date: getDateByColIndex(cIdx),
+                                reason: "Nhập nhanh (Paste)", val: (conf.code.includes("/2")||conf.code.includes("0.5"))?0.5:1.0,
+                                status: 'Đã duyệt'
+                            });
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Logic Paste
+                if (!isMultiValue && targetCells.length > 1) {
+                    // Paste FILL
                     const val = text.trim().toUpperCase();
-                    const conf = SHIFTS.find(s => s.code === val) || { cls: "", code: val };
-
                     targetCells.forEach(cell => {
                         try {
-                            const tr = cell.closest("tr");
-                            const rIdx = allRows.indexOf(tr);
-                            const cIdx = Array.from(tr.children).indexOf(cell) - 4;
-
-                            // Cập nhật UI
-                            cell.innerText = conf.code;
-                            cell.className = `shift ${conf.cls} cell-multi-selected`;
-                            cell.removeAttribute("style");
-                            
-                            // Cập nhật Data
-                            if (employeesData[rIdx] && cIdx >= 0 && cIdx < 7) {
-                                employeesData[rIdx].shifts[cIdx] = conf.code;
-                                hasChange = true;
-                            }
-                        } catch (err) { console.error(err); }
+                            const tr = cell.closest("tr"); const rIdx = Array.from(tbody.children).indexOf(tr); const cIdx = Array.from(tr.children).indexOf(cell) - 4;
+                            if (processPasteCell(cell, val, rIdx, cIdx)) hasChange = true;
+                        } catch (err) {}
                     });
-                }
-                // Logic Paste 2: NORMAL
-                else {
+                } else {
+                    // Paste NORMAL
                     const startTr = startCell.closest("tr");
-                    const startRIdx = allRows.indexOf(startTr);
+                    const startRIdx = Array.from(tbody.children).indexOf(startTr);
                     const startCIdx = Array.from(startTr.children).indexOf(startCell) - 4; 
-
                     rowsStr.forEach((rowStr, i) => {
-                        const cols = rowStr.split('\t');
-                        const rIdx = startRIdx + i;
-                        if (rIdx >= employeesData.length) return;
-
+                        const cols = rowStr.split('\t'); const rIdx = startRIdx + i; if (rIdx >= employeesData.length) return;
                         cols.forEach((val, j) => {
                             const cIdx = startCIdx + j;
                             if (cIdx >= 0 && cIdx < 7) {
                                 let rawVal = val.trim().toUpperCase();
-                                const conf = SHIFTS.find(s => s.code === rawVal) || { cls: "", code: rawVal };
-                                
-                                employeesData[rIdx].shifts[cIdx] = conf.code;
-                                hasChange = true;
-                                
-                                const targetRow = allRows[rIdx];
+                                const targetRow = Array.from(tbody.children)[rIdx]; 
                                 const targetCell = targetRow.children[cIdx + 4];
-                                if (targetCell) {
-                                    targetCell.innerText = conf.code;
-                                    targetCell.className = `shift ${conf.cls}`;
-                                    targetCell.removeAttribute("style");
-                                    // Giữ selected nếu đang chọn nhiều
-                                    if(targetCells.length > 1) targetCell.classList.add('cell-multi-selected');
-                                    
-                                    targetCell.animate([{ backgroundColor: '#ffffcc' }, { backgroundColor: 'transparent' }], { duration: 500 });
+                                if (targetCell) { 
+                                    if (processPasteCell(targetCell, rawVal, rIdx, cIdx)) hasChange = true; 
                                 }
                             }
                         });
                     });
                 }
-                
-                if (hasChange) triggerAutoSave();
+
+                if (hasChange) {
+                    triggerAutoSave();
+                    if (newRequests.length > 0) {
+                        _supabase.from('leave_requests').insert(newRequests).then(({error})=>{
+                            if(!error) showToastNotification(`✅ Đã tạo tự động ${newRequests.length} đơn Phép!`);
+                        });
+                    }
+                }
 
             } catch (err) { console.error("Lỗi paste:", err); }
         }
 
-        // --- ESCAPE ---
-        if (e.key === "Escape") {
-            if (document.querySelector(".copy-source")) 
-                document.querySelector(".copy-source").classList.remove("copy-source");
-            clearSelection();
-            document.getElementById("shiftMenu").style.display = "none";
-        }
+        // --- D. ĐIỀU HƯỚNG MŨI TÊN (GRID) ---
+		if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+			// Nếu Menu đang mở thì đã return ở trên rồi, nên xuống đây chắc chắn là Menu đang đóng
+			e.preventDefault(); 
+
+			if (selectedR === -1 || selectedC === -1) {
+				selectCell(0, 0); return;
+			}
+
+			let newR = selectedR;
+			let newC = selectedC;
+
+			if (e.key === "ArrowUp") newR--;
+			if (e.key === "ArrowDown") newR++;
+			if (e.key === "ArrowLeft") newC--;
+			if (e.key === "ArrowRight") newC++;
+
+			if (newR < 0) newR = 0;
+			if (newR >= employeesData.length) newR = employeesData.length - 1;
+			if (newC < 0) newC = 0;
+			if (newC > 6) newC = 6; 
+
+			selectCell(newR, newC);
+		}
+
+		// --- E. PHÍM ENTER (MỞ MENU) ---
+		if (e.key === "Enter") {
+			e.preventDefault();
+			// Nếu menu chưa mở thì mở nó ra
+			if (currentCell && selectedR !== -1 && !isMenuOpen) {
+				openMenu(currentCell, selectedR, selectedC);
+			}
+		}
+		
+		// --- F. PHÍM ESCAPE (ĐÓNG) ---
+		if (e.key === "Escape") {
+			if (document.querySelector(".copy-source")) 
+				document.querySelector(".copy-source").classList.remove("copy-source");
+			
+			if (isMenuOpen) {
+				menu.style.display = "none";
+				// [QUAN TRỌNG] Trả lại focus cho ô Grid để dùng phím tiếp
+				// Tuy nhiên div/td thường không nhận focus trừ khi có tabindex.
+				// Nhưng code logic arrow key của ta dựa vào biến selectedR/C nên không cần focus thực sự.
+			} else {
+				clearSelection();
+				selectedR = -1; selectedC = -1; currentCell = null;
+			}
+		}
+		
+		// --- D. ĐIỀU HƯỚNG MŨI TÊN (ARROWS) ---
+		if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+			// Nếu Menu chọn ca đang mở -> Để mặc định cho browser xử lý (chọn nút trong menu)
+			if(document.getElementById("shiftMenu").style.display === "block") return;
+
+			e.preventDefault(); // Chặn cuộn trang web
+
+			// Nếu chưa chọn ô nào -> Mặc định chọn ô đầu tiên (Dòng 0, Cột 0)
+			if (selectedR === -1 || selectedC === -1) {
+				selectCell(0, 0);
+				return;
+			}
+
+			let newR = selectedR;
+			let newC = selectedC;
+
+			if (e.key === "ArrowUp") newR--;
+			if (e.key === "ArrowDown") newR++;
+			if (e.key === "ArrowLeft") newC--;
+			if (e.key === "ArrowRight") newC++;
+
+			// Giới hạn biên (Không cho chạy ra ngoài bảng)
+			// Dòng: 0 đến max
+			if (newR < 0) newR = 0;
+			if (newR >= employeesData.length) newR = employeesData.length - 1;
+			
+			// Cột: 0 (T2) đến 6 (CN)
+			if (newC < 0) newC = 0;
+			if (newC > 6) newC = 6; 
+
+			// Thực hiện chọn
+			selectCell(newR, newC);
+		}
+
+		// --- E. PHÍM ENTER (MỞ MENU) ---
+		if (e.key === "Enter") {
+			e.preventDefault();
+			
+			const menu = document.getElementById("shiftMenu");
+			
+			// Trường hợp 1: Menu ĐANG mở -> Enter đóng vai trò click chọn nút đang focus
+			// (Browser tự xử lý việc này nếu nút đang được focus)
+			if(menu.style.display === "block") {
+				return; 
+			}
+
+			// Trường hợp 2: Menu ĐANG ĐÓNG -> Mở Menu tại ô đang chọn
+			if (currentCell && selectedR !== -1) {
+				openMenu(currentCell, selectedR, selectedC);
+			}
+		}
+		
+		// --- F. PHÍM ESCAPE (ĐÓNG MENU / BỎ CHỌN) ---
+		if (e.key === "Escape") {
+			if (document.querySelector(".copy-source")) 
+				document.querySelector(".copy-source").classList.remove("copy-source");
+			
+			// Nếu menu đang mở thì đóng menu, nhưng vẫn giữ ô đang chọn (selected) để thao tác tiếp
+			const menu = document.getElementById("shiftMenu");
+			if (menu.style.display === "block") {
+				menu.style.display = "none";
+			} else {
+				// Nếu menu đã đóng rồi thì mới bỏ chọn ô
+				clearSelection();
+				selectedR = -1; selectedC = -1; currentCell = null;
+			}
+		}
     });
 
     // Hàm hỗ trợ
@@ -3280,6 +3649,36 @@
             btnSave.innerText = oldText; btnSave.disabled = false;
         }
     }
+	
+	// --- HÀM HỖ TRỢ CHỌN Ô BẰNG CODE (DÙNG CHO PHÍM) ---
+	function selectCell(r, c) {
+		const tbody = document.getElementById("scheduleBody");
+		// Kiểm tra dòng tồn tại
+		if (!tbody || !tbody.children[r]) return;
+
+		const tr = tbody.children[r];
+		// Cấu trúc bảng: 0=STT, 1=Code, 2=Name, 3=Role => Ca làm việc bắt đầu từ index 4
+		const cellIndex = c + 4; 
+		const cell = tr.children[cellIndex];
+
+		if (cell) {
+			// 1. Xóa highlight cũ
+			if (document.querySelector(".selected")) {
+				document.querySelector(".selected").classList.remove("selected");
+			}
+			
+			// 2. Cập nhật biến toàn cục
+			selectedR = r;
+			selectedC = c;
+			currentCell = cell;
+
+			// 3. Highlight ô mới
+			cell.classList.add("selected");
+			
+			// 4. Tự động cuộn màn hình nếu ô bị khuất
+			cell.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+		}
+	}
 </script>
 </body>
 </html>
