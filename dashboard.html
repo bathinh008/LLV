@@ -93,6 +93,21 @@
     
     /* 3. Canh giữa nội dung cột Vai trò (để Badge đẹp hơn) */
     td:nth-child(2) { text-align: center; }
+	
+	/* --- FOOTER COPYRIGHT --- */
+	.footer-copyright {
+		text-align: center;
+		padding: 20px 0;
+		margin-top: 30px;
+		color: #999;
+		font-size: 20px;
+		border-top: 1px solid #eee;
+	}
+
+	.footer-copyright span {
+		font-weight: 600;
+		color: var(--primary); /* Hoặc #4a90e2 */
+	}
 </style>
 </head>
 <body>
@@ -116,16 +131,82 @@
     <div class="tabs" id="adminTabs">
         <div class="tab active" onclick="switchTab('users')">👤 Quản lý Tài khoản</div>
         <div class="tab" onclick="switchTab('groups')">🏢 Quản lý Nhóm</div>
+		<div class="tab" onclick="switchTab('employees')">👥 Quản lý Nhân sự</div>
         <div class="tab" onclick="switchTab('holidays')">🎉 Quản lý Ngày lễ</div>
         <div class="tab" onclick="switchTab('history')">📜 Lịch sử</div>
+		<div class="tab" onclick="switchTab('summary')">📑 Tổng hợp Toàn công ty</div>
     </div>
 
     <div id="tab-users" class="tab-content active">
-        <button class="btn-p" onclick="openUserPopup()">+ Thêm Tài Khoản</button>
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input id="searchUserInput" placeholder="Tìm theo Tên, Vai trò hoặc Nhóm..." style="width: 300px; margin-bottom:0;" onkeyup="filterUsers()">
+            <button class="btn-p" onclick="openUserPopup()" style="width:auto;">+ Thêm Tài Khoản</button>
+        </div>
+
         <table>
             <thead><tr><th>Username</th><th>Vai trò</th><th>Nhóm Chính</th><th>Nhóm Phụ</th><th>Thao tác</th></tr></thead>
             <tbody id="userTableBody"></tbody>
         </table>
+		
+		<div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+			<button id="btnPrevUser" class="btn-o" onclick="changeUserPage(-1)" disabled>← Trang trước</button>
+			<span style="font-weight:600; color:#555;">Trang <span id="pageUserNum">1</span> / <span id="pageUserTotal">1</span></span>
+			<button id="btnNextUser" class="btn-o" onclick="changeUserPage(1)">Trang sau →</button>
+		</div>
+    </div>
+
+	<div id="tab-summary" class="tab-content">
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 20px;">
+            
+            <div style="margin-bottom: 15px; border-bottom: 1px dashed #ddd; padding-bottom: 15px;">
+                <label style="margin-bottom: 5px;">Chọn nhóm cần xem:</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;" id="sumGroupCheckboxes">
+                    <span>Đang tải danh sách nhóm...</span>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:15px; align-items:flex-end;">
+                <div style="flex:1; max-width: 250px;">
+                    <label style="margin-bottom:5px; display:block;">Chọn tuần xem:</label>
+                    <input type="date" id="sumWeekPicker" style="margin-bottom:0;">
+                </div>
+                <button class="btn-p" onclick="loadAggregateSchedule()">🔍 Xem Tổng Hợp</button>
+                <button class="btn-s" onclick="exportAggregateExcel()">📊 Xuất Excel Tổng</button>
+            </div>
+        </div>
+
+        <div id="aggregateContainer">
+            <div style="text-align:center; color:#999; padding:30px;">
+                Vui lòng chọn nhóm, chọn ngày và bấm "Xem Tổng Hợp"
+            </div>
+        </div>
+    </div>
+
+	<div id="tab-employees" class="tab-content">
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input id="searchEmpInput" placeholder="Tìm theo Mã, Tên hoặc Chức vụ..." style="width: 300px; margin-bottom:0;" onkeyup="filterEmployees()">
+            <button class="btn-p" onclick="openEmployeePopup()" style="width:auto;">+ Thêm Nhân Viên</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:80px;">Mã NV</th>
+                    <th>Họ Tên</th>
+                    <th>Chức vụ</th>
+                    <th>Nhóm</th>
+                    <th style="text-align:center;">Ngày vào làm</th>
+                    <th style="text-align:center;">Trạng thái</th>
+                    <th style="text-align:center;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="empTableBody"></tbody>
+        </table>
+		
+		<div style="margin-top: 15px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+			<button id="btnPrevEmp" class="btn-o" onclick="changeEmpPage(-1)" disabled>← Trang trước</button>
+			<span style="font-weight:600; color:#555;">Trang <span id="pageEmpNum">1</span> / <span id="pageEmpTotal">1</span></span>
+			<button id="btnNextEmp" class="btn-o" onclick="changeEmpPage(1)">Trang sau →</button>
+		</div>
     </div>
 
     <div id="tab-groups" class="tab-content">
@@ -145,15 +226,63 @@
     </div>
 
     <div id="tab-history" class="tab-content">
-        <div style="display:flex; gap:10px; margin-bottom: 15px;">
-            <input id="searchHistoryInput" placeholder="Tìm theo Mã NV hoặc Lý do..." style="width: 300px; margin-bottom:0;" onkeyup="filterHistory()">
-            <button class="btn-p" onclick="loadHistoryData()" style="width:auto;">🔄 Làm mới</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+            <button id="subtab-btn-sup" class="btn-p" onclick="switchHistorySubTab('sup')">💰 Biến động phép/bù</button>
+            <button id="subtab-btn-req" class="btn-o" onclick="switchHistorySubTab('req')">📝 Yêu cầu xin nghỉ phép/bù</button>
         </div>
-        <table>
-            <thead><tr><th>Thời gian</th><th>Mã NV</th><th>Loại</th><th>Số lượng</th><th>Lý do</th></tr></thead>
-            <tbody id="historyTableBody"></tbody>
-        </table>
+
+        <div style="display:flex; gap:10px; margin-bottom: 15px;">
+            <input id="searchHistoryInput" placeholder="Tìm theo Mã NV, Tên hoặc Lý do..." style="width: 300px; margin-bottom:0;" onkeyup="filterCurrentHistory()">
+            <button class="btn-p" onclick="refreshCurrentHistoryTab()" style="width:auto;">🔄 Làm mới</button>
+        </div>
+
+        <div id="history-view-sup">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Mã NV</th>
+                        <th style="text-align:center;">Loại</th>
+                        <th style="text-align:center;">Số lượng</th>
+                        <th>Lý do</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="history-view-req" style="display: none;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Ngày tạo</th>
+                        <th>Mã NV</th>
+                        <th>Họ Tên</th>
+                        <th style="text-align:center;">Loại nghỉ</th>
+                        <th style="text-align:center;">Ngày nghỉ</th>
+                        <th style="text-align:center;">Số công</th>
+                        <th style="text-align:center;">Trạng thái</th>
+                        <th>Lý do</th>
+                    </tr>
+                </thead>
+                <tbody id="reqHistoryBody"></tbody>
+            </table>
+        </div>
+		
+		<div id="historyPagination" style="margin-top: 20px; display: flex; justify-content: center; align-items: center; gap: 15px;">
+			<button id="btnPrevPage" class="btn-o" onclick="changeHistoryPage(-1)" disabled>← Trang trước</button>
+			
+			<span style="font-weight:600; color:#555;">
+				Trang <span id="pageHistoryNum">1</span> / <span id="pageHistoryTotal">...</span>
+			</span>
+			
+			<button id="btnNextPage" class="btn-o" onclick="changeHistoryPage(1)">Trang sau →</button>
+		</div>
     </div>
+	
+	</div> <div class="footer-copyright">
+		&copy; 2025 Hệ thống Quản lý. Phát triển bởi <span>Phương Thịnh</span>.
+	</div>
 </div>
 
 <div id="userPopup" class="popup-bg">
@@ -208,6 +337,54 @@
     </div>
 </div>
 
+<div id="employeePopup" class="popup-bg">
+    <div class="popup-box">
+        <h3 id="empPopupTitle">Thêm Nhân Viên</h3>
+        <input type="hidden" id="empOldCode"> <div style="display:flex; gap:10px;">
+            <div style="flex:1">
+                <label>Mã NV (*):</label>
+                <input id="empCode" placeholder="VD: NV01" style="font-family:monospace; font-weight:bold;">
+            </div>
+            <div style="flex:2">
+                <label>Họ Tên (*):</label>
+                <input id="empName" placeholder="Nhập họ tên">
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1">
+                <label>Chức vụ:</label>
+                <input id="empRole" placeholder="VD: NV Bán hàng">
+            </div>
+            <div style="flex:1">
+                <label>Nhóm:</label>
+                <select id="empGroup">
+                    <option value="">-- Chọn nhóm --</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1">
+                <label>Ngày vào làm:</label>
+                <input type="date" id="empJoinDate">
+            </div>
+            <div style="flex:1">
+                <label>Trạng thái:</label>
+                <select id="empStatus">
+                    <option value="active">🟢 Đang làm việc</option>
+                    <option value="inactive">🔴 Đã nghỉ việc</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-d" onclick="closePopup('employeePopup')">Hủy</button>
+            <button class="btn-p" onclick="saveEmployee()">Lưu lại</button>
+        </div>
+    </div>
+</div>
+
 <div id="loading">⏳ Đang xử lý...</div>
 
 <script>
@@ -220,7 +397,16 @@
     // ================= 2. BIẾN TOÀN CỤC =================
     let allGroups = [];
     let fullHistory = [];
-    let currentUserRole = ""; // Lưu vai trò hiện tại
+    let allUsers = [];
+	let allEmployees = [];
+    let currentUserRole = "";
+	
+	// =====================================================
+	const PAGE_SIZE_ADMIN = 20; // Số dòng mỗi trang
+	let curPageUser = 1;        // Trang hiện tại User
+	let curPageEmp = 1;         // Trang hiện tại Employee
+	let currentFilteredUsers = []; // Danh sách User đang hiển thị (để tính trang)
+	let currentFilteredEmps = [];  // Danh sách Emp đang hiển thị
 
     // ================= 3. KHỞI TẠO & PHÂN QUYỀN =================
     document.addEventListener("DOMContentLoaded", async () => {
@@ -305,25 +491,36 @@
     }
 
     function switchTab(name) {
-        // [BẢO MẬT] Nếu Manager cố tình gọi switchTab('users') -> Chặn lại
-        if (name === 'users' && currentUserRole !== 'Admin') return;
+		if (name === 'users' && currentUserRole !== 'Admin') return;
 
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        
-        const map = { 'users': 1, 'groups': 2, 'holidays': 3, 'history': 4 };
-        const tabIndex = map[name];
-        
-        // Tìm tab button tương ứng để active
-        // Lưu ý: nth-child vẫn đếm cả phần tử ẩn, nên logic này vẫn đúng
-        const tabBtn = document.querySelector(`.tabs .tab:nth-child(${tabIndex})`);
-        if(tabBtn) tabBtn.classList.add('active');
-        
-        document.getElementById(`tab-${name}`).classList.add('active');
+		document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+		document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+		
+		// [CẬP NHẬT] Thêm 'summary': 6
+		const map = { 'users': 1, 'groups': 2, 'employees': 3, 'holidays': 4, 'history': 5, 'summary': 6 };
+		const tabIndex = map[name];
+		
+		const tabBtn = document.querySelector(`.tabs .tab:nth-child(${tabIndex})`);
+		if(tabBtn) tabBtn.classList.add('active');
+		
+		document.getElementById(`tab-${name}`).classList.add('active');
 
-        if(name === 'holidays') loadHolidays();
-        if(name === 'history') loadHistoryData();
-    }
+		if(name === 'holidays') loadHolidays();
+		if(name === 'history') { switchHistorySubTab('sup'); }
+		if(name === 'employees') loadEmployees();
+		
+		// [MỚI] Tự động set ngày cho tab Summary
+		if(name === 'summary') {
+			if(!document.getElementById("sumWeekPicker").value) {
+				// Hàm getMonday đã khai báo ở trên, hoặc dùng logic new Date()
+				const d = new Date();
+				const day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1);
+				const monday = new Date(d.setDate(diff)).toISOString().split('T')[0];
+				document.getElementById("sumWeekPicker").value = monday;
+			}
+			renderSumGroupCheckboxes();
+		}
+	}
 
     // ================= 4. QUẢN LÝ NHÓM & RENDER FORM =================
     async function loadGroups() {
@@ -412,34 +609,113 @@
     }
 
     // ================= 5. QUẢN LÝ USER (CHỈ ADMIN) =================
+    // 1. Hàm tải dữ liệu từ Server
     async function loadUsers() {
-        // Bảo vệ lớp 2: Chặn nếu không phải Admin
         if (currentUserRole !== 'Admin') return;
-
         showLoading(true);
         const { data, error } = await _supabase.from('users').select('*').order('username');
+        showLoading(false);
+        if(error) return console.error(error);
+
+        allUsers = data || [];
+        filterUsers(); // Gọi filter để khởi tạo danh sách và reset về trang 1
+    }
+	
+	// 2. [MỚI] Hàm vẽ bảng (Tách ra để tái sử dụng khi tìm kiếm)
+    function renderUserTable(list) {
         const tbody = document.getElementById("userTableBody");
         tbody.innerHTML = "";
         
-        if(data) {
-            data.forEach(u => {
-                const uString = JSON.stringify(u).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-                tbody.innerHTML += `
-                <tr>
-                    <td style="font-family:monospace; color:#666; font-weight:600; text-align:center;">${u.username}</td>
-                    <td style="text-align:center;">${getRoleBadge(u.role)}</td>
-                    <td style="color:#d97706; font-weight:600; text-align:center;">${u.main_group || '-'}</td>
-                    <td style="font-size:13px; color:#666; text-align:center;">${u.sub_groups || '-'}</td>
-                    <td style="text-align:center;">
-                        <div style="display:flex; justify-content:center; gap:5px;">
-                            <button class="btn-e btn-sm" onclick='editUser(${uString})'>✏ Sửa</button>
-                            <button class="btn-d btn-sm" onclick="deleteUser(${u.id})">🗑 Xóa</button>
-                        </div>
-                    </td>
-                </tr>`;
-            });
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:20px;">Không tìm thấy tài khoản nào.</td></tr>`;
+            return;
         }
-        showLoading(false);
+
+        list.forEach(u => {
+            // Xử lý chuỗi JSON an toàn để đưa vào nút Sửa
+            const uString = JSON.stringify(u).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-family:monospace; color:#666; font-weight:600; text-align:center;">${u.username}</td>
+                <td style="text-align:center;">${getRoleBadge(u.role)}</td>
+                <td style="color:#d97706; font-weight:600; text-align:center;">${u.main_group || '-'}</td>
+                <td style="font-size:13px; color:#666; text-align:center;">${u.sub_groups || '-'}</td>
+                <td style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:5px;">
+                        <button class="btn-e btn-sm" onclick='editUser(${uString})'>✏ Sửa</button>
+                        <button class="btn-d btn-sm" onclick="deleteUser(${u.id})">🗑 Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    }
+
+    // 3. [MỚI] Hàm lọc tìm kiếm
+    function filterUsers() {
+        const term = document.getElementById("searchUserInput").value.toLowerCase().trim();
+        
+        // Lọc dữ liệu từ allUsers -> currentFilteredUsers
+        currentFilteredUsers = allUsers.filter(u => 
+            (u.username && u.username.toLowerCase().includes(term)) || 
+            (u.role && u.role.toLowerCase().includes(term)) || 
+            (u.main_group && u.main_group.toLowerCase().includes(term))
+        );
+        
+        curPageUser = 1; // Reset về trang 1
+        renderUserTable();
+    }
+	
+	// Hàm chuyển trang User
+    function changeUserPage(step) {
+        curPageUser += step;
+        renderUserTable();
+    }
+
+    // Hàm vẽ bảng (Có cắt trang)
+    function renderUserTable() {
+        const tbody = document.getElementById("userTableBody");
+        tbody.innerHTML = "";
+        
+        const list = currentFilteredUsers; // Dùng danh sách đang lọc
+        
+        // Tính toán phân trang
+        const totalPages = Math.ceil(list.length / PAGE_SIZE_ADMIN) || 1;
+        if (curPageUser < 1) curPageUser = 1;
+        if (curPageUser > totalPages) curPageUser = totalPages;
+
+        // Cập nhật số trang hiển thị
+        document.getElementById("pageUserNum").innerText = curPageUser;
+        document.getElementById("pageUserTotal").innerText = totalPages;
+        document.getElementById("btnPrevUser").disabled = (curPageUser === 1);
+        document.getElementById("btnNextUser").disabled = (curPageUser === totalPages);
+
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999; padding:20px;">Không tìm thấy tài khoản nào.</td></tr>`;
+            return;
+        }
+
+        // Cắt mảng (Slice)
+        const start = (curPageUser - 1) * PAGE_SIZE_ADMIN;
+        const end = start + PAGE_SIZE_ADMIN;
+        const pageData = list.slice(start, end);
+
+        pageData.forEach(u => {
+            const uString = JSON.stringify(u).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-family:monospace; color:#666; font-weight:600; text-align:center;">${u.username}</td>
+                <td style="text-align:center;">${getRoleBadge(u.role)}</td>
+                <td style="color:#d97706; font-weight:600; text-align:center;">${u.main_group || '-'}</td>
+                <td style="font-size:13px; color:#666; text-align:center;">${u.sub_groups || '-'}</td>
+                <td style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:5px;">
+                        <button class="btn-e btn-sm" onclick='editUser(${uString})'>✏ Sửa</button>
+                        <button class="btn-d btn-sm" onclick="deleteUser(${u.id})">🗑 Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
     }
 
     function openUserPopup() {
@@ -565,20 +841,123 @@
         if(confirm("Xóa ngày lễ này?")) { await _supabase.from('holidays').delete().eq('id', id); loadHolidays(); }
     }
 
-    // ================= 7. LỊCH SỬ GD =================
-    async function loadHistoryData() {
-        showLoading(true);
-        const { data } = await _supabase.from('supplemental_leave').select('*').order('created_at', { ascending: false }).limit(100);
-        showLoading(false);
-        if(data) { fullHistory = data; renderHistory(data); }
+    // ================= 7. LỊCH SỬ GD & YÊU CẦU (ĐÃ NÂNG CẤP 2 TAB) =================
+    
+    // Biến lưu trữ dữ liệu
+    let historySupData = []; // Dữ liệu Supplemental Leave
+    let historyReqData = []; // Dữ liệu Leave Requests
+    let currentSubTab = 'sup'; // Tab hiện tại: 'sup' hoặc 'req'
+
+	// [MỚI] Biến quản lý phân trang
+    const ITEMS_PER_PAGE = 20;
+    let pageSup = 1; // Trang hiện tại của tab Số dư
+    let pageReq = 1; // Trang hiện tại của tab Yêu cầu
+
+	// Biến lưu tổng số lượng bản ghi (để tính trang)
+    let totalSupRecords = 0;
+    let totalReqRecords = 0;
+
+    // --- HÀM CHUYỂN TAB CON ---
+    function switchHistorySubTab(tabName) {
+        currentSubTab = tabName;
+        
+        const btnSup = document.getElementById("subtab-btn-sup");
+        const btnReq = document.getElementById("subtab-btn-req");
+        
+        if (tabName === 'sup') {
+            btnSup.className = "btn-p"; btnReq.className = "btn-o";
+            document.getElementById("history-view-sup").style.display = "block";
+            document.getElementById("history-view-req").style.display = "none";
+            
+            // Nếu chưa có dữ liệu thì tải, nếu có rồi thì update UI trang hiện tại
+            if(historySupData.length === 0) loadHistorySup(1);
+            else updateHistoryPaginationUI(pageSup, totalSupRecords);
+
+        } else {
+            btnSup.className = "btn-o"; btnReq.className = "btn-p";
+            document.getElementById("history-view-sup").style.display = "none";
+            document.getElementById("history-view-req").style.display = "block";
+            
+            if(historyReqData.length === 0) loadHistoryReq(1);
+            else updateHistoryPaginationUI(pageReq, totalReqRecords);
+        }
     }
 
-    function renderHistory(list) {
+    // --- HÀM LÀM MỚI ---
+    function refreshCurrentHistoryTab() {
+        if (currentSubTab === 'sup') { pageSup = 1; loadHistorySup(1); }
+        else { pageReq = 1; loadHistoryReq(1); }
+    }
+
+    // --- [MỚI] HÀM CHUYỂN TRANG ---
+    function changeHistoryPage(step) {
+        if (currentSubTab === 'sup') {
+            pageSup += step;
+            if (pageSup < 1) pageSup = 1;
+            loadHistorySup(pageSup);
+        } else {
+            pageReq += step;
+            if (pageReq < 1) pageReq = 1;
+            loadHistoryReq(pageReq);
+        }
+    }
+	
+	// --- [MỚI] CẬP NHẬT UI PHÂN TRANG (Hiện Trang X / Y) ---
+    function updateHistoryPaginationUI(page, totalRecords) {
+        // Tính tổng số trang (Làm tròn lên)
+        const totalPages = Math.ceil(totalRecords / ITEMS_PER_PAGE) || 1;
+        
+        // Đảm bảo trang hiện tại không vượt quá tổng trang (trừ khi là trang 1)
+        if (page > totalPages && totalPages > 0) page = totalPages;
+
+        document.getElementById("pageHistoryNum").innerText = page;
+        document.getElementById("pageHistoryTotal").innerText = totalPages;
+
+        // Bật/Tắt nút
+        document.getElementById("btnPrevPage").disabled = (page <= 1);
+        document.getElementById("btnNextPage").disabled = (page >= totalPages);
+    }
+
+    // --- [MỚI] CẬP NHẬT UI PHÂN TRANG ---
+    function updatePaginationUI(page, dataLength) {
+        document.getElementById("pageIndicator").innerText = page;
+        document.getElementById("btnPrevPage").disabled = (page === 1);
+        
+        // Nếu dữ liệu tải về ít hơn giới hạn -> Đang ở trang cuối -> Khóa nút Next
+        // Nếu dữ liệu = 0 -> Cũng khóa
+        document.getElementById("btnNextPage").disabled = (dataLength < ITEMS_PER_PAGE);
+    }
+
+    // --- A. LOAD & RENDER SUPPLEMENTAL LEAVE (SỐ DƯ) ---
+    async function loadHistorySup(page) {
+        showLoading(true);
+        const from = (page - 1) * ITEMS_PER_PAGE;
+        const to = from + ITEMS_PER_PAGE - 1;
+
+        // [QUAN TRỌNG] Thêm { count: 'exact' } để lấy tổng số dòng
+        const { data, count, error } = await _supabase
+            .from('supplemental_leave')
+            .select('*', { count: 'exact' }) 
+            .order('created_at', { ascending: false })
+            .range(from, to);
+            
+        showLoading(false);
+        
+        if (error) { console.error(error); return; }
+        
+        historySupData = data || [];
+        totalSupRecords = count || 0; // Lưu tổng số dòng
+
+        renderHistorySup(historySupData);
+        updateHistoryPaginationUI(page, totalSupRecords);
+    }
+
+    function renderHistorySup(list) {
         const tbody = document.getElementById("historyTableBody");
         tbody.innerHTML = "";
         
         if(!list || list.length === 0) { 
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">Chưa có dữ liệu lịch sử.</td></tr>`; 
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">Không có dữ liệu.</td></tr>`; 
             return; 
         }
 
@@ -586,6 +965,7 @@
             const time = new Date(item.created_at).toLocaleString('en-GB');
             const colorAmt = item.amount > 0 ? "color:#16a34a" : "color:#dc2626";
             let typeStyle = "background:#f3f4f6; color:#4b5563";
+            
             if (item.type.includes("P")) typeStyle = "background:#fce4ec; color:#ad1457; border:1px solid #f8bbd0";
             if (item.type.includes("NB")) typeStyle = "background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd";
 
@@ -595,17 +975,103 @@
                 <td style="font-weight:600; text-align:center; font-family:monospace; color:#333;">${item.emp_code}</td>
                 <td style="text-align:center;"><span style="padding:4px 8px; border-radius:12px; font-weight:700; font-size:11px; ${typeStyle}">${item.type}</span></td>
                 <td style="text-align:center; font-weight:800; ${colorAmt}">${item.amount > 0 ? '+' + item.amount : item.amount}</td>
-                <td style="text-align:left; padding-left:15px; color:#444;">${item.reason}</td>
+                <td style="text-align:left; padding-left:15px; color:#444;">${item.reason || '-'}</td>
             </tr>`;
         });
     }
 
-    function filterHistory() {
+    // --- B. LOAD & RENDER LEAVE REQUESTS (YÊU CẦU NGHỈ) ---
+    async function loadHistoryReq(page) {
+        showLoading(true);
+        const from = (page - 1) * ITEMS_PER_PAGE;
+        const to = from + ITEMS_PER_PAGE - 1;
+
+        // [QUAN TRỌNG] Thêm { count: 'exact' }
+        const { data, count, error } = await _supabase
+            .from('leave_requests')
+            .select('*', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(from, to);
+            
+        showLoading(false);
+        
+        if (error) { console.error(error); return; }
+        
+        historyReqData = data || [];
+        totalReqRecords = count || 0; // Lưu tổng số dòng
+
+        renderHistoryReq(historyReqData);
+        updateHistoryPaginationUI(page, totalReqRecords);
+    }
+
+    function renderHistoryReq(list) {
+        const tbody = document.getElementById("reqHistoryBody");
+        tbody.innerHTML = "";
+        
+        if(!list || list.length === 0) { 
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px; color:#999;">Không có dữ liệu.</td></tr>`; 
+            return; 
+        }
+
+        list.forEach(item => {
+            const createdTime = new Date(item.created_at).toLocaleString('en-GB').split(',')[0];
+            const leaveDate = new Date(item.date).toLocaleDateString('en-GB');
+            
+            let statusStyle = "background:#f3f4f6; color:#4b5563";
+            let statusIcon = "⏳";
+            
+            if (item.status === 'Đã duyệt') { 
+                statusStyle = "background:#dcfce7; color:#166534; border:1px solid #bbf7d0"; 
+                statusIcon = "✅";
+            }
+            else if (item.status === 'Từ chối' || item.status.includes('Hủy')) { 
+                statusStyle = "background:#fee2e2; color:#991b1b; border:1px solid #fca5a5"; 
+                statusIcon = "❌";
+            } else {
+                statusStyle = "background:#ffedd5; color:#9a3412; border:1px solid #fed7aa"; 
+            }
+
+            let typeBadge = "bg-gray-100 text-gray-800";
+            if(item.type.includes("P")) typeBadge = "color:#ad1457; background:#fce4ec; font-weight:bold; padding:2px 6px; border-radius:4px;";
+            else typeBadge = "color:#0369a1; background:#e0f2fe; font-weight:bold; padding:2px 6px; border-radius:4px;";
+
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-size:12px; color:#666; text-align:center;">${createdTime}</td>
+                <td style="font-weight:600; text-align:center; font-family:monospace; color:#333;">${item.emp_code}</td>
+                <td style="font-weight:500;">${item.emp_name}</td>
+                <td style="text-align:center;"><span style="${typeBadge}">${item.type}</span></td>
+                <td style="text-align:center; font-family:monospace;">${leaveDate}</td>
+                <td style="text-align:center; font-weight:bold;">${item.val || '-'}</td>
+                <td style="text-align:center;"><span style="padding:4px 8px; border-radius:20px; font-size:11px; font-weight:600; ${statusStyle}">${statusIcon} ${item.status}</span></td>
+                <td style="font-size:13px; color:#555; font-style:italic;">${item.reason || '-'}</td>
+            </tr>`;
+        });
+    }
+
+    // --- C. HÀM LỌC TÌM KIẾM (Client-side) ---
+    function filterCurrentHistory() {
         const term = document.getElementById("searchHistoryInput").value.toLowerCase();
-        const filtered = fullHistory.filter(i => (i.emp_code && i.emp_code.toLowerCase().includes(term)) || (i.reason && i.reason.toLowerCase().includes(term)));
-        renderHistory(filtered);
+        // Lưu ý: Tìm kiếm này chỉ lọc trên 20 dòng đã tải về (để đơn giản)
+        // Nếu muốn tìm toàn bộ database thì cần viết query Supabase .ilike() phức tạp hơn
+        
+        if (currentSubTab === 'sup') {
+            const filtered = historySupData.filter(i => 
+                (i.emp_code && i.emp_code.toLowerCase().includes(term)) || 
+                (i.reason && i.reason.toLowerCase().includes(term))
+            );
+            renderHistorySup(filtered);
+        } else {
+            const filtered = historyReqData.filter(i => 
+                (i.emp_code && i.emp_code.toLowerCase().includes(term)) || 
+                (i.emp_name && i.emp_name.toLowerCase().includes(term)) || 
+                (i.reason && i.reason.toLowerCase().includes(term))
+            );
+            renderHistoryReq(filtered);
+        }
     }
     
+	// định hình Quyền
     function getRoleBadge(role) {
         const config = {
             'Admin':   { cls: 'role-admin',   icon: '👑', label: 'Admin' },
@@ -614,6 +1080,556 @@
         };
         const conf = config[role] || config['User'];
         return `<span class="role-badge ${conf.cls}"><span>${conf.icon}</span> ${conf.label}</span>`;
+    }
+	
+	// ================= X. QUẢN LÝ NHÂN SỰ (MỚI) =================
+    
+    // 1. Tải danh sách nhân viên
+    async function loadEmployees() {
+        showLoading(true);
+        const { data, error } = await _supabase.from('employees').select('*').order('stt', { ascending: true });
+        showLoading(false);
+        if(error) return console.error(error);
+
+        allEmployees = data || [];
+        filterEmployees(); // Gọi filter để reset trang
+    }
+
+    // 2. Vẽ bảng
+    function renderEmployeeTable(list) {
+        const tbody = document.getElementById("empTableBody");
+        tbody.innerHTML = "";
+        
+        if (!list || list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#999;">Không tìm thấy nhân viên nào.</td></tr>`;
+            return;
+        }
+
+        list.forEach(e => {
+            const eString = JSON.stringify(e).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            
+            // Format ngày
+            const joinDate = e.created_at ? new Date(e.created_at).toLocaleDateString('en-GB') : '-';
+            
+            // Badge trạng thái
+            let statusBadge = `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:600;">Active</span>`;
+            if(e.status === 'inactive') statusBadge = `<span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:600;">Đã nghỉ</span>`;
+
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-family:monospace; font-weight:700; color:var(--primary); text-align:center;">${e.code}</td>
+                <td style="font-weight:600;">${e.name}</td>
+                <td>${e.role || ''}</td>
+                <td style="color:#d97706; font-weight:500;">${e.group_name || '-'}</td>
+                <td style="text-align:center; font-size:12px; color:#666;">${joinDate}</td>
+                <td style="text-align:center;">${statusBadge}</td>
+                <td style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:5px;">
+                        <button class="btn-e btn-sm" onclick='editEmployee(${eString})'>✏ Sửa</button>
+                        <button class="btn-d btn-sm" onclick="deleteEmployee('${e.code}')">🗑 Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    }
+
+    // 3. Tìm kiếm
+    function filterEmployees() {
+        const term = document.getElementById("searchEmpInput").value.toLowerCase().trim();
+        
+        currentFilteredEmps = allEmployees.filter(e => 
+            (e.code && e.code.toLowerCase().includes(term)) || 
+            (e.name && e.name.toLowerCase().includes(term)) || 
+            (e.role && e.role.toLowerCase().includes(term))
+        );
+        
+        curPageEmp = 1;
+        renderEmployeeTable();
+    }
+	
+	function changeEmpPage(step) {
+        curPageEmp += step;
+        renderEmployeeTable();
+    }
+
+    function renderEmployeeTable() {
+        const tbody = document.getElementById("empTableBody");
+        tbody.innerHTML = "";
+        
+        const list = currentFilteredEmps;
+        
+        const totalPages = Math.ceil(list.length / PAGE_SIZE_ADMIN) || 1;
+        if (curPageEmp < 1) curPageEmp = 1;
+        if (curPageEmp > totalPages) curPageEmp = totalPages;
+
+        document.getElementById("pageEmpNum").innerText = curPageEmp;
+        document.getElementById("pageEmpTotal").innerText = totalPages;
+        document.getElementById("btnPrevEmp").disabled = (curPageEmp === 1);
+        document.getElementById("btnNextEmp").disabled = (curPageEmp === totalPages);
+        
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#999;">Không tìm thấy nhân viên nào.</td></tr>`;
+            return;
+        }
+
+        const start = (curPageEmp - 1) * PAGE_SIZE_ADMIN;
+        const end = start + PAGE_SIZE_ADMIN;
+        const pageData = list.slice(start, end);
+
+        pageData.forEach(e => {
+            const eString = JSON.stringify(e).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const joinDate = e.created_at ? new Date(e.created_at).toLocaleDateString('en-GB') : '-';
+            let statusBadge = `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:600;">Active</span>`;
+            if(e.status === 'inactive') statusBadge = `<span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:600;">Đã nghỉ</span>`;
+
+            tbody.innerHTML += `
+            <tr>
+                <td style="font-family:monospace; font-weight:700; color:var(--primary); text-align:center;">${e.code}</td>
+                <td style="font-weight:600;">${e.name}</td>
+                <td>${e.role || ''}</td>
+                <td style="color:#d97706; font-weight:500;">${e.group_name || '-'}</td>
+                <td style="text-align:center; font-size:12px; color:#666;">${joinDate}</td>
+                <td style="text-align:center;">${statusBadge}</td>
+                <td style="text-align:center;">
+                    <div style="display:flex; justify-content:center; gap:5px;">
+                        <button class="btn-e btn-sm" onclick='editEmployee(${eString})'>✏ Sửa</button>
+                        <button class="btn-d btn-sm" onclick="deleteEmployee('${e.code}')">🗑 Xóa</button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+    }
+
+    // 4. Mở Popup Thêm
+    function openEmployeePopup() {
+        document.getElementById("empOldCode").value = ""; // Mode thêm mới
+        document.getElementById("empCode").value = "";
+        document.getElementById("empCode").disabled = false; // Cho phép nhập mã
+        document.getElementById("empName").value = "";
+        document.getElementById("empRole").value = "";
+        document.getElementById("empJoinDate").value = new Date().toISOString().split('T')[0]; // Mặc định hôm nay
+        document.getElementById("empStatus").value = "active";
+        
+        document.getElementById("empPopupTitle").innerText = "Thêm Nhân Viên";
+        
+        // Load danh sách nhóm vào dropdown
+        populateGroupSelect();
+        
+        document.getElementById("employeePopup").style.display = "flex";
+        document.getElementById("empCode").focus();
+    }
+
+    // 5. Mở Popup Sửa
+    function editEmployee(e) {
+        document.getElementById("empOldCode").value = e.code; // Mode sửa
+        document.getElementById("empCode").value = e.code;
+        document.getElementById("empCode").disabled = true; // Không cho sửa mã
+        document.getElementById("empName").value = e.name;
+        document.getElementById("empRole").value = e.role || "";
+        document.getElementById("empStatus").value = e.status || "active";
+        
+        // Xử lý ngày
+        if(e.created_at) {
+            document.getElementById("empJoinDate").value = new Date(e.created_at).toISOString().split('T')[0];
+        }
+        
+        document.getElementById("empPopupTitle").innerText = "Sửa Thông Tin";
+        
+        populateGroupSelect();
+        document.getElementById("empGroup").value = e.group_name || ""; // Chọn nhóm hiện tại
+        
+        document.getElementById("employeePopup").style.display = "flex";
+    }
+
+    // Hàm phụ: Đổ dữ liệu nhóm vào select
+    function populateGroupSelect() {
+        const sel = document.getElementById("empGroup");
+        sel.innerHTML = '<option value="">-- Chọn nhóm --</option>';
+        allGroups.forEach(g => {
+            sel.innerHTML += `<option value="${g.name}">${g.name}</option>`;
+        });
+    }
+
+    // 6. Lưu (Thêm/Sửa)
+    async function saveEmployee() {
+        const oldCode = document.getElementById("empOldCode").value;
+        const code = document.getElementById("empCode").value.trim().toUpperCase();
+        const name = document.getElementById("empName").value.trim();
+        const role = document.getElementById("empRole").value.trim();
+        const group = document.getElementById("empGroup").value;
+        const joinDate = document.getElementById("empJoinDate").value;
+        const status = document.getElementById("empStatus").value;
+
+        if(!code || !name) return alert("Vui lòng nhập Mã và Tên nhân viên!");
+
+        showLoading(true);
+        
+        const payload = {
+            code: code,
+            name: name,
+            role: role,
+            group_name: group,
+            status: status,
+            created_at: joinDate ? new Date(joinDate).toISOString() : new Date().toISOString()
+        };
+
+        let error;
+        
+        if (oldCode) {
+            // CẬP NHẬT
+            // Lưu ý: Nếu user cố tình hack đổi mã code disabled thì Supabase vẫn chặn nếu ta dùng .eq('code', oldCode)
+            ({ error } = await _supabase.from('employees').update(payload).eq('code', oldCode));
+        } else {
+            // THÊM MỚI
+            // Cần lấy STT lớn nhất để gán (giống bên scheduler.html)
+            const maxStt = allEmployees.reduce((max, p) => (p.stt > max ? p.stt : max), 0);
+            payload.stt = maxStt + 1;
+            
+            ({ error } = await _supabase.from('employees').insert([payload]));
+        }
+
+        showLoading(false);
+
+        if(error) {
+            console.error(error);
+            alert("Lỗi lưu: " + error.message);
+        } else {
+            closePopup('employeePopup');
+            loadEmployees(); // Tải lại bảng
+            alert("✅ Đã lưu thành công!");
+        }
+    }
+
+    // 7. Xóa nhân viên
+    async function deleteEmployee(code) {
+        if(!confirm(`⚠️ XÓA VĨNH VIỄN nhân viên [${code}]?\n\nDữ liệu lịch sử và phép của nhân viên này cũng có thể bị ảnh hưởng.\nNếu họ chỉ nghỉ việc, hãy chọn "Sửa" -> Chuyển trạng thái sang "Đã nghỉ việc".`)) return;
+
+        showLoading(true);
+        const { error } = await _supabase.from('employees').delete().eq('code', code);
+        showLoading(false);
+
+        if(error) alert("Lỗi xóa: " + error.message);
+        else {
+            loadEmployees();
+            alert("Đã xóa nhân viên!");
+        }
+    }
+	
+	// ================= Y. TỔNG HỢP TOÀN CÔNG TY (MỚI) =================
+
+    // 1. Cập nhật hàm switchTab (Thêm case 'summary')
+    // Bạn tìm hàm switchTab cũ và sửa lại map index hoặc thêm dòng if
+    /*
+    const map = { 
+        'users': 1, 'groups': 2, 'employees': 3, 
+        'holidays': 4, 'history': 5, 'summary': 6 // <--- Thêm số 6
+    };
+    */
+    // Hoặc chỉ cần thêm dòng này vào cuối hàm switchTab:
+    /*
+    if(name === 'summary') {
+        // Tự động set ngày hiện tại vào picker nếu chưa có
+        if(!document.getElementById("sumWeekPicker").value) {
+            document.getElementById("sumWeekPicker").value = new Date().toISOString().split('T')[0];
+        }
+    }
+    */
+
+    let aggregateData = {}; // Biến lưu dữ liệu tổng hợp
+
+	// 2. Hàm vẽ Checkbox chọn nhóm
+    function renderSumGroupCheckboxes() {
+        const container = document.getElementById("sumGroupCheckboxes");
+        container.innerHTML = "";
+
+        // Nút chọn tất cả
+        const divAll = document.createElement("div");
+        divAll.innerHTML = `
+            <label style="display:flex; align-items:center; cursor:pointer; font-weight:bold; color:var(--primary);">
+                <input type="checkbox" id="chkAllSumGroups" onchange="toggleAllSumGroups(this)" checked style="width:16px; height:16px; margin:0 5px 0 0;"> 
+                Tất cả
+            </label>`;
+        container.appendChild(divAll);
+
+        // Danh sách các nhóm (Lấy từ biến toàn cục allGroups đã load ở đầu trang)
+        if (allGroups && allGroups.length > 0) {
+            allGroups.forEach(g => {
+                const div = document.createElement("div");
+                div.innerHTML = `
+                    <label style="display:flex; align-items:center; cursor:pointer;">
+                        <input type="checkbox" class="chk-sum-group" value="${g.name}" checked style="width:16px; height:16px; margin:0 5px 0 0;"> 
+                        ${g.name}
+                    </label>`;
+                container.appendChild(div);
+            });
+        } else {
+            container.innerHTML = "Chưa có nhóm nào.";
+        }
+    }
+
+	function toggleAllSumGroups(source) {
+        document.querySelectorAll('.chk-sum-group').forEach(cb => cb.checked = source.checked);
+    }
+
+    // 3. Hàm hỗ trợ: Lấy thứ 2 đầu tuần
+    function getMonday(d) {
+        d = new Date(d);
+        var day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1); 
+        return new Date(d.setDate(diff)).toISOString().split('T')[0];
+    }
+
+    // 4. Tải dữ liệu tổng hợp
+    async function loadAggregateSchedule() {
+        const inputDate = document.getElementById("sumWeekPicker").value;
+        if (!inputDate) return alert("Vui lòng chọn ngày!");
+
+        // Lấy danh sách nhóm được tick
+        const selectedGroups = [];
+        document.querySelectorAll('.chk-sum-group:checked').forEach(cb => selectedGroups.push(cb.value));
+
+        if (selectedGroups.length === 0) return alert("Vui lòng chọn ít nhất 1 nhóm!");
+
+        const weekStart = getMonday(inputDate);
+        showLoading(true);
+
+        try {
+            // A. Lấy lịch làm việc (Lọc theo nhóm đã chọn)
+            const schRes = await _supabase
+                .from('schedule')
+                .select('*')
+                .eq('week_start', weekStart)
+                .in('group_name', selectedGroups) // Chỉ lấy các nhóm đã chọn
+                .order('group_name', { ascending: true });
+
+            if (schRes.error) throw schRes.error;
+
+            // B. Lấy STT nhân viên
+            const empRes = await _supabase.from('employees').select('code, stt');
+            const empSttMap = {};
+            if(empRes.data) empRes.data.forEach(e => empSttMap[e.code] = e.stt || 9999);
+
+            // C. Gom nhóm
+            aggregateData = {};
+            const schedules = schRes.data || [];
+            
+            schedules.forEach(s => {
+                const gName = s.group_name || "Khác";
+                if (!aggregateData[gName]) aggregateData[gName] = [];
+                s.real_stt = empSttMap[s.emp_code] || 9999;
+                aggregateData[gName].push(s);
+            });
+
+            // D. Sort
+            for (const gName in aggregateData) {
+                aggregateData[gName].sort((a, b) => a.real_stt - b.real_stt);
+            }
+
+            renderAggregateUI(weekStart);
+
+        } catch (e) {
+            console.error(e);
+            alert("Lỗi: " + e.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // 4. Vẽ bảng tổng hợp
+    function renderAggregateUI(weekStartStr) {
+        const container = document.getElementById("aggregateContainer");
+        container.innerHTML = "";
+
+        // Header ngày tháng
+        const startDate = new Date(weekStartStr);
+        // [MỚI] Lấy năm từ ngày bắt đầu tuần đã chọn
+        const viewYear = startDate.getFullYear();
+        const prevYear = viewYear - 1;
+
+        let dateHeadersHTML = "";
+        for(let i=0; i<7; i++) {
+            const d = new Date(startDate); d.setDate(d.getDate() + i);
+            const dStr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+            dateHeadersHTML += `<th>${dStr}</th>`;
+        }
+
+        const listGroups = Object.keys(aggregateData).sort();
+
+        if (listGroups.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:30px; color:#e74c3c;">Không tìm thấy dữ liệu cho các nhóm đã chọn.</div>`;
+            return;
+        }
+
+        listGroups.forEach(gName => {
+            const listItems = aggregateData[gName];
+            
+            // [MỚI] Kiểm tra xem có ai trong nhóm này có số dư cũ > 0 không
+            const hasPOld = listItems.some(item => (Number(item.pn_old) || 0) > 0);
+            const hasBOld = listItems.some(item => (Number(item.nb_old) || 0) > 0);
+
+            // [MỚI] Tạo tiêu đề cột động
+            const headerPOld = hasPOld ? `<th style="width:50px; font-size:11px; color:#666;">Phép<br>${prevYear}</th>` : '';
+            const headerPNew = `<th style="width:50px; font-size:11px;">Phép<br>${viewYear}</th>`; // Luôn hiện phép mới
+            const headerBOld = hasBOld ? `<th style="width:50px; font-size:11px; color:#666;">Bù<br>${prevYear}</th>` : '';
+            const headerBNew = `<th style="width:50px; font-size:11px;">Bù<br>${viewYear}</th>`; // Luôn hiện bù mới
+
+            const section = document.createElement("div");
+            section.style.marginBottom = "30px";
+            
+            let html = `
+                <h3 style="background:#e0f2fe; color:#0369a1; padding:10px; border-radius:8px 8px 0 0; margin:0; border:1px solid #bae6fd; font-size:16px;">
+                    🏢 ${gName} (${listItems.length} nhân viên)
+                </h3>
+                <table style="margin-top:0; border-radius:0 0 8px 8px;">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;">STT</th>
+                            <th style="width:180px;">Họ Tên</th>
+                            <th style="width:100px;">Chức vụ</th>
+                            ${dateHeadersHTML}
+                            
+                            ${headerPOld}
+                            ${headerPNew}
+                            ${headerBOld}
+                            ${headerBNew}
+                            
+                            <th style="width:60px; background:#fffcf5; color:#d35400;">Tổng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            listItems.forEach((item, idx) => {
+                const pOld = Number(item.pn_old)||0;
+                const pNew = Number(item.pn_new)||0;
+                const bOld = Number(item.nb_old)||0;
+                const bNew = Number(item.nb_new)||0;
+                const total = pOld + pNew + bOld + bNew;
+                
+                let shiftsHTML = "";
+                if (item.shifts) {
+                    item.shifts.forEach(s => {
+                        let bg = "";
+                        if(s.startsWith("S")) bg = "color:#1565c0; font-weight:bold;";
+                        if(s.startsWith("C")) bg = "color:#2e7d32; font-weight:bold;";
+                        if(s.startsWith("P") || s.startsWith("NB")) bg = "color:#c62828; font-weight:bold;";
+                        shiftsHTML += `<td style="text-align:center; ${bg}">${s}</td>`;
+                    });
+                }
+
+                // [MỚI] Ẩn/Hiện ô dữ liệu tương ứng với Header
+                const cellPOld = hasPOld ? `<td style="text-align:center; color:#666; background:#f9fafb;">${pOld}</td>` : '';
+                const cellPNew = `<td style="text-align:center; font-weight:bold;">${pNew}</td>`;
+                const cellBOld = hasBOld ? `<td style="text-align:center; color:#666; background:#f9fafb;">${bOld}</td>` : '';
+                const cellBNew = `<td style="text-align:center; font-weight:bold;">${bNew}</td>`;
+
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="font-weight:600;">${item.emp_name}</td>
+                        <td style="font-size:12px; color:#666;">${item.emp_role || ''}</td>
+                        ${shiftsHTML}
+                        
+                        ${cellPOld}
+                        ${cellPNew}
+                        ${cellBOld}
+                        ${cellBNew}
+                        
+                        <td style="text-align:center; font-weight:bold; background:#fffcf5; color:#d35400;">${parseFloat(total.toFixed(2))}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            section.innerHTML = html;
+            container.appendChild(section);
+        });
+    }
+
+    // 5. Xuất Excel Tổng hợp (Nhiều Sheet hoặc 1 Sheet dài)
+    function exportAggregateExcel() {
+        if (Object.keys(aggregateData).length === 0) return alert("Chưa có dữ liệu để xuất.");
+
+        // [MỚI] Lấy năm
+        const inputDate = document.getElementById("sumWeekPicker").value;
+        const viewYear = new Date(inputDate).getFullYear();
+        const prevYear = viewYear - 1;
+
+        const wb = XLSX.utils.book_new();
+        let wsData = [];
+        
+        wsData.push(["BẢNG TỔNG HỢP LỊCH LÀM VIỆC TOÀN CÔNG TY"]);
+        wsData.push(["Tuần bắt đầu: " + inputDate]);
+        wsData.push([]);
+
+        const listGroups = Object.keys(aggregateData).sort();
+
+        listGroups.forEach(gName => {
+            const listItems = aggregateData[gName];
+
+            // [MỚI] Kiểm tra số dư > 0 cho nhóm này
+            const hasPOld = listItems.some(item => (Number(item.pn_old) || 0) > 0);
+            const hasBOld = listItems.some(item => (Number(item.nb_old) || 0) > 0);
+
+            wsData.push([`NHÓM: ${gName.toUpperCase()}`]);
+            
+            // [MỚI] Header động
+            const headerRow = [
+                "STT", "Mã NV", "Họ Tên", "Chức Vụ", 
+                "T2", "T3", "T4", "T5", "T6", "T7", "CN"
+            ];
+            if (hasPOld) headerRow.push(`Phép ${prevYear}`);
+            headerRow.push(`Phép ${viewYear}`);
+            if (hasBOld) headerRow.push(`Bù ${prevYear}`);
+            headerRow.push(`Bù ${viewYear}`);
+            headerRow.push("Tổng Công");
+
+            wsData.push(headerRow);
+
+            listItems.forEach((item, idx) => {
+                const pOld = Number(item.pn_old)||0;
+                const pNew = Number(item.pn_new)||0;
+                const bOld = Number(item.nb_old)||0;
+                const bNew = Number(item.nb_new)||0;
+                const total = pOld + pNew + bOld + bNew;
+
+                // [MỚI] Value động
+                const row = [
+                    idx + 1,
+                    item.emp_code,
+                    item.emp_name,
+                    item.emp_role,
+                    ...(item.shifts || [])
+                ];
+                
+                if (hasPOld) row.push(pOld);
+                row.push(pNew);
+                if (hasBOld) row.push(bOld);
+                row.push(bNew);
+                row.push(total);
+
+                wsData.push(row);
+            });
+
+            wsData.push([]); 
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        
+        // Chỉnh độ rộng cột (Cần tính toán lại chút vì số cột thay đổi)
+        // Mặc định cho phần cố định
+        let cols = [
+            {wch:5}, {wch:10}, {wch:25}, {wch:15}, 
+            {wch:5}, {wch:5}, {wch:5}, {wch:5}, {wch:5}, {wch:5}, {wch:5}
+        ];
+        // Thêm độ rộng cho các cột động (khoảng 10px mỗi cột)
+        // Vì ta không biết chính xác có bao nhiêu cột động ở đây (mỗi nhóm khác nhau), 
+        // ta có thể add dư ra vài cột. Excel JS sẽ ignore nếu không có dữ liệu.
+        cols.push({wch:10}, {wch:10}, {wch:10}, {wch:10}, {wch:10}); 
+
+        ws['!cols'] = cols;
+
+        XLSX.utils.book_append_sheet(wb, ws, "TongHop");
+        XLSX.writeFile(wb, `TongHop_LichLamViec_${inputDate}.xlsx`);
     }
 </script>
 

@@ -285,7 +285,28 @@
     input:checked + .slider { background-color: #2196F3; }
     input:checked + .slider:before { transform: translateX(26px); }
 	
-	
+	/* Style cho ô Input khi đang nhập liệu giống Excel */
+	.cell-editor {
+		width: 100%;
+		height: 100%;
+		border: none;
+		outline: 2px solid #0078d4; /* Viền xanh khi đang nhập */
+		background: white;
+		font-size: 14px;
+		font-family: inherit;
+		font-weight: bold;
+		text-align: center;
+		padding: 0;
+		margin: 0;
+		position: absolute; /* Đè lên ô cũ */
+		top: 0;
+		left: 0;
+		z-index: 100;
+	}
+
+	.shift {
+		position: relative; /* Để ô input đè lên chính xác */
+	}
 </style>
 </head>
 <body>
@@ -308,18 +329,22 @@
 				<span id="badgeReq" style="background:red; color:white; border-radius:50%; padding:2px 6px; font-size:10px; position:absolute; top:-5px; right:-5px; display:none;">0</span>
 			</button>
         </div>
+		<div style="display:inline-flex; gap:5px; margin-right:10px;">
+			<button class="btn-w" onclick="saveSchedule(false)">💾 Lưu lịch</button>
+			<button id="btnUndoUI" class="btn-s" onclick="performUndo()" title="Phím tắt: Undo (Ctrl+Z)" disabled style="opacity:0.5">↩️ Undo</button>
+			<button id="btnRedoUI" class="btn-s" onclick="performRedo()" title="Phím tắt: Redo (Ctrl+Y)" disabled style="opacity:0.5">↪️ Redo</button>
+		</div>
         <div style="display:flex; gap:10px; border-right:1px solid #ddd; padding-right:10px;">
             <button class="btn-o" id="btnSwap" onclick="toggleSwapMode()">⇌ Đảo</button>
             <button class="btn-o" onclick="openWeekPopup()">📅 Chọn Tuần</button>
             <button class="btn-o" onclick="loadSchedule()">🔄 Tải lại</button>
         </div>
         <div style="display:flex; gap:10px;">
-			<button class="btn-w" onclick="saveSchedule(false)">💾 Lưu lịch</button>
             <button class="btn-s" onclick="exportToExcel()">📊 Xuất Excel</button>
 			<button class="btn-excel" onclick="openExportRangePopup()">📅 Xuất Excel(Tùy chọn)</button>
-			<button class="btn-setting" onclick="document.getElementById('settingsModal').style.display='block'">
-				⚙️ Cài đặt
-			</button>
+        </div>
+		<div style="display:flex; gap:10px;">
+			<button class="btn-setting" onclick="document.getElementById('settingsModal').style.display='block'">⚙️ Cài đặt</button>
             <button class="btn-d" onclick="window.location.href='dashboard.html'">← Thoát</button>
         </div>
     </div>
@@ -340,6 +365,7 @@
 				<th rowspan="2" id="th_b_new" style="width:45px;">B.MỚI</th>
                 
                 <th rowspan="2" style="width:50px; background:#fffcf5; color:#d35400;">TỔNG</th>
+				<th rowspan="2" style="width: 50px;">Ghi chú</th>
                 <th rowspan="2" style="width:40px;">XÓA</th>
             </tr>
             <tr id="headerDatesRow"></tr>
@@ -451,7 +477,7 @@
                 <thead>
                     <tr>
                         <th style="width: 80px;">Mã NV</th>
-                        <th style="width: 180px; text-align: left; padding-left: 10px;">Họ Tên</th>
+                        <th style="width: 100px; text-align: left; padding-left: 10px;">Họ Tên</th>
                         <th style="width: 100px;">Ngày</th>
                         <th style="width: 80px;">Loại</th>
                         <th style="text-align: left; padding-left: 10px;">Lý Do / Ghi Chú</th>
@@ -751,7 +777,9 @@
 
 						shifts: s.shifts || Array(7).fill(""),
 						pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
-						pn_old: pOld, nb_old: bOld
+						pn_old: pOld, nb_old: bOld,
+						
+						note: s.note || ""
 					});
 					processedCodes.add(s.emp_code);
 				});
@@ -784,7 +812,9 @@
                             stt: e.stt || 0,
                             shifts: Array(7).fill(""),
                             pn: bal.pNew, nb: bal.bNew,
-                            pn_old: bal.pOld, nb_old: bal.bOld
+                            pn_old: bal.pOld, nb_old: bal.bOld,
+							
+							note: ""
                         });
                     }
                 });
@@ -910,6 +940,28 @@
                 </td>
                 
                 <td style="background-color:#fffcf5; color:#c0392b; font-weight:900;">${total}</td>
+				
+				<td style="padding: 0; height: 100%;">
+					<input type="text" 
+						value="${emp.note || ''}" 
+						onchange="updateEmpNote(${rIdx}, this.value)" 
+						placeholder="..."
+						style="
+							width: 100%; 
+							height: 100%;       /* Chiều cao 100% của ô */
+							border: none; 
+							outline: none; 
+							background: transparent; 
+							padding: 0 5px;     /* Chỉ padding trái phải, bỏ trên dưới để căn giữa chuẩn hơn */
+							text-align: center; 
+							box-sizing: border-box;
+							
+							margin: 0;          /* [QUAN TRỌNG] Xóa vùng màu cam */
+							display: block;     /* [QUAN TRỌNG] Biến thành khối để lấp đầy ô */
+							line-height: 38px;  /* Căn giữa dòng chữ theo chiều cao dòng (38px là height của td trong CSS) */
+						">
+				</td>
+				
                 <td><button class="btn-d" style="padding:2px 6px;" onclick="removeRow(${rIdx}); event.stopPropagation();">X</button></td>
             `;
             tr.innerHTML = html;
@@ -945,6 +997,7 @@
             renderTable();
         } else {
 			// --- CHỌN NGƯỜI THỨ 2 -> THỰC HIỆN ĐẢO ---
+			saveUndoState();
 			
 			const emp1 = employeesData[swapSourceIdx];
 			const emp2 = employeesData[idx];
@@ -1272,7 +1325,9 @@
 					pn_old: emp.pn_old,
 					
 					// --- [QUAN TRỌNG] THÊM DÒNG NÀY ĐỂ LƯU VỊ TRÍ ---
-					stt: (emp.stt !== undefined && emp.stt !== null) ? emp.stt : 9999
+					stt: (emp.stt !== undefined && emp.stt !== null) ? emp.stt : 9999,
+					
+					note: emp.note || ""
 				});
 
 				balUpsert.push({ 
@@ -1429,13 +1484,11 @@
 	// ================= TÍNH NĂNG CHỌN NGUỒN BÙ (ADMIN) =================
 
 	async function openNbSourcePopup(empCode, empName, dateStr, type) {
-		console.log("--- BẮT ĐẦU MỞ POPUP NGUỒN BÙ ---");
-		console.log("1. Thông tin đầu vào:", { empCode, empName, dateStr, type });
-
+		console.log("--- BẮT ĐẦU MỞ POPUP NGUỒN BÙ (FIXED) ---");
+		// ... (Giữ nguyên phần reset giao diện) ...
 		const popup = document.getElementById("nbSourcePopup");
 		const listDiv = document.getElementById("nbSourceList");
 		
-		// Reset giao diện
 		document.getElementById("nbTargetCode").innerText = `${empName} (${empCode})`;
 		document.getElementById("nbTargetDate").innerText = dateStr.split('-').reverse().join('/');
 		document.getElementById("nbTargetType").innerText = type;
@@ -1445,112 +1498,95 @@
 		listDiv.innerHTML = '<div style="padding:10px; text-align:center;">⏳ Đang tải dữ liệu...</div>';
 
 		try {
-			// --- QUERY 1: Lấy danh sách nguồn ---
-			console.log("2. Đang gọi bảng 'supplemental_leave'...");
-			const resSource = await _supabase
-				.from('supplemental_leave')
-				.select('*')
-				.eq('emp_code', empCode)
-				.eq('type', 'NB'); // Bỏ .gt('amount', 0) tạm thời để xem có data ko đã
+			// --- QUERY 1 & 2: GIỮ NGUYÊN ---
+			const resSource = await _supabase.from('supplemental_leave').select('*').eq('emp_code', empCode).eq('type', 'NB');
+			const resHistory = await _supabase.from('leave_requests').select('reason, type, status, val').eq('emp_code', empCode); // Lấy thêm cột 'val' nếu có
 
-			if (resSource.error) {
-				console.error("❌ Lỗi Supabase (Nguồn):", resSource.error);
-				listDiv.innerHTML = `<div style="color:red; padding:10px;">Lỗi tải nguồn: ${resSource.error.message}</div>`;
-				return;
+			if (resSource.error || resHistory.error) {
+				listDiv.innerHTML = `<div style="color:red; padding:10px;">Lỗi tải dữ liệu.</div>`; return;
 			}
-			console.log("✅ Dữ liệu nguồn tải được:", resSource.data);
 
-			// --- QUERY 2: Lấy lịch sử đã dùng ---
-			console.log("3. Đang gọi bảng 'leave_requests'...");
-			const resHistory = await _supabase
-				.from('leave_requests')
-				.select('reason, type, status')
-				.eq('emp_code', empCode);
-
-			if (resHistory.error) {
-				console.error("❌ Lỗi Supabase (Lịch sử):", resHistory.error);
-			}
-			console.log("✅ Dữ liệu lịch sử tải được:", resHistory.data);
-
-			// --- XỬ LÝ DỮ LIỆU ---
+			// --- XỬ LÝ DỮ LIỆU (ĐÃ SỬA) ---
 			listDiv.innerHTML = "";
 			const sources = resSource.data || [];
 			const history = resHistory.data || [];
 
 			if (sources.length === 0) {
-				listDiv.innerHTML = '<div style="padding:15px; color:#999; text-align:center;">Nhân viên này không có dữ liệu nguồn (supplemental_leave).</div>';
-				return;
+				listDiv.innerHTML = '<div style="padding:15px; color:#999; text-align:center;">Không có dữ liệu nguồn.</div>'; return;
 			}
 
 			let countAvailable = 0;
 
 			sources.forEach(src => {
-				// Tính toán số đã dùng
 				let used = 0;
 				const d = new Date(src.date);
-				const dKey = `${d.getDate()}/${d.getMonth()+1}`;
-				const signature = `${dKey} - ${src.reason}`; // Key để đối chiếu
+				const dKey = `${d.getDate()}/${d.getMonth()+1}`; // VD: 14/12
+				
+				// 1. Tạo 2 loại chữ ký để kiểm tra
+				const signatureText = `${dKey} - ${src.reason}`; // Cách cũ: Theo tên
+				const signatureID = `[REF:${src.id}]`;           // Cách mới: Theo ID (Chính xác 100%)
 
+				// 2. Quét lịch sử để tính đã dùng bao nhiêu
 				history.forEach(h => {
-					if (h.status !== 'Từ chối' && h.reason && h.reason.includes(signature)) {
-						if (h.type === 'NB/2' || h.type === '0.5NB') used += 0.5;
-						else if (h.type === 'NB') used += 1.0;
+					if (h.status !== 'Từ chối' && h.reason) {
+						// Kiểm tra: Nếu lý do chứa ID HOẶC chứa Tên cũ
+						const isMatchID = h.reason.includes(signatureID);
+						const isMatchText = h.reason.includes(signatureText);
+
+						if (isMatchID || isMatchText) {
+							// Ưu tiên lấy giá trị thực từ DB (h.val) nếu có, không thì đoán theo type
+							let val = h.val !== undefined ? h.val : (h.type.includes("/2") || h.type.includes("0.5") ? 0.5 : 1.0);
+							used += val;
+						}
 					}
 				});
 
 				const remaining = parseFloat(src.amount) - used;
-				console.log(`- Nguồn: ${signature} | Tổng: ${src.amount} | Đã dùng: ${used} | Còn: ${remaining}`);
+				// console.log(`Src: ${src.id} | Used: ${used} | Remain: ${remaining}`);
 
-				// Chỉ hiện những cái còn dư > 0
 				if (remaining > 0) {
 					countAvailable++;
 					const div = document.createElement("div");
 					div.className = "src-item-row";
 					div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #eee; cursor:pointer;";
 					
+					// Click vào div cũng chọn được checkbox
 					div.onclick = (e) => {
 						if (e.target.type !== 'checkbox') {
 							const cb = div.querySelector('input');
 							cb.checked = !cb.checked;
-							calcNbSelection();
+							calcNbSelection(); // Hàm tính toán tổng
 						}
 					};
 
 					div.innerHTML = `
 						<div style="display:flex; align-items:center; width: 100%;">
-							
-							<input type="checkbox" class="nb-src-cb" value="${signature}" data-amt="${remaining}" onchange="calcNbSelection()" 
+							<input type="checkbox" class="nb-src-cb" 
+								value="${src.id}" 
+								data-text="${signatureText}" 
+								data-amt="${remaining}" 
+								onchange="calcNbSelection()" 
 								style="margin: 0 12px 0 0; cursor: pointer; width: 18px; height: 18px; flex-shrink: 0;">
 							
 							<div style="display:flex; flex-direction: column;">
-								
 								<span style="font-weight:600; font-size:14px; color:#2c3e50; line-height: 1.4;">
-									${signature}
-								</span>
-
+									${signatureText} </span>
 								<span style="font-weight:500; color:${remaining < 1 ? '#e67e22' : '#27ae60'}; font-size:12px;">
 									(Còn: ${remaining} ngày)
 								</span>
-
 							</div>
-
 						</div>
 					`;
-					
 					listDiv.appendChild(div);
 				}
 			});
 
-			if (countAvailable === 0) {
-				listDiv.innerHTML = '<div style="padding:15px; color:#e67e22; text-align:center;">Có nguồn nhưng đã dùng hết sạch!</div>';
-			}
-
-			// Reset trạng thái tính toán
+			if (countAvailable === 0) listDiv.innerHTML = '<div style="padding:15px; color:#e67e22; text-align:center;">Đã dùng hết các nguồn bù!</div>';
+			
 			calcNbSelection();
 
 		} catch (e) {
-			console.error("❌ Lỗi Crash Javascript:", e);
-			listDiv.innerHTML = '<div style="color:red; padding:10px;">Lỗi xử lý JS (Xem Console)</div>';
+			console.error("❌ Lỗi JS:", e);
 		}
 	}
 
@@ -1645,6 +1681,8 @@
 	// Hàm cập nhật vào ô (Đã nâng cấp để xử lý tạo Leave Request)
 	async function applyShiftToCell(code, cls, customReason = null, customVal = null) {
 		if (!currentCell) return;
+
+		saveUndoState();
 
 		// A. Cập nhật UI ngay lập tức
 		currentCell.className = `shift ${cls} selected`;
@@ -1987,6 +2025,9 @@
 		balanceHeaders.push(txtBNew);               // Sẽ là "BÙ 2025"
 		balanceHeaders.push("TỔNG");
 
+		// [MỚI] Thêm cột Ghi chú vào danh sách header động (sau cột Tổng)
+        balanceHeaders.push("GHI CHÚ");
+
         // Tổng số cột = 11 cột cố định (STT..CN) + số cột balance động
         const totalCols = 11 + balanceHeaders.length;
 
@@ -2031,6 +2072,9 @@
                 if (showBOld) balanceValues.push(bOld);
                 balanceValues.push(bNew);
                 balanceValues.push(total);
+				
+				// [MỚI] Thêm dữ liệu Ghi chú vào cuối
+                balanceValues.push(emp.note || "");
 
                 wsData.push([index + 1, emp.code, emp.name, emp.role, ...emp.shifts, ...balanceValues]);
             });
@@ -2874,6 +2918,8 @@
 		if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
 		if (typeof isSwapMode !== 'undefined' && isSwapMode) return;
 		
+		if (isEditing) return;
+		
 		const menu = document.getElementById("shiftMenu");
 		const isMenuOpen = menu.style.display === "block";
 	
@@ -2936,6 +2982,7 @@
             }
 
             if (targets.length > 0) {
+				saveUndoState();
                 e.preventDefault();
                 const tbody = document.getElementById("scheduleBody");
                 const allRows = Array.from(tbody.children);
@@ -3000,6 +3047,8 @@
                 
                 if (!text) return;
                 
+				saveUndoState();
+				
                 // 3. PHÂN TÍCH DỮ LIỆU
                 const rowsStr = text.trim().split(/\r?\n/);
                 // Mảng phẳng để check nhanh
@@ -3121,7 +3170,7 @@
                              newRequests.push({
                                 emp_code: employeesData[rIdx].code, emp_name: employeesData[rIdx].name,
                                 type: conf.code, date: getDateByColIndex(cIdx),
-                                reason: "Nhập nhanh (Paste)", val: (conf.code.includes("/2")||conf.code.includes("0.5"))?0.5:1.0,
+                                reason: "Admin nhập trực tiếp (Phép năm)", val: (conf.code.includes("/2")||conf.code.includes("0.5"))?0.5:1.0,
                                 status: 'Đã duyệt'
                             });
                         }
@@ -3173,31 +3222,6 @@
             } catch (err) { console.error("Lỗi paste:", err); }
         }
 
-        // --- D. ĐIỀU HƯỚNG MŨI TÊN (GRID) ---
-		if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-			// Nếu Menu đang mở thì đã return ở trên rồi, nên xuống đây chắc chắn là Menu đang đóng
-			e.preventDefault(); 
-
-			if (selectedR === -1 || selectedC === -1) {
-				selectCell(0, 0); return;
-			}
-
-			let newR = selectedR;
-			let newC = selectedC;
-
-			if (e.key === "ArrowUp") newR--;
-			if (e.key === "ArrowDown") newR++;
-			if (e.key === "ArrowLeft") newC--;
-			if (e.key === "ArrowRight") newC++;
-
-			if (newR < 0) newR = 0;
-			if (newR >= employeesData.length) newR = employeesData.length - 1;
-			if (newC < 0) newC = 0;
-			if (newC > 6) newC = 6; 
-
-			selectCell(newR, newC);
-		}
-
 		// --- E. PHÍM ENTER (MỞ MENU) ---
 		if (e.key === "Enter") {
 			e.preventDefault();
@@ -3206,6 +3230,54 @@
 				openMenu(currentCell, selectedR, selectedC);
 			}
 		}
+		
+		// --- G. UNDO (Ctrl+Z) & REDO (Ctrl+Y) ---
+		if (e.ctrlKey || e.metaKey) {
+			
+			// Check Undo: Ctrl + Z
+			if (e.key === 'z' || e.key === 'Z') {
+				e.preventDefault();
+				// Nếu có thêm Shift -> Redo
+				if (e.shiftKey) {
+					performRedo();
+				} else {
+					performUndo();
+				}
+				return;
+			}
+			
+			// Check Redo: Ctrl + Y
+			if (e.key === 'y' || e.key === 'Y') {
+				e.preventDefault();
+				performRedo();
+				return;
+			}
+		}
+		
+		// ================= [MỚI] BẮT SỰ KIỆN GÕ PHÍM (A-Z, 0-9) =================
+        // Chỉ bắt khi không giữ Ctrl/Alt (để tránh phím tắt như Ctrl+C, Ctrl+S)
+        if (!e.ctrlKey && !e.altKey && !e.metaKey && e.key.length === 1) {
+            
+            // Chỉ kích hoạt nếu đang chọn 1 ô ca làm việc
+            if (currentCell && selectedR !== -1 && selectedC !== -1) {
+                // Kiểm tra ký tự in được (Chữ hoặc số)
+                // Regex: /^[a-zA-Z0-9\/\+]$/ -> Cho phép chữ, số, dấu /, dấu + (cho S+)
+                if (/^[a-zA-Z0-9\/\+]$/.test(e.key)) {
+                    e.preventDefault();
+                    startEditing(currentCell, e.key); // Bắt đầu sửa với ký tự vừa gõ
+                    return;
+                }
+            }
+        }
+
+        // ================= [MỚI] PHÍM F2 (SỬA GIÁ TRỊ CŨ) =================
+        if (e.key === "F2") {
+            if (currentCell && selectedR !== -1) {
+                e.preventDefault();
+                startEditing(currentCell, currentCell.innerText); // Bắt đầu sửa với giá trị cũ
+                return;
+            }
+        }
 		
 		// --- F. PHÍM ESCAPE (ĐÓNG) ---
 		if (e.key === "Escape") {
@@ -3341,6 +3413,98 @@
             document.execCommand('copy');
             document.body.removeChild(textArea);
         } catch (err) {}
+    }
+	
+	// Biến cờ để biết đang nhập liệu (để chặn các phím tắt khác như Arrow di chuyển)
+    let isEditing = false;
+
+    function startEditing(cell, initialValue = "") {
+        if (!cell || isEditing) return;
+
+        isEditing = true; // Bật cờ đang sửa
+        
+        // 1. Lưu giá trị cũ để restore nếu bấm Esc
+        const oldValue = cell.innerText;
+        
+        // 2. Tạo thẻ Input
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "cell-editor";
+        input.value = initialValue; // Giá trị khởi tạo (ký tự vừa gõ hoặc rỗng)
+
+        // 3. Xóa nội dung text cũ tạm thời và chèn Input vào
+        cell.innerText = ""; 
+        cell.appendChild(input);
+        input.focus();
+
+        // 4. Xử lý sự kiện trên Input này
+        input.addEventListener("keydown", (e) => {
+            e.stopPropagation(); // Chặn sự kiện nổi bọt lên window (để không kích hoạt phím tắt chung)
+
+            // ENTER: Lưu và xuống dòng
+            if (e.key === "Enter") {
+                e.preventDefault();
+                finishEditing(cell, input.value, true); // true = move down
+            }
+            
+            // TAB: Lưu và sang phải
+            if (e.key === "Tab") {
+                e.preventDefault();
+                finishEditing(cell, input.value, false, true); // true = move right
+            }
+
+            // ESC: Hủy bỏ
+            if (e.key === "Escape") {
+                e.preventDefault();
+                cancelEditing(cell, oldValue);
+            }
+        });
+
+        // Click ra ngoài (Blur): Tự động lưu
+        input.addEventListener("blur", () => {
+            finishEditing(cell, input.value, false);
+        });
+    }
+
+    // Hàm kết thúc nhập và LƯU
+    function finishEditing(cell, value, moveDown = false, moveRight = false) {
+        if (!isEditing) return;
+        
+        // 1. Chuẩn hóa giá trị (Viết hoa, Trim)
+        const code = value.trim().toUpperCase();
+        
+        // 2. Xóa input, trả lại trạng thái bình thường
+        // (Việc cập nhật UI và DB sẽ do hàm applyShiftToCell lo)
+        cell.innerHTML = ""; 
+        isEditing = false;
+
+        // 3. Tìm thông tin ca làm việc để lấy màu sắc (cls)
+        const conf = SHIFTS.find(s => s.code === code) || { cls: "", code: code };
+
+        // 4. Gọi hàm lưu có sẵn của bạn
+        // Hàm này đã có Undo, Check số dư, Lưu DB... nên tái sử dụng rất tốt
+        applyShiftToCell(conf.code, conf.cls, "Nhập trực tiếp từ bàn phím");
+
+        // 5. Di chuyển con trỏ (giống Excel)
+        if (moveDown) {
+            // Di chuyển xuống dưới
+            let nextR = selectedR + 1;
+            if (nextR < employeesData.length) selectCell(nextR, selectedC);
+        } else if (moveRight) {
+             // Di chuyển sang phải
+            let nextC = selectedC + 1;
+            if (nextC < 7) selectCell(selectedR, nextC);
+        } else {
+            // Focus lại ô hiện tại (để nhận phím tiếp)
+            selectCell(selectedR, selectedC);
+        }
+    }
+
+    // Hàm hủy bỏ (Esc)
+    function cancelEditing(cell, oldValue) {
+        isEditing = false;
+        cell.innerHTML = oldValue; // Trả lại text cũ
+        selectCell(selectedR, selectedC); // Focus lại
     }
 	
 	// ============================================================
@@ -3677,6 +3841,93 @@
 			
 			// 4. Tự động cuộn màn hình nếu ô bị khuất
 			cell.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+		}
+	}
+	
+	// --- KHAI BÁO BIẾN UNDO / REDO ---
+    let undoStack = []; // Lưu quá khứ
+    let redoStack = []; // Lưu tương lai (những cái vừa bị undo)
+    const MAX_HISTORY_STEPS = 20; 
+
+    // 1. Lưu trạng thái (Gọi trước khi thay đổi dữ liệu)
+    function saveUndoState() {
+        const snapshot = JSON.parse(JSON.stringify(employeesData));
+        undoStack.push(snapshot);
+        
+        // [QUAN TRỌNG] Khi có hành động mới, tương lai (Redo) bị vô hiệu hóa
+        redoStack = []; 
+        
+        if (undoStack.length > MAX_HISTORY_STEPS) undoStack.shift();
+        
+        // Cập nhật trạng thái nút bấm (nếu có UI)
+        updateHistoryButtons();
+    }
+
+    // 2. Thực hiện Undo (Quay lui)
+    function performUndo() {
+        if (undoStack.length === 0) {
+            showToastNotification("⚠️ Không thể Undo nữa!");
+            return;
+        }
+
+        // A. Cất trạng thái HIỆN TẠI vào túi REDO
+        const currentState = JSON.parse(JSON.stringify(employeesData));
+        redoStack.push(currentState);
+
+        // B. Lấy quá khứ ra dùng
+        const prevState = undoStack.pop();
+        employeesData = prevState;
+        
+        // C. Vẽ lại và lưu
+        renderTable();
+        triggerAutoSave();
+        updateHistoryButtons();
+        
+        showToastNotification("↩️ Đã hoàn tác (Undo)!");
+    }
+	
+	// 3. Thực hiện Redo (Tiến tới)
+    function performRedo() {
+        if (redoStack.length === 0) {
+            showToastNotification("⚠️ Không thể Redo nữa!");
+            return;
+        }
+
+        // A. Cất trạng thái HIỆN TẠI về túi UNDO (để tí nữa còn Undo lại được)
+        const currentState = JSON.parse(JSON.stringify(employeesData));
+        undoStack.push(currentState);
+
+        // B. Lấy tương lai ra dùng
+        const nextState = redoStack.pop();
+        employeesData = nextState;
+        
+        // C. Vẽ lại và lưu
+        renderTable();
+        triggerAutoSave();
+        updateHistoryButtons();
+        
+        showToastNotification("↪️ Đã làm lại (Redo)!");
+    }
+    
+    // (Tùy chọn) Hàm cập nhật trạng thái Disable cho nút bấm UI
+    function updateHistoryButtons() {
+        const btnUndo = document.getElementById("btnUndoUI");
+        const btnRedo = document.getElementById("btnRedoUI");
+        
+        if(btnUndo) btnUndo.disabled = (undoStack.length === 0);
+        if(btnRedo) btnRedo.disabled = (redoStack.length === 0);
+        
+        // Thay đổi màu sắc cho trực quan (Opacity)
+        if(btnUndo) btnUndo.style.opacity = (undoStack.length === 0) ? "0.5" : "1";
+        if(btnRedo) btnRedo.style.opacity = (redoStack.length === 0) ? "0.5" : "1";
+    }
+	
+	// Hàm lưu ghi chú khi người dùng gõ xong
+	function updateEmpNote(idx, val) {
+		if (employeesData[idx]) {
+			employeesData[idx].note = val;
+			// Gọi Auto Save để lưu ngay lập tức
+			triggerAutoSave();
 		}
 	}
 </script>
