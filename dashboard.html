@@ -581,7 +581,7 @@
                 listMulti.innerHTML += `
                 <div class="group-item">
                     <label style="display:flex; align-items:center; width:100%; cursor:pointer; margin:0;">
-                        <input type="checkbox" value="${g.name}" class="chk-sub"> 
+                        <input type="checkbox" value="${g.name}" class="chk-sub" onchange="checkIndividualSubGroup()"> 
                         <span style="font-weight:500;">${g.name}</span>
                     </label>
                 </div>`;
@@ -593,6 +593,18 @@
 
     function toggleCheckAllGroups(source) {
         document.querySelectorAll(".chk-sub").forEach(cb => cb.checked = source.checked);
+    }
+
+    // [MỚI] Hàm kiểm tra trạng thái các nhóm phụ để update checkbox Tổng
+    function checkIndividualSubGroup() {
+        const allSubs = document.querySelectorAll('.chk-sub');
+        const checkedSubs = document.querySelectorAll('.chk-sub:checked');
+        const chkAll = document.getElementById("checkAllGroups");
+        
+        if (chkAll) {
+            // Nếu số lượng đã tick = Tổng số lượng -> Tick vào ô Tổng
+            chkAll.checked = (allSubs.length > 0 && allSubs.length === checkedSubs.length);
+        }
     }
 
     async function addGroup() {
@@ -1351,13 +1363,13 @@
             </label>`;
         container.appendChild(divAll);
 
-        // Danh sách các nhóm (Lấy từ biến toàn cục allGroups đã load ở đầu trang)
+        // Danh sách các nhóm
         if (allGroups && allGroups.length > 0) {
             allGroups.forEach(g => {
                 const div = document.createElement("div");
                 div.innerHTML = `
                     <label style="display:flex; align-items:center; cursor:pointer;">
-                        <input type="checkbox" class="chk-sum-group" value="${g.name}" checked style="width:16px; height:16px; margin:0 5px 0 0;"> 
+                        <input type="checkbox" class="chk-sum-group" value="${g.name}" checked onchange="checkIndividualSumGroup()" style="width:16px; height:16px; margin:0 5px 0 0;"> 
                         ${g.name}
                     </label>`;
                 container.appendChild(div);
@@ -1369,6 +1381,19 @@
 
 	function toggleAllSumGroups(source) {
         document.querySelectorAll('.chk-sum-group').forEach(cb => cb.checked = source.checked);
+    }
+
+    // [MỚI] Hàm kiểm tra trạng thái checkbox con để update checkbox Tổng
+    function checkIndividualSumGroup() {
+        const allCheckboxes = document.querySelectorAll('.chk-sum-group');
+        const checkedCheckboxes = document.querySelectorAll('.chk-sum-group:checked');
+        const chkAll = document.getElementById("chkAllSumGroups");
+        
+        if (chkAll) {
+            // Nếu số lượng đã tick = Tổng số lượng -> Tick vào ô Tổng
+            // Ngược lại -> Bỏ tick ô Tổng
+            chkAll.checked = (allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length);
+        }
     }
 
     // 3. Hàm hỗ trợ: Lấy thứ 2 đầu tuần

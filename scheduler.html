@@ -1878,11 +1878,12 @@
         const listDiv = document.getElementById("blEmpList");
         listDiv.innerHTML = "";
         document.getElementById("checkAllBox").checked = true;
+        
         employeesData.forEach(e => {
             listDiv.innerHTML += `
             <div class="emp-item">
                 <label style="display:flex;align-items:center;width:100%;cursor:pointer;margin:0;">
-                    <input type="checkbox" value="${e.code}" checked class="emp-checkbox">
+                    <input type="checkbox" value="${e.code}" checked class="emp-checkbox" onchange="checkIndividualBulkLeave()">
                     <span><b>${e.code}</b> - ${e.name}</span>
                 </label>
             </div>`;
@@ -1892,6 +1893,19 @@
 
     function toggleCheckAll(source) {
         document.querySelectorAll(".emp-checkbox").forEach(cb => cb.checked = source.checked);
+    }
+
+    // [MỚI] Hàm kiểm tra trạng thái checkbox con để update checkbox Tổng
+    function checkIndividualBulkLeave() {
+        const all = document.querySelectorAll(".emp-checkbox");
+        const checked = document.querySelectorAll(".emp-checkbox:checked");
+        const chkAll = document.getElementById("checkAllBox");
+        
+        if (chkAll) {
+            // Nếu số lượng tick = Tổng số lượng -> Tick ô Tổng
+            // Ngược lại -> Bỏ tick ô Tổng
+            chkAll.checked = (all.length > 0 && all.length === checked.length);
+        }
     }
 
     async function submitBulkLeave() {
@@ -2353,7 +2367,7 @@
                     <td style="text-align:center;">
                         <div style="display:flex; justify-content:center; gap:5px;">
                             <button class="btn-s" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.id}, 'APPROVE', '${req.emp_code}', '${req.type}', '${req.date}')">✔ Duyệt</button>
-                            <button class="btn-d" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.id}, 'REJECT', null, null, null)">✘ Huỷ</button>
+                            <button class="btn-d" style="padding:4px 8px; font-size:11px;" onclick="processRequest(${req.id}, 'REJECT', null, null, null)">✘ Từ chối</button>
                         </div>
                     </td>
                 `;
@@ -3577,22 +3591,35 @@
         });
     }
 	
-	// ============================================================
-    // LOGIC CÀI ĐẶT (SETTINGS)
-    // ============================================================
+	// 1. Khởi tạo cài đặt khi tải trang
+    async function initSettings() {
+        // Lấy user hiện tại đang đăng nhập
+        const userStr = localStorage.getItem("currentUser");
+        if (!userStr) return; // Chưa đăng nhập thì thôi
+        const currentUser = JSON.parse(userStr);
 
-    // 1. Khởi tạo cài đặt khi tải trang
-    function initSettings() {
-        const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-        
-        if (savedSettings && savedSettings.isCrosshairEnabled !== undefined) {
-            isCrosshairEnabled = savedSettings.isCrosshairEnabled;
-        } else {
-            // Mặc định là bật nếu chưa từng lưu
-            isCrosshairEnabled = true;
+        try {
+            // Gọi Supabase lấy cài đặt
+            const { data, error } = await _supabase
+                .from('user_settings')
+                .select('*')
+                .eq('username', currentUser.username)
+                .single();
+
+            if (data) {
+                // Nếu đã có cài đặt trong DB -> Áp dụng
+                isCrosshairEnabled = data.is_crosshair_enabled;
+            } else {
+                // Nếu chưa có (User mới) -> Mặc định là Bật
+                isCrosshairEnabled = true;
+            }
+
+        } catch (e) {
+            console.error("Lỗi tải cài đặt:", e);
+            isCrosshairEnabled = true; // Fallback
         }
 
-        // Cập nhật trạng thái switch
+        // Cập nhật trạng thái switch trên giao diện
         const toggle = document.getElementById("toggleCrosshair");
         if (toggle) {
             toggle.checked = isCrosshairEnabled;
@@ -3600,19 +3627,34 @@
     }
 
     // 2. Hàm xử lý khi người dùng bật/tắt switch
-    function toggleCrosshairFeature(isChecked) {
+    async function toggleCrosshairFeature(isChecked) {
         isCrosshairEnabled = isChecked;
         
-        // Nếu tắt, phải dọn dẹp highlight đang có ngay lập tức
+        // A. Xử lý giao diện ngay lập tức (cho mượt)
         if (!isChecked) {
-            clearHighlight();
+            clearHighlight(); // Nếu tắt thì xóa highlight ngay
         }
 
-        // Lưu trạng thái mới vào localStorage
-        const settings = { isCrosshairEnabled: isChecked };
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        // B. Lưu vào Database
+        const userStr = localStorage.getItem("currentUser");
+        if (userStr) {
+            const currentUser = JSON.parse(userStr);
+            
+            // Dùng UPSERT: Nếu chưa có thì tạo mới, có rồi thì cập nhật
+            const { error } = await _supabase
+                .from('user_settings')
+                .upsert({ 
+                    username: currentUser.username, 
+                    is_crosshair_enabled: isChecked 
+                });
 
-        showToast("Đã " + (isChecked ? "Bật" : "Tắt") + " Highlight Dòng & Cột!");
+            if (error) {
+                console.error("Lỗi lưu cài đặt:", error);
+                showToastNotification("⚠️ Không thể lưu cài đặt!");
+            } else {
+                showToastNotification("Đã " + (isChecked ? "Bật" : "Tắt") + " Highlight & Đã lưu!");
+            }
+        }
     }
 	
 	initSettings();
