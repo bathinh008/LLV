@@ -1656,6 +1656,76 @@
         XLSX.utils.book_append_sheet(wb, ws, "TongHop");
         XLSX.writeFile(wb, `TongHop_LichLamViec_${inputDate}.xlsx`);
     }
+	
+	// ================= 8. CẤU HÌNH REALTIME (TỰ ĐỘNG CẬP NHẬT) =================
+
+    // Hàm hiển thị thông báo nhỏ góc màn hình (Toast)
+    function showToast(message) {
+        const div = document.createElement("div");
+        div.style.cssText = "position:fixed; bottom:20px; left:20px; background:#333; color:fff; padding:12px 20px; border-radius:8px; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.3); animation: fadeIn 0.5s;";
+        div.style.color = "white";
+        div.innerText = message;
+        document.body.appendChild(div);
+        setTimeout(() => {
+            div.style.opacity = "0";
+            div.style.transition = "opacity 0.5s";
+            setTimeout(() => div.remove(), 500);
+        }, 3000);
+    }
+
+    // Đăng ký lắng nghe thay đổi
+    _supabase.channel('dashboard-realtime-global')
+        // 1. Lắng nghe bảng GROUPS (Nhóm)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'groups' }, (payload) => {
+            console.log('🔔 Thay đổi bảng Groups:', payload);
+            loadGroups(); // Tải lại danh sách nhóm & dropdown
+            // Nếu đang ở tab Tổng hợp, load lại checkbox nhóm
+            if (document.getElementById('tab-summary').classList.contains('active')) {
+                renderSumGroupCheckboxes();
+            }
+        })
+        
+        // 2. Lắng nghe bảng USERS (Tài khoản)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+            console.log('🔔 Thay đổi bảng Users:', payload);
+            // Chỉ tải lại nếu đang là Admin
+            if (currentUserRole === 'Admin') {
+                loadUsers();
+                showToast("🔔 Danh sách tài khoản vừa được cập nhật.");
+            }
+        })
+
+        // 3. Lắng nghe bảng EMPLOYEES (Nhân sự)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, (payload) => {
+            console.log('🔔 Thay đổi bảng Employees:', payload);
+            loadEmployees();
+            showToast("🔔 Danh sách nhân sự vừa được cập nhật.");
+        })
+
+        // 4. Lắng nghe bảng SUPPLEMENTAL_LEAVE (Biến động số dư)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'supplemental_leave' }, (payload) => {
+            console.log('🔔 Thay đổi bảng Supplemental Leave:', payload);
+            // Nếu đang xem tab lịch sử (Tab con: Biến động), tải lại trang hiện tại
+            if (document.getElementById('tab-history').classList.contains('active') && currentSubTab === 'sup') {
+                loadHistorySup(pageSup);
+                showToast("🔔 Có biến động số dư phép/bù mới.");
+            }
+        })
+
+        // 5. Lắng nghe bảng LEAVE_REQUESTS (Yêu cầu nghỉ)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, (payload) => {
+            console.log('🔔 Thay đổi bảng Leave Requests:', payload);
+            // Nếu đang xem tab lịch sử (Tab con: Yêu cầu), tải lại trang hiện tại
+            if (document.getElementById('tab-history').classList.contains('active') && currentSubTab === 'req') {
+                loadHistoryReq(pageReq);
+                showToast("🔔 Có yêu cầu nghỉ phép/bù mới.");
+            }
+        })
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('✅ Đã kết nối Realtime Dashboard.');
+            }
+        });
 </script>
 
 </body>

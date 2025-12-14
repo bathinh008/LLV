@@ -2542,6 +2542,71 @@
         )
         .subscribe();
 
+	// ================= 12. CẤU HÌNH REALTIME CHO LỊCH & NHÂN VIÊN =================
+    
+    // Đăng ký lắng nghe thay đổi trên bảng 'schedule' và 'employees'
+    _supabase
+        .channel('realtime-schedule-sync') 
+        .on(
+            'postgres_changes', 
+            { event: '*', schema: 'public', table: 'schedule', filter: `group_name=eq.${currentGroup}` }, 
+            (payload) => {
+                console.log('🔔 CÓ THAY ĐỔI TRÊN LỊCH:', payload);
+
+                // Kiểm tra xem thay đổi có thuộc tuần đang xem không
+                if (payload.new && payload.new.week_start === currentWeekStart) {
+                    
+                    // Cập nhật dữ liệu vào biến employeesData mà KHÔNG cần tải lại trang
+                    const empCode = payload.new.emp_code;
+                    const empIndex = employeesData.findIndex(e => e.code === empCode);
+
+                    if (empIndex !== -1) {
+                        // Cập nhật ca làm việc
+                        employeesData[empIndex].shifts = payload.new.shifts;
+                        employeesData[empIndex].note = payload.new.note;
+                        
+                        // Cập nhật số dư (nếu có thay đổi)
+                        employeesData[empIndex].pn = payload.new.pn_new;
+                        employeesData[empIndex].nb = payload.new.nb_new;
+                        employeesData[empIndex].pn_old = payload.new.pn_old;
+                        employeesData[empIndex].nb_old = payload.new.nb_old;
+
+                        // Vẽ lại bảng ngay lập tức
+                        renderTable();
+                        
+                        // Hiệu ứng nháy dòng để báo hiệu
+                        highlightUpdatedRow(empIndex);
+                    } else {
+                        // Trường hợp nhân viên mới được thêm vào lịch -> Tải lại toàn bộ cho chắc
+                        loadSchedule();
+                    }
+                }
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'employees', filter: `group_name=eq.${currentGroup}` },
+            (payload) => {
+                console.log('🔔 CÓ THAY ĐỔI THÔNG TIN NHÂN VIÊN:', payload);
+                // Với nhân viên, tốt nhất là tải lại để cập nhật STT, Tên, Chức vụ chuẩn xác
+                loadSchedule();
+            }
+        )
+        .subscribe();
+
+    // Hàm hiệu ứng nháy dòng khi có update
+    function highlightUpdatedRow(idx) {
+        const tbody = document.getElementById("scheduleBody");
+        if (tbody && tbody.children[idx]) {
+            const row = tbody.children[idx];
+            row.style.transition = "background-color 0.5s";
+            row.style.backgroundColor = "#fff3cd"; // Màu vàng nhạt
+            setTimeout(() => {
+                row.style.backgroundColor = ""; // Trả về bình thường
+            }, 1000);
+        }
+    }
+
     // --- Hàm tạo âm thanh "Ding" nhẹ nhàng ---
     function playNotificationSound() {
         // Tạo âm thanh tần số cao ngắn (giả lập tiếng chuông)
@@ -2614,7 +2679,7 @@
         autoSaveTimer = setTimeout(() => {
             // Gọi hàm lưu với chế độ im lặng (true)
             saveSchedule(true); 
-        }, 3000);
+        }, 1000);
     }
 	
 	/* ===========================================================
