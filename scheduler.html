@@ -616,6 +616,10 @@
     let currentWeekStart = ""; 
     let employeesData = []; 
     
+	// Tạo ID định danh cho trình duyệt hiện tại
+	const MY_CLIENT_ID = "client_" + Math.random().toString(36).substr(2, 9);
+	console.log("Client ID của tôi là:", MY_CLIENT_ID);
+	
     // BIẾN CHO CHỨC NĂNG ĐẢO
     let isSwapMode = false;
     let swapSourceIdx = -1;
@@ -1327,7 +1331,10 @@
 					// --- [QUAN TRỌNG] THÊM DÒNG NÀY ĐỂ LƯU VỊ TRÍ ---
 					stt: (emp.stt !== undefined && emp.stt !== null) ? emp.stt : 9999,
 					
-					note: emp.note || ""
+					note: emp.note || "",
+					
+					// [MỚI] Gửi kèm ID của mình lên
+					last_modifier_id: MY_CLIENT_ID
 				});
 
 				balUpsert.push({ 
@@ -2551,6 +2558,12 @@
             'postgres_changes', 
             { event: '*', schema: 'public', table: 'schedule', filter: `group_name=eq.${currentGroup}` }, 
             (payload) => {
+				// [QUAN TRỌNG] Kiểm tra xem tin nhắn này có phải do chính mình gửi không
+				if (payload.new && payload.new.last_modifier_id === MY_CLIENT_ID) {
+					console.log('🙈 Bỏ qua update do chính mình tạo ra.');
+					return; // Dừng lại ngay, không vẽ lại bảng
+				}
+			
                 console.log('🔔 CÓ THAY ĐỔI TRÊN LỊCH:', payload);
 
                 // Kiểm tra xem thay đổi có thuộc tuần đang xem không
@@ -2600,7 +2613,7 @@
         if (tbody && tbody.children[idx]) {
             const row = tbody.children[idx];
             row.style.transition = "background-color 0.5s";
-            row.style.backgroundColor = "#fff3cd"; // Màu vàng nhạt
+            //row.style.backgroundColor = "#fff3cd"; // Màu vàng nhạt
             setTimeout(() => {
                 row.style.backgroundColor = ""; // Trả về bình thường
             }, 1000);
