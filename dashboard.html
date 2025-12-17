@@ -1047,6 +1047,43 @@
             if(item.type.includes("P")) typeBadge = "color:#ad1457; background:#fce4ec; font-weight:bold; padding:2px 6px; border-radius:4px;";
             else typeBadge = "color:#0369a1; background:#e0f2fe; font-weight:bold; padding:2px 6px; border-radius:4px;";
 
+			//===================================
+			// 1. Xử lý thời gian
+            const time = new Date(item.created_at).toLocaleString('en-GB');
+            const colorAmt = item.amount > 0 ? "color:#16a34a" : "color:#dc2626";
+            
+            // 2. Xử lý Style loại (P/NB)
+            let typeStyle = "background:#f3f4f6; color:#4b5563";
+            if (item.type.includes("P")) typeStyle = "background:#fce4ec; color:#ad1457; border:1px solid #f8bbd0";
+            if (item.type.includes("NB")) typeStyle = "background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd";
+
+            // ================= [MỚI] XỬ LÝ LÝ DO PHỨC TẠP =================
+            let cleanReason = item.reason || '-';
+
+            // Bước A: Xóa mã [REF:...] trước để chuỗi sạch sẽ
+            // Input: [Bù cho: 14/12 (Test(11/11/2025)) [REF:191]] test
+            // Out:   [Bù cho: 14/12 (Test(11/11/2025)) ] test
+            cleanReason = cleanReason.replace(/\[REF:\d+\]/g, "").trim();
+
+            // Bước B: Dùng Regex để "bắt" lấy nội dung bên trong
+            // Logic: Tìm đoạn [Bù cho: ... (...) ] và tách 2 phần:
+            // 1. (.*) -> Nội dung trong ngoặc đơn sau ngày tháng (Nguồn bù)
+            // 2. (.*) -> Nội dung ghi chú ở cuối cùng
+            const match = cleanReason.match(/\[Bù cho:.*?\((.*)\)\s*\](.*)/);
+
+            if (match) {
+                const source = match[1].trim(); // Lấy được: Test(11/11/2025)
+                const note = match[2].trim();   // Lấy được: test
+
+                if (note) {
+                    // Ghép lại theo ý bạn
+                    cleanReason = `Bù cho: ${source}, lý do: ${note}`;
+                } else {
+                    // Nếu không có ghi chú thì chỉ hiện nguồn
+                    cleanReason = `Bù cho: ${source}`;
+                }
+            }
+
             tbody.innerHTML += `
             <tr>
                 <td style="font-size:12px; color:#666; text-align:center;">${createdTime}</td>
@@ -1056,7 +1093,7 @@
                 <td style="text-align:center; font-family:monospace;">${leaveDate}</td>
                 <td style="text-align:center; font-weight:bold;">${item.val || '-'}</td>
                 <td style="text-align:center;"><span style="padding:4px 8px; border-radius:20px; font-size:11px; font-weight:600; ${statusStyle}">${statusIcon} ${item.status}</span></td>
-                <td style="font-size:13px; color:#555; font-style:italic;">${item.reason || '-'}</td>
+                <td style="font-size:13px; color:#555; font-style:italic;">${cleanReason || '-'}</td>
             </tr>`;
         });
     }
