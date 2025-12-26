@@ -2579,7 +2579,7 @@
         }
     }
 	
-	// ================= 11. CẤU HÌNH REALTIME (ĐÃ SỬA LỖI HỦY ĐƠN & LỌC NHÓM) =================
+	// ================= 11. CẤU HÌNH REALTIME (ĐÃ SỬA LỖI MẤT DỮ LIỆU KHI PASTE) =================
 
 	_supabase
 		.channel('realtime-leave-requests') 
@@ -2589,44 +2589,46 @@
 			(payload) => {
 				console.log('🔔 Realtime Update:', payload);
 				
-				// --- TRƯỜNG HỢP 1: XÓA (DELETE) - NHÂN VIÊN HỦY ĐƠN ---
-				// Vì DELETE chỉ trả về ID, ta phải kiểm tra xem ID đó có đang hiển thị trên màn hình không
+				// --- TRƯỜNG HỢP 1: XÓA (DELETE) ---
 				if (payload.eventType === 'DELETE') {
 					const deletedId = payload.old.id;
-					
-					// Kiểm tra xem ID bị xóa có nằm trong:
-					// 1. Danh sách chấm đỏ trên lịch (requestsData)
-					// 2. Hoặc danh sách chờ duyệt trong chuông (window.pendingRequests)
+					// Kiểm tra xem ID bị xóa có liên quan không
 					const isRelevant = (requestsData && requestsData.some(r => r.id === deletedId)) || 
 									   (window.pendingRequests && window.pendingRequests.some(r => r.id === deletedId));
 					
 					if (isRelevant) {
-						console.log("♻️ Phát hiện đơn thuộc nhóm này bị hủy -> Tải lại");
-						checkPendingRequests(); // Cập nhật số trên chuông
-						loadSchedule();         // Cập nhật bảng (xóa chấm đỏ/tam giác)
+						console.log("♻️ Đơn thuộc nhóm bị hủy -> Tải lại");
+						checkPendingRequests(); 
+						loadSchedule();         
 					}
-					return; // Xử lý xong DELETE thì dừng, không chạy code dưới
+					return; 
 				}
 
 				// --- TRƯỜNG HỢP 2: THÊM / SỬA (INSERT / UPDATE) ---
-				// Lấy mã nhân viên từ dữ liệu mới
 				const targetEmpCode = payload.new ? payload.new.emp_code : null;
-				
-				// Kiểm tra: Nhân viên này có thuộc nhóm đang mở không?
-				// (employeesData là danh sách NV hiện tại trên bảng)
 				const isMyGroup = employeesData.some(e => e.code === targetEmpCode);
 
-				if (!isMyGroup) return; // ⛔ Nếu là đơn của nhóm khác -> Bỏ qua ngay
+				if (!isMyGroup) return; // Không phải nhóm mình -> Bỏ qua
 
-				// Logic thông báo (Chỉ báo nếu là đơn mới Chờ duyệt, bỏ qua đơn Admin tự tạo)
+				// Logic thông báo (Chỉ báo nếu là đơn mới Chờ duyệt)
 				if (payload.eventType === 'INSERT' && payload.new.status === 'Chờ duyệt') {
 					playNotificationSound();
 					showToastNotification(`🔔 Có yêu cầu mới từ ${payload.new.emp_name || 'Nhân viên'}!`);
 				}
 
-				// Cập nhật lại giao diện
+				// Cập nhật số trên chuông
 				checkPendingRequests();
-				loadSchedule(); 
+
+				// [QUAN TRỌNG - SỬA LỖI MẤT DỮ LIỆU]
+				// Nếu là đơn mới (INSERT) và trạng thái là 'Đã duyệt' -> Nghĩa là do Admin vừa Paste hoặc SetShift tạo ra.
+				// Lúc này hàm saveSchedule đang chạy ngầm, TUYỆT ĐỐI KHÔNG gọi loadSchedule() để tránh tải dữ liệu cũ đè lên.
+				const isAdminAction = (payload.eventType === 'INSERT' && payload.new.status === 'Đã duyệt');
+				
+				if (!isAdminAction) {
+					loadSchedule(); 
+				} else {
+					console.log("🙈 Bỏ qua reload do Admin vừa thao tác (Paste/Set).");
+				}
 			}
 		)
 		.subscribe();
