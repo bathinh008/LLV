@@ -80,9 +80,60 @@
     button:hover { background-color: #357abd; }
     button:active { transform: scale(0.98); }
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+    /* --- [MỚI] CSS CHO POPUP THÔNG BÁO --- */
+    .popup-bg { 
+        display: none; 
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100%; height: 100%; 
+        background: rgba(0, 0, 0, 0.5); 
+        backdrop-filter: blur(3px);
+        z-index: 10000; 
+        justify-content: center; 
+        align-items: center; 
+        animation: fadeIn 0.3s;
+    }
+    .popup-box { 
+        background: white; 
+        padding: 0 0 20px 0; 
+        width: 90%; 
+        max-width: 420px; 
+        border-radius: 12px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+        overflow: hidden;
+        animation: slideIn 0.3s;
+    }
+    .popup-box h3 {
+        color: white;
+        margin: 0;
+        padding: 15px;
+        font-size: 16px;
+        text-transform: uppercase;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 </style>
 </head>
+
 <body>
+
+<div id="sysMsgPopup" class="popup-bg">
+    <div class="popup-box" style="text-align: center;">
+        <h3 id="sysMsgTitle">Thông báo</h3>
+        
+        <div style="padding: 20px;">
+            <div id="sysMsgIcon" style="font-size: 40px; margin-bottom: 10px;">🔔</div>
+            <p id="sysMsgContent" style="font-size: 15px; color: #444; line-height: 1.6; margin: 0;">
+                Nội dung...
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:center; border-top:1px solid #eee; padding-top:15px; padding-bottom: 5px;">
+            <button class="btn-p" onclick="closePopup('sysMsgPopup')" style="width: 120px;">Đã hiểu</button>
+        </div>
+    </div>
+</div>
 
 <div class="login-card">
     <div class="login-header">
@@ -127,13 +178,12 @@ window.onload = function() {
             LOGIN
 ============================= */
 async function login() {
-    // [SỬA LỖI 2] Lấy đúng ID là inputUser và inputPass
     const username = document.getElementById("inputUser").value.trim();
     const password = document.getElementById("inputPass").value.trim();
     const btn = document.getElementById("btnLogin");
 
     if (!username || !password) {
-        return alert("Vui lòng nhập đủ tài khoản & mật khẩu!");
+        return showSystemMsg("HỆ THỐNG", 'Vui lòng nhập đủ tài khoản & mật khẩu!', "error");
     }
 
     // Xử lý ghi nhớ
@@ -143,26 +193,31 @@ async function login() {
         localStorage.removeItem("remember_username");
     }
 
-    //btn.disabled = true;
-    //btn.innerHTML = "⏳ Đang kiểm tra...";
-	showLoading(true, "🔐 Đang kiểm tra đăng nhập...");
+    // Gọi hàm loading từ config.js
+    if (typeof showLoading === 'function') {
+        showLoading(true, "🔐 Đang kiểm tra đăng nhập...");
+    } else {
+        btn.innerText = "⏳ Đang kiểm tra...";
+        btn.disabled = true;
+    }
 
     try {
-        // Truy vấn Supabase: Tìm user trong bảng 'users'
+        // _supabase được khởi tạo trong config.js
         const { data, error } = await _supabase
             .from('users')
             .select('*')
             .eq('username', username)
-            .eq('password', password) // Lưu ý: Nên mã hóa password sau này
-            .single(); // Lấy 1 dòng duy nhất
+            .eq('password', password)
+            .single();
 
         if (error || !data) {
+            if (typeof showLoading === 'function') showLoading(false);
             btn.disabled = false;
-            btn.innerHTML = "Đăng nhập";
-            return alert("Sai tài khoản hoặc mật khẩu!");
+            btn.innerText = "Đăng nhập";
+            return showSystemMsg("ĐĂNG NHẬP THẤT BẠI", 'Sai tài khoản hoặc mật khẩu!', "error");
         }
 
-        // Đăng nhập thành công -> Lưu session
+        // Đăng nhập thành công
         localStorage.setItem("currentUser", JSON.stringify({
             username: data.username,
             role: data.role,
@@ -170,22 +225,66 @@ async function login() {
             groupsSub: data.sub_groups
         }));
 
-        // Chuyển trang
         window.location.href = "dashboard.html";
         
     } catch (err) {
         console.error(err);
-        alert("Lỗi kết nối!");
+        if (typeof showLoading === 'function') showLoading(false);
         btn.disabled = false;
-        btn.innerHTML = "Đăng nhập";
+        btn.innerText = "Đăng nhập";
+        showSystemMsg("LỖI KẾT NỐI", 'Không thể kết nối đến máy chủ: ' + err.message, "error");
     }
-	
-	showLoading(false);
+}
+
+// ================= HÀM HIỂN THỊ THÔNG BÁO ĐẸP =================
+function showSystemMsg(title, message, type = 'info') {
+    const popup = document.getElementById("sysMsgPopup");
+    const titleEl = document.getElementById("sysMsgTitle");
+    const contentEl = document.getElementById("sysMsgContent");
+    const iconEl = document.getElementById("sysMsgIcon");
+
+    if (!popup) return alert(message); // Fallback nếu chưa load HTML
+
+    // 1. Cấu hình màu sắc
+    if (type === 'error') {
+        titleEl.style.background = "#e74c3c"; // Đỏ
+        iconEl.innerText = "❌";
+        // Nếu tiêu đề rỗng thì lấy mặc định
+        titleEl.innerText = title || "Lỗi Hệ Thống";
+    } else if (type === 'warning') {
+        titleEl.style.background = "#f39c12"; // Cam
+        iconEl.innerText = "⚠️";
+        titleEl.innerText = title || "Cảnh Báo";
+    } else if (type === 'success') {
+        titleEl.style.background = "#2ecc71"; // Xanh lá
+        iconEl.innerText = "✅";
+        titleEl.innerText = title || "Thành Công";
+    } else {
+        titleEl.style.background = "#4a90e2"; // Xanh dương
+        iconEl.innerText = "ℹ️";
+        titleEl.innerText = title || "Thông Báo";
+    }
+
+    contentEl.innerHTML = message;
+    popup.style.display = "flex";
+}
+
+// [MỚI] HÀM ĐÓNG POPUP (QUAN TRỌNG)
+function closePopup(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
 }
 
 // Bắt sự kiện phím Enter
 document.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
+        // Nếu popup đang hiện thì Enter để đóng popup
+        const popup = document.getElementById("sysMsgPopup");
+        if (popup && popup.style.display === "flex") {
+            closePopup("sysMsgPopup");
+            return;
+        }
+
         if (document.activeElement.id === "inputUser") {
             document.getElementById("inputPass").focus();
         } else {

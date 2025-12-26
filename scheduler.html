@@ -336,6 +336,53 @@
 		font-weight: bold;
 		margin-bottom: 5px;
 	}
+	
+	/* --- CSS CHO THANH CHUYỂN TUẦN NHANH --- */
+	.week-navigator-container {
+		display: flex;
+		align-items: center;
+		background: white;
+		border: 1px solid #d1d5db; /* Màu viền nhẹ */
+		border-radius: 50px;       /* Bo tròn hình viên thuốc */
+		padding: 4px 6px;
+		box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+	}
+
+	.week-text {
+		font-size: 15px;
+		font-weight: 700;
+		color: #4a90e2;      /* Màu xanh chủ đạo */
+		margin: 0 15px;      /* Khoảng cách 2 bên chữ */
+		min-width: 240px;    /* Cố định chiều rộng để nút không bị nhảy khi chữ thay đổi */
+		text-align: center;
+		user-select: none;   /* Chống bôi đen khi bấm liên tục */
+	}
+
+	.nav-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		border: none;
+		background: #f3f4f6; /* Nền xám nhạt */
+		color: #555;
+		font-size: 16px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		padding: 0;          /* Reset padding mặc định */
+	}
+
+	.nav-btn:hover {
+		background: #4a90e2; /* Hover màu xanh */
+		color: white;
+		transform: scale(1.1);
+	}
+
+	.nav-btn:active {
+		transform: scale(0.95);
+	}
 </style>
 </head>
 <body>
@@ -346,7 +393,13 @@
             <h2 style="font-weight:bold; font-size:35px;">LỊCH LÀM VIỆC</h2>
             <div style="font-size:15px; color:#666; margin-top:5px;">Nhóm: <b id="groupNameDisplay">...</b></div>
         </div>
-        <div class="week-badge" id="weekRangeDisplay">Đang tải...</div>
+        <div class="week-navigator-container">
+			<button class="nav-btn" onclick="changeWeek(-1)" title="Tuần trước">❮</button>
+			
+			<span id="weekRangeDisplay" class="week-text">Đang tải dữ liệu...</span>
+			
+			<button class="nav-btn" onclick="changeWeek(1)" title="Tuần sau">❯</button>
+		</div>
     </div>
 
     <div class="control-bar">
@@ -622,6 +675,24 @@
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
             <button class="btn-d" onclick="closePopup('editEmpPopup')">Hủy</button> 
             <button class="btn-p" onclick="submitEditEmployee()">Lưu Thay Đổi</button>
+        </div>
+    </div>
+</div>
+
+<div id="sysMsgPopup" class="popup-bg" style="z-index: 10000;">
+    <div class="popup-box" style="width: 420px; text-align: center;">
+        <h3 id="sysMsgTitle" style="margin-bottom: 15px;">Thông báo</h3>
+        
+        <div style="padding: 0 10px;">
+            <div id="sysMsgIcon" style="font-size: 40px; margin-bottom: 15px;">🔔</div>
+            
+            <p id="sysMsgContent" style="font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 20px;">
+                Nội dung...
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:center; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-p" onclick="closePopup('sysMsgPopup')" style="min-width: 100px; justify-content: center;">Đã hiểu</button>
         </div>
     </div>
 </div>
@@ -984,7 +1055,7 @@
         const btn = document.getElementById("btnSwap");
         if(isSwapMode) {
             btn.classList.add("btn-swap-active");
-            alert("Đã bật chế độ ĐẢO VỊ TRÍ.\n\nCách dùng: Bấm vào người thứ 1, sau đó bấm vào người thứ 2 để đổi chỗ.");
+            showSystemMsg("HƯỚNG DẪN",'Đã bật chế độ ĐẢO VỊ TRÍ.<br><br>Cách dùng: Bấm vào người thứ 1, sau đó bấm vào người thứ 2 để đổi chỗ.',"");
         } else {
             btn.classList.remove("btn-swap-active");
         }
@@ -1720,7 +1791,7 @@
 		if (checkedBoxes.length === 1 && selected > needed) isValid = true;
 
 		if (!isValid) {
-			return alert(`Lựa chọn chưa hợp lệ!\n- Cần: ${needed}\n- Đang chọn: ${selected}\n\n(Chỉ được phép chọn DƯ khi tích vào đúng 1 ô nguồn).`);
+			return showSystemMsg("HỆ THỐNG",`Lựa chọn chưa hợp lệ!<br>- Cần: ${needed}<br>- Đang chọn: ${selected}<br><br>(Chỉ được phép chọn DƯ khi tích vào đúng 1 ô nguồn).`,"error");
 		}
 
 		// 4. Tạo lý do chi tiết
@@ -1855,13 +1926,13 @@
         let finalDate = selVal || newVal;
 
         if (!finalDate) {
-            return alert("Vui lòng chọn một tuần từ danh sách HOẶC chọn ngày để tạo mới!");
+            return showSystemMsg("HỆ THỐNG",'Vui lòng chọn một tuần từ danh sách HOẶC chọn ngày để tạo mới!',"error");
         }
         
         if (newVal && !selVal) {
             const d = new Date(newVal);
             if (d.getDay() !== 1) {
-                return alert("⚠️ Ngày bắt đầu tuần mới phải là Thứ 2!");
+                return showSystemMsg("HỆ THỐNG",'⚠️ Ngày bắt đầu tuần mới phải là Thứ 2!',"error");
             }
         }
 
@@ -1887,9 +1958,9 @@
 		const name = document.getElementById("newEmpName").value.trim();
 		const role = document.getElementById("newEmpRole").value.trim();
 
-		if(!code || !name) return alert("Vui lòng nhập đủ thông tin!");
+		if(!code || !name) return showSystemMsg("HỆ THỐNG",'Vui lòng nhập đủ thông tin!',"error");
 		
-		if(employeesData.some(e => e.code === code)) return alert("Mã NV đã hiển thị trên bảng!");
+		if(employeesData.some(e => e.code === code)) return showSystemMsg("HỆ THỐNG",'Mã NV đã hiển thị trên bảng!',"error");
 
 		// --- [MỚI] TÍNH TOÁN STT TIẾP THEO ---
 		// Tìm số STT lớn nhất hiện có trong danh sách
@@ -1927,7 +1998,7 @@
 			
 			renderTable();
 			closePopup('addEmpPopup');
-			alert("✅ Đã thêm nhân viên thành công!");
+			showSystemMsg("HỆ THỐNG",'✅ Đã thêm nhân viên thành công!',"");
 			
 		} catch(e) { console.error(e); alert("Lỗi: " + e.message); }
 		showLoading(false);
@@ -1973,7 +2044,7 @@
         const reason = document.getElementById("blReason").value;
         const checks = document.querySelectorAll(".emp-checkbox:checked");
         
-        if(checks.length === 0 || !amount || !reason) return alert("Thiếu thông tin!");
+        if(checks.length === 0 || !amount || !reason) return showSystemMsg("HỆ THỐNG",'Thiếu thông tin!',"warning");
 
         showLoading(true);
         const payload = [];
@@ -1993,7 +2064,7 @@
         }));
         await _supabase.from('leave_balance').upsert(upserts, { onConflict: 'emp_code, year' });
 
-        alert("Đã cộng thành công!");
+        showSystemMsg("HỆ THỐNG",'Đã cộng thành công!',"");
         closePopup('bulkLeavePopup');
         renderTable();
         showLoading(false);
@@ -2019,7 +2090,7 @@
                 
                 if(error) throw error;
                 
-                alert(`✅ Đã cập nhật trạng thái nhân viên ${emp.name} thành "Đã nghỉ".`);
+                showSystemMsg("HỆ THỐNG",`✅ Đã cập nhật trạng thái nhân viên ${emp.name} thành "Đã nghỉ".`,"");
                 
                 employeesData.splice(idx, 1);
                 renderTable();
@@ -2508,12 +2579,12 @@
                 await saveSchedule(); 
                 
             } else {
-                alert(`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động lưu.`);
+                showSystemMsg("HỆ THỐNG",`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động lưu.`,"warning");
             }
         } 
         // B. Nếu ngày nằm ở tuần khác
         else {
-            alert(`✅ Đã duyệt trạng thái đơn cho ngày ${dateStr}.\n(Ngày này không nằm trong tuần hiện tại nên lịch làm việc không thay đổi).`);
+            showSystemMsg("HỆ THỐNG",`✅ Đã duyệt trạng thái đơn cho ngày ${dateStr}.\n(Ngày này không nằm trong tuần hiện tại nên lịch làm việc không thay đổi).`,"");
         }
     }
 
@@ -2542,13 +2613,13 @@
                 renderTable();
                 
                 // 3. Thông báo nhắc nhở quan trọng
-                alert(`✅ Đã duyệt thành công!\n\nLịch của [${empCode}] ngày T${diffDays + 2} (hoặc CN) đã chuyển thành [${type}].\n\n⚠️ LƯU Ý: Bạn cần bấm nút "LƯU LỊCH" để áp dụng thay đổi này vĩnh viễn và trừ phép.`);
+                showSystemMsg("HỆ THỐNG",`✅ Đã duyệt thành công!<br><br>Lịch của [${empCode}] ngày T${diffDays + 2} (hoặc CN) đã chuyển thành [${type}].<br><br>⚠️ LƯU Ý: Bạn cần bấm nút "LƯU LỊCH" để áp dụng thay đổi này vĩnh viễn và trừ phép.`,"warning");
             } else {
-                alert(`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động đổi ca.`);
+                showSystemMsg("HỆ THỐNG",`⚠️ Đã duyệt đơn, nhưng nhân viên [${empCode}] không có trong bảng lịch tuần này nên không thể tự động đổi ca.`,"warning");
             }
         } else {
             // Ngày nghỉ nằm ở tuần khác (không phải tuần đang mở)
-            alert(`✅ Đã duyệt đơn cho ngày ${dateStr}.\n(Ngày này không nằm trong tuần hiện tại nên không hiển thị trên bảng).`);
+            showSystemMsg("HỆ THỐNG",`✅ Đã duyệt đơn cho ngày ${dateStr}.<br>(Ngày này không nằm trong tuần hiện tại nên không hiển thị trên bảng).`,"");
         }
     }
 
@@ -2570,12 +2641,12 @@
                 
                 // Vẽ lại bảng
                 renderTable();
-                alert(`✅ Đã duyệt và cập nhật lịch cho nhân viên ${empCode} vào ngày T${diffDays + 2} (hoặc CN). \n\n👉 Vui lòng bấm "LƯU LỊCH" để hệ thống tính toán trừ phép.`);
+                showSystemMsg("HỆ THỐNG",`✅ Đã duyệt và cập nhật lịch cho nhân viên ${empCode} vào ngày T${diffDays + 2} (hoặc CN). <br><br>👉 Vui lòng bấm "LƯU LỊCH" để hệ thống tính toán trừ phép.`,"warning");
             } else {
-                alert("✅ Đã duyệt! (Nhân viên này không có trong bảng lịch hiện tại)");
+                showSystemMsg("HỆ THỐNG",'✅ Đã duyệt! (Nhân viên này không có trong bảng lịch hiện tại)',"");
             }
         } else {
-            alert(`✅ Đã duyệt! \n(Ngày nghỉ ${dateStr} không nằm trong tuần đang mở nên không hiển thị lên lịch ngay lập tức).`);
+            showSystemMsg("HỆ THỐNG",`✅ Đã duyệt! <br>(Ngày nghỉ ${dateStr} không nằm trong tuần đang mở nên không hiển thị lên lịch ngay lập tức).`,"");
         }
     }
 	
@@ -2825,8 +2896,8 @@
         const fromDStr = document.getElementById("expFrom").value;
         const toDStr = document.getElementById("expTo").value;
         
-        if (!fromDStr || !toDStr) return alert("Vui lòng chọn ngày!");
-        if (fromDStr > toDStr) return alert("Ngày bắt đầu phải nhỏ hơn ngày kết thúc!");
+        if (!fromDStr || !toDStr) return showSystemMsg("HỆ THỐNG",'Vui lòng chọn ngày!',"warning");
+        if (fromDStr > toDStr) return showSystemMsg("HỆ THỐNG",'Ngày bắt đầu phải nhỏ hơn ngày kết thúc!',"error");
 
 		const btn = document.querySelector("#exportRangePopup .btn-s");
         const oldText = btn.innerText;
@@ -3976,7 +4047,7 @@
         const newRole = document.getElementById("txtEditRole").value.trim();
         const newStatus = document.getElementById("selEditStatus").value;
 
-        if (!newName) return alert("Họ tên không được để trống!");
+        if (!newName) return showSystemMsg("HỆ THỐNG",'Họ tên không được để trống!',"warning");
 
         const btnSave = document.querySelector("#editEmpPopup .btn-p");
         const oldText = btnSave.innerText;
@@ -4008,7 +4079,7 @@
             // Vẽ lại bảng và đóng popup
             renderTable();
             closePopup('editEmpPopup');
-            alert("✅ Cập nhật thông tin thành công!");
+            showSystemMsg("HỆ THỐNG",'✅ Cập nhật thông tin thành công!',"");
 
         } catch (e) {
             console.error(e);
@@ -4166,6 +4237,88 @@
 			console.error(err);
 			alert("Lỗi khi duyệt đơn trên server: " + err.message);
 		}
+	}
+	
+	// ================= CHUYỂN TUẦN NHANH (PRO VERSION) =================
+	async function changeWeek(offset) {
+		if (!currentWeekStart) return;
+
+		// 1. Tính toán ngày đích đến
+		const d = new Date(currentWeekStart);
+		d.setDate(d.getDate() + (offset * 7)); 
+		const targetWeekStr = formatDateISO(d);
+
+		// 2. KIỂM TRA GIỚI HẠN (Nếu bấm Tiến)
+		if (offset > 0) {
+			showLoading(true, "⏳ Đang kiểm tra dữ liệu...");
+			try {
+				const { data, error } = await _supabase
+					.from('weeks')
+					.select('week_start')
+					.eq('group_name', currentGroup)
+					.eq('week_start', targetWeekStr)
+					.maybeSingle();
+
+				if (!data) {
+					showLoading(false);
+					
+					// --- [SỬA ĐỔI] DÙNG POPUP ĐẸP THAY ALERT ---
+					const weekDisplay = targetWeekStr.split('-').reverse().join('/');
+					showSystemMsg(
+						"ĐÃ ĐẾN GIỚI HẠN!",
+						`Tuần kế tiếp (<b>${weekDisplay}</b>) chưa được tạo.<br><br>
+						Vui lòng bấm nút <b style="color:#2980b9">📅 Chọn Tuần</b> và nhập ngày để tạo mới.`,
+						"warning"
+					);
+					return; 
+				}
+			} catch (e) {
+				console.error(e);
+				showLoading(false);
+				showSystemMsg("Lỗi Kết Nối", "Không thể kiểm tra dữ liệu tuần: " + e.message, "error");
+				return;
+			}
+			showLoading(false);
+		}
+
+		// 3. Chuyển tuần
+		currentWeekStart = targetWeekStr;
+		document.getElementById("weekRangeDisplay").innerText = "Đang tải...";
+		localStorage.setItem("LAST_WEEK_" + currentGroup, currentWeekStart);
+		loadSchedule();
+	}
+	
+	// ================= HÀM HIỂN THỊ THÔNG BÁO ĐẸP =================
+	function showSystemMsg(title, message, type = 'info') {
+		const popup = document.getElementById("sysMsgPopup");
+		const titleEl = document.getElementById("sysMsgTitle");
+		const contentEl = document.getElementById("sysMsgContent");
+		const iconEl = document.getElementById("sysMsgIcon");
+
+		// 1. Cấu hình màu sắc theo loại
+		if (type === 'error') {
+			titleEl.style.background = "#e74c3c"; // Đỏ
+			iconEl.innerText = "❌";
+			titleEl.innerText = "Lỗi Hệ Thống";
+		} else if (type === 'warning') {
+			titleEl.style.background = "#f39c12"; // Cam
+			iconEl.innerText = "⚠️";
+			titleEl.innerText = title || "Cảnh Báo";
+		} else if (type === 'success') {
+			titleEl.style.background = "#2ecc71"; // Xanh lá
+			iconEl.innerText = "✅";
+			titleEl.innerText = title || "Thành Công";
+		} else {
+			titleEl.style.background = "#4a90e2"; // Xanh dương (Mặc định)
+			iconEl.innerText = "ℹ️";
+			titleEl.innerText = title || "Thông Báo";
+		}
+
+		// 2. Gán nội dung (Cho phép dùng thẻ HTML như <br>, <b>)
+		contentEl.innerHTML = message;
+
+		// 3. Hiển thị
+		popup.style.display = "flex";
 	}
 </script>
 </body>

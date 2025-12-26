@@ -387,6 +387,24 @@
     </div>
 </div>
 
+<div id="sysMsgPopup" class="popup-bg" style="z-index: 10000;">
+    <div class="popup-box" style="width: 420px; text-align: center;">
+        <h3 id="sysMsgTitle" style="margin-bottom: 15px;">Thông báo</h3>
+        
+        <div style="padding: 0 10px;">
+            <div id="sysMsgIcon" style="font-size: 40px; margin-bottom: 15px;">🔔</div>
+            
+            <p id="sysMsgContent" style="font-size: 15px; color: #444; line-height: 1.6; margin-bottom: 20px;">
+                Nội dung...
+            </p>
+        </div>
+
+        <div style="display:flex; justify-content:center; border-top:1px solid #eee; padding-top:15px;">
+            <button class="btn-p" onclick="closePopup('sysMsgPopup')" style="min-width: 100px; justify-content: center;">Đã hiểu</button>
+        </div>
+    </div>
+</div>
+
 <div id="loading">⏳ Đang xử lý...</div>
 
 <script>
@@ -482,7 +500,7 @@
 
     function goToSchedule() {
         const g = document.getElementById("quickGroupSelect").value;
-        if(!g) return alert("Chọn nhóm trước!");
+        if(!g) return showSystemMsg("HỆ THỐNG",'Chọn nhóm trước!',"error");
         window.location.href = `scheduler.html?group=${encodeURIComponent(g)}`;
     }
 
@@ -605,7 +623,7 @@
 
     async function addGroup() {
         const name = document.getElementById("newGroupInput").value.trim();
-        if(!name) return alert("Nhập tên nhóm!");
+        if(!name) return showSystemMsg("HỆ THỐNG",'Nhập tên nhóm!',"warning");
         const { error } = await _supabase.from('groups').insert([{ name: name }]);
         if(error) alert("Lỗi: " + error.message); else { document.getElementById("newGroupInput").value=""; loadGroups(); }
     }
@@ -1305,7 +1323,7 @@
         const joinDate = document.getElementById("empJoinDate").value;
         const status = document.getElementById("empStatus").value;
 
-        if(!code || !name) return alert("Vui lòng nhập Mã và Tên nhân viên!");
+        if(!code || !name) return showSystemMsg("HỆ THỐNG",'Vui lòng nhập Mã và Tên nhân viên!',"warning");
 
         showLoading(true);
         
@@ -1341,7 +1359,7 @@
         } else {
             closePopup('employeePopup');
             loadEmployees(); // Tải lại bảng
-            alert("✅ Đã lưu thành công!");
+            showSystemMsg("HỆ THỐNG",'✅ Đã lưu thành công!',"");
         }
     }
 
@@ -1356,7 +1374,7 @@
         if(error) alert("Lỗi xóa: " + error.message);
         else {
             loadEmployees();
-            alert("Đã xóa nhân viên!");
+            showSystemMsg("HỆ THỐNG",'Đã xóa nhân viên!',"");
         }
     }
 	
@@ -1439,13 +1457,13 @@
     // 4. Tải dữ liệu tổng hợp
     async function loadAggregateSchedule() {
         const inputDate = document.getElementById("sumWeekPicker").value;
-        if (!inputDate) return alert("Vui lòng chọn ngày!");
+        if (!inputDate) return showSystemMsg("HỆ THỐNG",'Vui lòng chọn ngày!',"warning");
 
         // Lấy danh sách nhóm được tick
         const selectedGroups = [];
         document.querySelectorAll('.chk-sum-group:checked').forEach(cb => selectedGroups.push(cb.value));
 
-        if (selectedGroups.length === 0) return alert("Vui lòng chọn ít nhất 1 nhóm!");
+        if (selectedGroups.length === 0) return showSystemMsg("HỆ THỐNG",'Vui lòng chọn ít nhất 1 nhóm!',"warning");
 
         const weekStart = getMonday(inputDate);
         showLoading(true);
@@ -1605,7 +1623,7 @@
 
     // 5. Xuất Excel Tổng hợp (Nhiều Sheet hoặc 1 Sheet dài)
     function exportAggregateExcel() {
-        if (Object.keys(aggregateData).length === 0) return alert("Chưa có dữ liệu để xuất.");
+        if (Object.keys(aggregateData).length === 0) return showSystemMsg("HỆ THỐNG",'Chưa có dữ liệu để xuất.',"error");
 
         // [MỚI] Lấy năm
         const inputDate = document.getElementById("sumWeekPicker").value;
@@ -1705,6 +1723,39 @@
             setTimeout(() => div.remove(), 500);
         }, 3000);
     }
+
+	// ================= HÀM HIỂN THỊ THÔNG BÁO ĐẸP =================
+	function showSystemMsg(title, message, type = 'info') {
+		const popup = document.getElementById("sysMsgPopup");
+		const titleEl = document.getElementById("sysMsgTitle");
+		const contentEl = document.getElementById("sysMsgContent");
+		const iconEl = document.getElementById("sysMsgIcon");
+
+		// 1. Cấu hình màu sắc theo loại
+		if (type === 'error') {
+			titleEl.style.background = "#e74c3c"; // Đỏ
+			iconEl.innerText = "❌";
+			titleEl.innerText = "Lỗi Hệ Thống";
+		} else if (type === 'warning') {
+			titleEl.style.background = "#f39c12"; // Cam
+			iconEl.innerText = "⚠️";
+			titleEl.innerText = title || "Cảnh Báo";
+		} else if (type === 'success') {
+			titleEl.style.background = "#2ecc71"; // Xanh lá
+			iconEl.innerText = "✅";
+			titleEl.innerText = title || "Thành Công";
+		} else {
+			titleEl.style.background = "#4a90e2"; // Xanh dương (Mặc định)
+			iconEl.innerText = "ℹ️";
+			titleEl.innerText = title || "Thông Báo";
+		}
+
+		// 2. Gán nội dung (Cho phép dùng thẻ HTML như <br>, <b>)
+		contentEl.innerHTML = message;
+
+		// 3. Hiển thị
+		popup.style.display = "flex";
+	}
 
     // Đăng ký lắng nghe thay đổi
     _supabase.channel('dashboard-realtime-global')
