@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script src="config.js"></script>
+
 <style>
     body {
         font-family: 'Inter', sans-serif;
@@ -108,16 +110,6 @@
 
 <script>
 /* =============================
-    CẤU HÌNH SUPABASE
-============================= */
-// Thay thông tin dự án của bạn vào đây
-const SUPABASE_URL = 'https://renqusdcczlhrglbclhe.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJlbnF1c2RjY3psaHJnbGJjbGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwMTIyMzUsImV4cCI6MjA4MDU4ODIzNX0.kF960FS-VvAM2rkNo9kVHfmGAkpwrmlZ5Vf9-QFiC2E';
-
-// [SỬA LỖI 1] Phải dùng supabase.createClient
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-/* =============================
     LOAD USERNAME (nếu có)
 ============================= */
 window.onload = function() {
@@ -151,8 +143,9 @@ async function login() {
         localStorage.removeItem("remember_username");
     }
 
-    btn.disabled = true;
-    btn.innerHTML = "⏳ Đang kiểm tra...";
+    //btn.disabled = true;
+    //btn.innerHTML = "⏳ Đang kiểm tra...";
+	showLoading(true, "🔐 Đang kiểm tra đăng nhập...");
 
     try {
         // Truy vấn Supabase: Tìm user trong bảng 'users'
@@ -186,6 +179,8 @@ async function login() {
         btn.disabled = false;
         btn.innerHTML = "Đăng nhập";
     }
+	
+	showLoading(false);
 }
 
 // Bắt sự kiện phím Enter
