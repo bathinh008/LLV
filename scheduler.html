@@ -775,130 +775,168 @@
 	async function loadSchedule() {
 		showLoading(true, "⏳ Đang tải dữ liệu...");
 		try {
-			// 1. XÁC ĐỊNH THỜI GIAN
-			const viewDate = new Date(currentWeekStart);
-			const viewYear = viewDate.getFullYear(); 
-			const prevYear = viewYear - 1;            
+			// 1. [LOGIC] Xác định năm tài chính (Dựa vào ngày cuối tuần)
+			const viewDateObj = new Date(currentWeekStart);
+			const [y, m, d] = currentWeekStart.split('-').map(Number);
+			const endOfWeekDate = new Date(y, m - 1, d + 6); // Lấy Chủ Nhật làm chuẩn năm
+			const viewYear = endOfWeekDate.getFullYear();
+			const prevYear = viewYear - 1;
 
-			// Cập nhật Tiêu đề cột
-			const elPOld = document.getElementById("th_p_old");
-			const elPNew = document.getElementById("th_p_new");
-			const elBOld = document.getElementById("th_b_old");
-			const elBNew = document.getElementById("th_b_new");
+			// 2. [UI] Cập nhật tiêu đề cột ngay lập tức
+			updateHeaderLabels(viewYear, prevYear);
+
+			// 3. [DATA] Tải dữ liệu từ Server
+			const ctx = await fetchLoadContext(viewYear, prevYear);
+
+			// 4. [PROCESS] Xử lý gộp dữ liệu & Tính toán số dư
+			// Kết quả trả về gán vào biến toàn cục employeesData
+			employeesData = mergeAndProcessData(ctx, viewDateObj);
 			
-			if(elPOld) elPOld.innerText = `Phép ${prevYear}`;
-			if(elPNew) elPNew.innerText = `Phép ${viewYear}`;
-			if(elBOld) elBOld.innerText = `Bù ${prevYear}`;
-			if(elBNew) elBNew.innerText = `Bù ${viewYear}`;
+			// Cập nhật biến toàn cục requestsData (để dùng cho badge)
+			requestsData = ctx.requests;
 
-			// 2. TẢI DỮ LIỆU SONG SONG
-			const [schRes, empRes, balRes, reqRes] = await Promise.all([
-				_supabase.from('schedule').select('*').eq('group_name', currentGroup).eq('week_start', currentWeekStart).order('stt', { ascending: true }),
-				_supabase.from('employees').select('*').eq('group_name', currentGroup).eq('status', 'active').order('stt', { ascending: true }),
-				_supabase.from('leave_balance').select('*').in('year', [viewYear, prevYear]),
-				// Tải yêu cầu nghỉ để hiện chấm đỏ (Lấy rộng ra chút để chắc chắn)
-				_supabase.from('leave_requests').select('*').eq('status', 'Chờ duyệt').gte('date', currentWeekStart)
-			]);
-
-			const schData = schRes.data || [];
-			const allEmps = empRes.data || [];
-			const balances = balRes.data || [];
-			
-			// [SỬA LỖI NHẦM NHÓM CHO CHẤM ĐỎ]
-			// Chỉ lấy những requests thuộc về nhân viên có trong nhóm này
-			const groupEmpCodes = allEmps.map(e => e.code);
-			requestsData = (reqRes.data || []).filter(r => groupEmpCodes.includes(r.emp_code)); 
-
-			// Map số dư
-			const balCurrent = {}; 
-			const balPrev = {};    
-			if(balances) {
-				balances.forEach(b => {
-					if (b.year === viewYear) balCurrent[b.emp_code] = b;
-					if (b.year === prevYear) balPrev[b.emp_code] = b;
-				});
-			}
-
-			// 3. XỬ LÝ DỮ LIỆU
-			employeesData = [];
-			const processedCodes = new Set();
-			const hasSchedule = schData && schData.length > 0;
-
-			const getFreshBalance = (empCode, empProfile) => {
-				let pNew=0, bNew=0, pOld=0, bOld=0;
-				if (balCurrent[empCode]) {
-					const b = balCurrent[empCode];
-					pNew = Number(b.pn_val)||0; bNew = Number(b.nb_val)||0;
-					pOld = Number(b.pn_old_val)||0; bOld = Number(b.nb_old_val)||0; 
-				} else if (balPrev[empCode]) {
-					const bPrev = balPrev[empCode];
-					pOld = Number(bPrev.pn_val)||0; bOld = Number(bPrev.nb_val)||0;
-				}
-				if (empProfile) {
-					const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
-					const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
-					if (pnExpireDate && viewDate > pnExpireDate) pOld = 0;
-					if (nbExpireDate && viewDate > nbExpireDate) bOld = 0;
-				}
-				return { pNew, bNew, pOld, bOld };
-			};
-
-			if (hasSchedule) {
-				schData.forEach(s => {
-					const empProfile = allEmps ? allEmps.find(e => e.code === s.emp_code) : null;
-					let pOld = Number(s.pn_old)||0; let bOld = Number(s.nb_old)||0;
-					if (empProfile) {
-						const pnExpireDate = empProfile.pn_expire ? new Date(empProfile.pn_expire) : null;
-						const nbExpireDate = empProfile.nb_expire ? new Date(empProfile.nb_expire) : null;
-						if (pnExpireDate && viewDate > pnExpireDate) pOld = 0;
-						if (nbExpireDate && viewDate > nbExpireDate) bOld = 0;
-					}
-					employeesData.push({
-						code: s.emp_code, name: s.emp_name, role: s.emp_role, 
-						join_date: empProfile ? empProfile.created_at : null,
-						stt: (s.stt !== null && s.stt !== undefined) ? s.stt : (empProfile ? (empProfile.stt || 9999) : 9999),
-						shifts: s.shifts || Array(7).fill(""),
-						pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
-						pn_old: pOld, nb_old: bOld, note: s.note || ""
-					});
-					processedCodes.add(s.emp_code);
-				});
-			}
-
-			if (allEmps) {
-				const weekEndDate = new Date(currentWeekStart); weekEndDate.setDate(weekEndDate.getDate() + 7); 
-				allEmps.forEach(e => {
-					if (!processedCodes.has(e.code)) {
-						const joinDate = new Date(e.created_at);
-						if (joinDate > weekEndDate) return;
-						const bal = getFreshBalance(e.code, e);
-						employeesData.push({
-							code: e.code, name: e.name, role: e.role,
-							stt: (e.stt !== undefined && e.stt !== null) ? e.stt : 9999,
-							shifts: Array(7).fill(""),
-							pn: bal.pNew, nb: bal.bNew, pn_old: bal.pOld, nb_old: bal.bOld, note: ""
-						});
-					}
-				});
-			}
-			
-			employeesData.sort((a, b) => {
-				const sttA = (a.stt !== undefined && a.stt !== null) ? a.stt : 9999;
-				const sttB = (b.stt !== undefined && b.stt !== null) ? b.stt : 9999;
-				if (sttA !== sttB) return sttA - sttB;
-				if (a.code && b.code) return a.code.localeCompare(b.code);
-				return 0;
-			});
-			
+			// 5. [RENDER] Vẽ bảng
 			renderTable();
 			updateHeaderDates();
+			checkPendingRequests(); // Cập nhật chấm đỏ
 
-			// [QUAN TRỌNG] GỌI HÀM CHECK YÊU CẦU Ở ĐÂY (SAU KHI CÓ employeesData)
-			// Việc này giúp Badge đếm đúng số lượng của nhóm hiện tại
-			checkPendingRequests();
+		} catch (e) {
+			console.error(e);
+			showSystemMsg("LỖI",'Lỗi tải dữ liệu: ' + e.message, "error");
+		} finally {
+			showLoading(false);
+		}
+	}
 
-		} catch (e) { console.error(e); alert("Lỗi tải dữ liệu: " + e.message); }
-		showLoading(false);
+	function updateHeaderLabels(viewYear, prevYear) {
+		const elPOld = document.getElementById("th_p_old");
+		const elPNew = document.getElementById("th_p_new");
+		const elBOld = document.getElementById("th_b_old");
+		const elBNew = document.getElementById("th_b_new");
+		
+		if(elPOld) elPOld.innerText = `Phép ${prevYear}`;
+		if(elPNew) elPNew.innerText = `Phép ${viewYear}`;
+		if(elBOld) elBOld.innerText = `Bù ${prevYear}`;
+		if(elBNew) elBNew.innerText = `Bù ${viewYear}`;
+	}
+
+	async function fetchLoadContext(viewYear, prevYear) {
+		const [schRes, empRes, balRes, reqRes] = await Promise.all([
+			_supabase.from('schedule').select('*').eq('group_name', currentGroup).eq('week_start', currentWeekStart).order('stt', { ascending: true }),
+			_supabase.from('employees').select('*').eq('group_name', currentGroup).eq('status', 'active').order('stt', { ascending: true }),
+			_supabase.from('leave_balance').select('*').in('year', [viewYear, prevYear]),
+			_supabase.from('leave_requests').select('*').eq('status', 'Chờ duyệt').gte('date', currentWeekStart)
+		]);
+
+		const allEmps = empRes.data || [];
+		// Lọc request rác (không thuộc nhóm này)
+		const groupEmpCodes = allEmps.map(e => e.code);
+		const validRequests = (reqRes.data || []).filter(r => groupEmpCodes.includes(r.emp_code));
+
+		// Map số dư để tra cứu nhanh
+		const balCurrent = {}; 
+		const balPrev = {};    
+		(balRes.data || []).forEach(b => {
+			if (b.year === viewYear) balCurrent[b.emp_code] = b;
+			if (b.year === prevYear) balPrev[b.emp_code] = b;
+		});
+
+		return {
+			schedule: schRes.data || [],
+			employees: allEmps,
+			balCurrent,
+			balPrev,
+			requests: validRequests
+		};
+	}
+
+	function mergeAndProcessData(ctx, viewDateObj) {
+		const { schedule, employees, balCurrent, balPrev } = ctx;
+		const resultList = [];
+		const processedCodes = new Set();
+
+		// Helper: Logic kiểm tra hạn sử dụng phép
+		const applyExpiration = (val, expireDateStr) => {
+			if (!expireDateStr || val <= 0) return val;
+			const exp = new Date(expireDateStr);
+			// Nếu ngày xem lịch (viewDate) đã vượt quá hạn -> Số dư về 0
+			return (viewDateObj > exp) ? 0 : val;
+		};
+
+		// 1. Xử lý những người ĐÃ CÓ lịch
+		if (schedule.length > 0) {
+			schedule.forEach(s => {
+				const profile = employees.find(e => e.code === s.emp_code);
+				
+				// Xử lý hạn dùng cho số dư cũ (Logic cũ của bạn bị lặp ở đây)
+				let pOld = Number(s.pn_old) || 0;
+				let bOld = Number(s.nb_old) || 0;
+				
+				if (profile) {
+					pOld = applyExpiration(pOld, profile.pn_expire);
+					bOld = applyExpiration(bOld, profile.nb_expire);
+				}
+
+				resultList.push({
+					code: s.emp_code, name: s.emp_name, role: s.emp_role, 
+					join_date: profile ? profile.created_at : null,
+					stt: (s.stt ?? (profile?.stt ?? 9999)),
+					shifts: s.shifts || Array(7).fill(""),
+					pn: Number(s.pn_new)||0, nb: Number(s.nb_new)||0,
+					pn_old: pOld, nb_old: bOld, 
+					note: s.note || ""
+				});
+				processedCodes.add(s.emp_code);
+			});
+		}
+
+		// 2. Xử lý nhân viên MỚI (Chưa có lịch)
+		// Lấy ngày cuối tuần để check nhân viên mới vào
+		const weekEndDate = new Date(currentWeekStart); 
+		weekEndDate.setDate(weekEndDate.getDate() + 7); 
+
+		employees.forEach(e => {
+			if (!processedCodes.has(e.code)) {
+				// Check ngày vào làm
+				const joinDate = new Date(e.created_at);
+				if (joinDate > weekEndDate) return;
+
+				// Lấy số dư khởi tạo
+				let pNew=0, bNew=0, pOld=0, bOld=0;
+				
+				// Ưu tiên lấy năm nay -> Nếu ko có lấy năm cũ chuyển sang
+				if (balCurrent[e.code]) {
+					const b = balCurrent[e.code];
+					pNew = Number(b.pn_val)||0; bNew = Number(b.nb_val)||0;
+					pOld = Number(b.pn_old_val)||0; bOld = Number(b.nb_old_val)||0; 
+				} else if (balPrev[e.code]) {
+					const bPrev = balPrev[e.code];
+					// Năm ngoái còn dư thì năm nay thành Tồn Cũ
+					pOld = Number(bPrev.pn_val)||0; bOld = Number(bPrev.nb_val)||0;
+				}
+
+				// Check hạn dùng
+				pOld = applyExpiration(pOld, e.pn_expire);
+				bOld = applyExpiration(bOld, e.nb_expire);
+
+				resultList.push({
+					code: e.code, name: e.name, role: e.role,
+					stt: e.stt ?? 9999,
+					shifts: Array(7).fill(""),
+					pn: pNew, nb: bNew, pn_old: pOld, nb_old: bOld, note: ""
+				});
+			}
+		});
+
+		// 3. Sắp xếp danh sách
+		resultList.sort((a, b) => {
+			const sttA = a.stt ?? 9999;
+			const sttB = b.stt ?? 9999;
+			if (sttA !== sttB) return sttA - sttB;
+			return (a.code || "").localeCompare(b.code || "");
+		});
+
+		return resultList;
 	}
 
     // ================= 5. RENDER UI =================
@@ -1124,7 +1162,7 @@
 
 			} catch (e) {
 				console.error(e);
-				alert("Lỗi khi lưu vị trí: " + e.message);
+				showSystemMsg("LỖI",'Lỗi khi lưu vị trí: ' + e.message, "error");
 				// Nếu lỗi DB thì load lại bảng để hoàn tác giao diện về cũ (tránh sai lệch)
 				loadSchedule();
 			} finally {
@@ -1163,305 +1201,419 @@
 	// HÀM LƯU LỊCH (ĐÃ SỬA LỖI LOGIC & THỨ TỰ)
 	// ==========================================
 	async function saveSchedule(isSilent = false) {
-		// --- [MỚI] KIỂM TRA CẢNH BÁO LÀM VIỆC LIÊN TỤC ---
-		if (!isSilent) { 
+		// 1. Kiểm tra cảnh báo (Giữ nguyên logic cũ của bạn)
+		if (!isSilent && typeof checkContinuousWorkWarning === 'function') { 
 			const warningList = checkContinuousWorkWarning();
 			if (warningList.length > 0) {
-				const msg = "⚠️ CẢNH BÁO QUÁ SỨC!\n\n" +
-							"Các nhân viên sau đang làm việc 7 ngày liên tục:\n" +
-							warningList.join("\n") + 
-							"\n\nBạn có chắc chắn muốn lưu không?";
-				if (!confirm(msg)) return; 
+				if (!confirm("⚠️ CẢNH BÁO QUÁ SỨC!\n\n" + warningList.join("\n") + "\n\nBạn có chắc chắn muốn lưu không?")) return; 
 			}
 		}
 		
 		if (!isSilent) showLoading(true);
 		const statusSpan = document.getElementById("autoSaveStatus");
-		if (statusSpan) statusSpan.innerText = "⏳ Đang đồng bộ...";
+		if (statusSpan) statusSpan.innerText = "⏳ Đang xử lý dữ liệu...";
 
 		try {
-			console.log("--- BẮT ĐẦU LƯU ---");
+			console.log("--- BẮT ĐẦU QUÁ TRÌNH LƯU (NEW LOGIC) ---");
 
-			// 1. Tải dữ liệu tham chiếu
-			const [y, m, d] = currentWeekStart.split('-').map(Number);
-			const currentYear = y;
-			const prevYear = currentYear - 1;
-			
-			const nextYear = currentYear + 1;
-			const pnExpireDate = `${nextYear}-03-31`; 
-			const nbExpireDate = `${nextYear}-06-30`;
+			// 2. Tải dữ liệu tham chiếu
+			const ctx = await fetchScheduleContext();
 
-			// --- [QUAN TRỌNG] TẢI DỮ LIỆU TRƯỚC KHI DÙNG ---
-			const [holidaysRes, historyRes, oldScheduleRes, balancesRes] = await Promise.all([
-				_supabase.from('holidays').select('*'),
-				_supabase.from('supplemental_leave').select('reason, emp_code, type'),
-				_supabase.from('schedule').select('emp_code, shifts').eq('week_start', currentWeekStart).eq('group_name', currentGroup),
-				// Lấy số dư của cả NĂM NAY và NĂM NGOÁI
-				_supabase.from('leave_balance').select('*').in('year', [currentYear, prevYear])
-			]);
+			const schUpsert = [], supInsert = [], balUpsert = [], requestsToCancel = [];
 
-			const holidays = holidaysRes.data || [];
-			const history = historyRes.data || [];
-			const oldScheduleData = oldScheduleRes.data || [];
-			const balances = balancesRes.data || []; // Định nghĩa balances ở đây
-
-			// --- [QUAN TRỌNG] TẠO MAP DỮ LIỆU SAU KHI ĐÃ TẢI ---
-			const balCurrent = {}; 
-			const prevBalMap = {};   
-			
-			if (balances.length > 0) {
-				balances.forEach(b => {
-					if (b.year === currentYear) balCurrent[b.emp_code] = b;
-					if (b.year === prevYear) prevBalMap[b.emp_code] = b;
-				});
-			}
-
-			// Map Ngày lễ
-			const hMap = {};
-			holidays.forEach(h => {
-				const parts = h.date.split('-'); 
-				const d = parseInt(parts[2], 10);
-				const m = parseInt(parts[1], 10);
-				hMap[`${d}/${m}`] = { val: Number(h.value)||1, note: h.note };
-			});
-
-			// Check ngày 15
-			let autoPhepReason = null; 
-			let target15Date = null;
-
-			for(let i=0; i<7; i++) {
-				const dLoop = new Date(y, m - 1, d + i); 
-				if (dLoop.getDate() === 15) {
-					autoPhepReason = `Phép tháng ${dLoop.getMonth()+1}/${dLoop.getFullYear()}`;
-					target15Date = new Date(dLoop);
-					target15Date.setHours(0,0,0,0);
-					break; 
-				}
-			}
-
-			const schUpsert = [], supInsert = [], balUpsert = [];
-			const requestsToCancel = [];
-
-			// 3. DUYỆT TỪNG NHÂN VIÊN
+			// 3. Duyệt nhân viên và tính toán bằng hàm mới
 			employeesData.forEach(emp => {
-				// A. LẤY DỮ LIỆU THAM CHIẾU
-				const oldRec = oldScheduleData.find(x => x.emp_code === emp.code);
-				const oldShifts = oldRec ? oldRec.shifts : [];
+				// GỌI HÀM TÍNH TOÁN MỚI Ở ĐÂY
+				const res = calculateEmployeeBalances(emp, ctx);
 
-				// Lấy số dư hiện tại (Live) từ Map đã tạo ở trên
-				let liveBal = balCurrent[emp.code] || { pn_val: 0, nb_val: 0, pn_old_val: 0, nb_old_val: 0 };
-				
-				const prevData = prevBalMap[emp.code];
-				const maxPNOld = prevData ? (Number(prevData.pn_val) || 0) : 0;
-				const maxNBOld = prevData ? (Number(prevData.nb_val) || 0) : 0;
+				// Cập nhật giao diện
+				emp.pn = res.pn; emp.pn_old = res.pn_old;
+				emp.nb = res.nb; emp.nb_old = res.nb_old;
 
-				// ==========================================
-				// LOGIC TÍNH TOÁN "HOÀN TÁC & TÍNH LẠI"
-				// ==========================================
-
-				// B. BƯỚC 1: HOÀN TÁC (REVERT) - Cộng trả lại những gì đã trừ
-				const usedOld = calculateUsage(oldShifts);
-				
-				let basePNOld = Number(liveBal.pn_old_val) || 0;
-				let basePNNew = Number(liveBal.pn_val) || 0;
-				
-				// Hoàn tác Phép (PN)
-				let totalPRefund = usedOld.p; 
-				const spaceInOldP = maxPNOld - basePNOld; 
-				if (spaceInOldP > 0) {
-					const amountToOld = Math.min(totalPRefund, spaceInOldP);
-					basePNOld += amountToOld;
-					totalPRefund -= amountToOld;
-				}
-				basePNNew += totalPRefund;
-
-				// Hoàn tác Bù (NB)
-				let baseNBOld = Number(liveBal.nb_old_val) || 0;
-				let baseNBNew = Number(liveBal.nb_val) || 0;
-				let totalBRefund = usedOld.b;
-				
-				const spaceInOldB = maxNBOld - baseNBOld;
-				if (spaceInOldB > 0) {
-					const amountToOld = Math.min(totalBRefund, spaceInOldB);
-					baseNBOld += amountToOld;
-					totalBRefund -= amountToOld;
-				}
-				baseNBNew += totalBRefund;
-				
-				// --- XỬ LÝ CỘNG PHÉP THÁNG / BÙ LỄ ---
-				// (Đoạn này thêm vào base... trước khi trừ đi cái mới)
-				let addedNB = 0, addedPN = 0;
-
-				// Logic cộng phép tháng 15
-				if (autoPhepReason && target15Date) {
-					let isEligible = true;
-					if (emp.join_date) {
-						const joinDate = new Date(emp.join_date);
-						joinDate.setHours(0,0,0,0);
-						const diffDays = Math.ceil((target15Date - joinDate) / (1000 * 60 * 60 * 24));
-						if (diffDays < 15) isEligible = false;
-					}
-					if (isEligible) {
-						const hasMonthlyLeave = history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(autoPhepReason));
-						if (!hasMonthlyLeave) {
-							addedPN += 1.0;
-							supInsert.push({ emp_code: emp.code, type: 'PN', amount: 1.0, reason: autoPhepReason, date: new Date() });
-						}
-					}
-				}
-
-				// Logic cộng bù lễ
-				emp.shifts.forEach((s, idx) => {
-					const dObj = new Date(y, m - 1, d + idx);
-					const key = `${dObj.getDate()}/${dObj.getMonth()+1}`;
-					const fullDateStr = `${String(dObj.getDate()).padStart(2,'0')}/${String(dObj.getMonth()+1).padStart(2,'0')}/${dObj.getFullYear()}`;
-					
-					// Các mã ca được tính công lễ
-					if(hMap[key] && ["S","C","HC","S1","CT","S+","NC"].includes(s)) {
-						const hInfo = hMap[key];
-						const reasonCheck = `(${fullDateStr})-(${hInfo.note})`; 
-						const isPaid = history.some(h => h.emp_code === emp.code && h.type === 'NB' && h.reason && h.reason.includes(reasonCheck));
-						if(!isPaid) {
-							addedNB += hInfo.val;
-							supInsert.push({ emp_code: emp.code, type: 'NB', amount: hInfo.val, reason: `Bù Ngày Lễ ${reasonCheck}`, date: new Date() });
-						}
-					}
-				});
-
-				// Cộng thêm vào quỹ
-				basePNNew += addedPN;
-				baseNBNew += addedNB;
-
-				// --- XỬ LÝ HỦY ĐƠN KHI SỬA LỊCH ---
-				emp.shifts.forEach((newS, idx) => {
-					const oldS = oldShifts[idx] || "";
-					// Nếu cũ là Nghỉ, mà mới khác cũ -> Hủy đơn
-					const LEAVE_CODES = ["P", "P/2", "NB", "NB/2", "0.5NB", "NC", "Ô", "Te", "L", "NM"];
-					const wasLeave = LEAVE_CODES.some(c => oldS === c || oldS.startsWith(c));
-					
-					if (wasLeave && newS !== oldS) {
-						const dObj = new Date(y, m - 1, d + idx);
-						const dateISO = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
-						requestsToCancel.push({ emp_code: emp.code, date: dateISO });
-					}
-				});
-
-				// C. BƯỚC 2: TÍNH TOÁN TIÊU THỤ MỚI (APPLY NEW)
-				const usedNew = calculateUsage(emp.shifts);
-
-				// --- Trừ Phép (PN) ---
-				if (basePNOld >= usedNew.p) {
-					basePNOld -= usedNew.p;
-				} else {
-					const remain = usedNew.p - basePNOld;
-					basePNOld = 0;
-					basePNNew -= remain;
-				}
-
-				// --- Trừ Bù (NB) ---
-				if (baseNBOld >= usedNew.b) {
-					baseNBOld -= usedNew.b;
-				} else {
-					const remain = usedNew.b - baseNBOld;
-					baseNBOld = 0;
-					baseNBNew -= remain;
-				}
-
-				// D. GÁN GIÁ TRỊ CUỐI CÙNG VÀO OBJECT
-				emp.pn = parseFloat(basePNNew.toFixed(2));
-				emp.pn_old = parseFloat(basePNOld.toFixed(2));
-				emp.nb = parseFloat(baseNBNew.toFixed(2));
-				emp.nb_old = parseFloat(baseNBOld.toFixed(2));
-
-				// E. ĐẨY VÀO MẢNG UPDATE
+				// Chuẩn bị dữ liệu lưu
 				schUpsert.push({
-					week_start: currentWeekStart, 
-					group_name: currentGroup,
-					emp_code: emp.code, 
-					emp_name: emp.name, 
-					emp_role: emp.role,
-					shifts: emp.shifts, 
-					nb_new: emp.nb, 
-					pn_new: emp.pn,
-					nb_old: emp.nb_old, 
-					pn_old: emp.pn_old,
-					stt: (emp.stt !== undefined && emp.stt !== null) ? emp.stt : 9999,
-					note: emp.note || "",
-					last_modifier_id: MY_CLIENT_ID
+					week_start: currentWeekStart, group_name: currentGroup,
+					emp_code: emp.code, emp_name: emp.name, emp_role: emp.role,
+					shifts: emp.shifts,
+					nb_new: res.nb, pn_new: res.pn,
+					nb_old: res.nb_old, pn_old: res.pn_old,
+					stt: emp.stt || 9999, note: emp.note || "",
+					last_modifier_id: (typeof MY_CLIENT_ID !== 'undefined') ? MY_CLIENT_ID : 'admin'
 				});
 
-				balUpsert.push({ 
-					emp_code: emp.code, year: currentYear, 
-					nb_val: emp.nb, pn_val: emp.pn,
-					pn_old_val: emp.pn_old, nb_old_val: emp.nb_old,
-					pn_expire: pnExpireDate, nb_expire: nbExpireDate
+				balUpsert.push({
+					emp_code: emp.code, year: ctx.currentYear,
+					nb_val: res.nb, pn_val: res.pn,
+					pn_old_val: res.pn_old, nb_old_val: res.nb_old,
+					// Các trường expire giữ nguyên hoặc update nếu cần
+					
+					pn_expire: ctx.pnExpireDate, 
+					nb_expire: ctx.nbExpireDate
 				});
+
+				if (res.supLogs.length > 0) supInsert.push(...res.supLogs);
+				if (res.requestsToCancel.length > 0) requestsToCancel.push(...res.requestsToCancel);
 			});
 
+			// 4. Lưu xuống Database
 			const promises = [
 				_supabase.from('weeks').upsert({ group_name: currentGroup, week_start: currentWeekStart, week_range: document.getElementById("weekRangeDisplay").innerText }, { onConflict: 'group_name, week_start' }),
 				_supabase.from('schedule').upsert(schUpsert, { onConflict: 'week_start, emp_code' }),
 				_supabase.from('leave_balance').upsert(balUpsert, { onConflict: 'emp_code, year' })
 			];
-
 			if (supInsert.length > 0) promises.push(_supabase.from('supplemental_leave').insert(supInsert));
+			if (requestsToCancel.length > 0) {
+				promises.push(...requestsToCancel.map(req => 
+					_supabase.from('leave_requests').update({ status: 'Hủy bởi Admin', reason: 'Admin sửa lịch (Auto)' })
+					.eq('emp_code', req.emp_code).eq('date', req.date).in('status', ['Chờ duyệt', 'Đã duyệt'])
+				));
+			}
 
 			await Promise.all(promises);
 
-			// Hủy đơn
-			if (requestsToCancel.length > 0) {
-				const cancelPromises = requestsToCancel.map(req => 
-					_supabase.from('leave_requests')
-						.update({ 
-							status: 'Hủy bởi Admin',
-							reason: `Admin sửa lịch trực tiếp (Hủy)`
-						})
-						.eq('emp_code', req.emp_code)
-						.eq('date', req.date)
-						.in('status', ['Chờ duyệt', 'Đã duyệt']) 
-				);
-				await Promise.all(cancelPromises);
-			}
-
+			// 5. Hoàn tất
 			if (statusSpan) {
-				statusSpan.innerText = "✅ Đã lưu tự động";
+				statusSpan.innerText = "✅ Đã lưu xong";
 				setTimeout(() => statusSpan.innerText = "", 3000);
 			}
-
 			if (!isSilent) {
 				let msg = "Đã lưu thành công!";
-				if (autoPhepReason) msg += `\n(+1.0 Phép tháng 15)`;
-				alert(msg);
+				if (ctx.autoPhepReason) msg += `\n(+1.0 Phép tháng 15)`;
+				showSystemMsg("THÔNG BÁO",msg, "info");
+				loadSchedule(); // Tải lại bảng để khớp số liệu
 			}
-			
 			localStorage.setItem("LAST_WEEK_" + currentGroup, currentWeekStart);
-			if (!isSilent) loadSchedule(); 
 
 		} catch(e) { 
 			console.error(e); 
 			if (statusSpan) statusSpan.innerText = "❌ Lỗi lưu!";
-			if (!isSilent) alert("Lỗi lưu: " + e.message); 
+			if (!isSilent) showSystemMsg("LỖI",'Lỗi lưu: ' + e.message, "error");
+		} finally {
+			if (!isSilent) showLoading(false);
+			const container = document.getElementById("summaryContainer");
+			if (container && container.style.display !== 'none') updateDetailSummary();
 		}
-		if (!isSilent) showLoading(false);
+	}
+
+	async function fetchScheduleContext() {
+		const [y, m, d] = currentWeekStart.split('-').map(Number);
 		
-		// Cập nhật bảng tổng hợp (nếu đang mở)
+		// [FIX] Lấy ngày Chủ Nhật để xác định năm chuẩn
+		const endOfWeekDate = new Date(y, m - 1, d + 6);
+		const currentYear = endOfWeekDate.getFullYear(); 
+		
+		const prevYear = currentYear - 1;
+		const nextYear = currentYear + 1;
+
+		console.log(`Đang xử lý tuần thuộc năm: ${currentYear}`);
+
+		const [holidaysRes, historyRes, oldScheduleRes, balancesRes] = await Promise.all([
+			_supabase.from('holidays').select('*'),
+			_supabase.from('supplemental_leave').select('reason, emp_code, type'),
+			_supabase.from('schedule').select('emp_code, shifts').eq('week_start', currentWeekStart).eq('group_name', currentGroup),
+			_supabase.from('leave_balance').select('*').in('year', [currentYear, prevYear])
+		]);
+
+		const hMap = {};
+		(holidaysRes.data || []).forEach(h => {
+			const parts = h.date.split('-');
+			hMap[`${parseInt(parts[2],10)}/${parseInt(parts[1],10)}`] = { val: Number(h.value)||1, note: h.note };
+		});
+
+		const balCurrent = {}, balPrev = {};
+		(balancesRes.data || []).forEach(b => {
+			if (b.year === currentYear) balCurrent[b.emp_code] = b;
+			if (b.year === prevYear) balPrev[b.emp_code] = b;
+		});
+
+		let autoPhepReason = null, target15Date = null;
+		for(let i=0; i<7; i++) {
+			const dLoop = new Date(y, m - 1, d + i);
+			if (dLoop.getDate() === 15) {
+				autoPhepReason = `Phép tháng ${dLoop.getMonth()+1}/${dLoop.getFullYear()}`;
+				target15Date = new Date(dLoop);
+				target15Date.setHours(0,0,0,0);
+				break;
+			}
+		}
+
+		return {
+			currentYear, prevYear, y, m, d,
+			holidays: hMap,
+			history: historyRes.data || [],
+			oldSchedule: oldScheduleRes.data || [],
+			balCurrent, balPrev,
+			autoPhepReason, target15Date,
+			
+			// [SỬA LẠI] Ngày hết hạn của "Phép Cũ" phải là năm hiện tại
+			// Ví dụ: Đang năm 2026 -> Phép cũ hết hạn 31/03/2026
+			pnExpireDate: `${currentYear}-03-31`,
+			nbExpireDate: `${currentYear}-06-30`
+		};
+	}
+
+	function processAllEmployees(employees, ctx) {
+		const schUpsert = [], supInsert = [], balUpsert = [], requestsToCancel = [];
+
+		employees.forEach(emp => {
+			// 1. Lấy dữ liệu cũ & Số dư
+			const oldRec = ctx.oldSchedule.find(x => x.emp_code === emp.code);
+			const oldShifts = oldRec ? oldRec.shifts : [];
+			
+			let liveBal = ctx.balCurrent[emp.code] || { pn_val: 0, nb_val: 0, pn_old_val: 0, nb_old_val: 0 };
+			const prevData = ctx.balPrev[emp.code];
+			const maxPNOld = prevData ? (Number(prevData.pn_val) || 0) : 0;
+			const maxNBOld = prevData ? (Number(prevData.nb_val) || 0) : 0;
+
+			let basePNOld = Number(liveBal.pn_old_val) || 0;
+			let basePNNew = Number(liveBal.pn_val) || 0;
+			let baseNBOld = Number(liveBal.nb_old_val) || 0;
+			let baseNBNew = Number(liveBal.nb_val) || 0;
+
+			// 2. HOÀN TÁC (Revert logic)
+			const usedOld = calculateUsage(oldShifts);
+			
+			// Hoàn tác Phép
+			let totalPRefund = usedOld.p;
+			const spaceInOldP = maxPNOld - basePNOld;
+			if (spaceInOldP > 0) {
+				const amount = Math.min(totalPRefund, spaceInOldP);
+				basePNOld += amount;
+				totalPRefund -= amount;
+			}
+			basePNNew += totalPRefund;
+
+			// Hoàn tác Bù
+			let totalBRefund = usedOld.b;
+			const spaceInOldB = maxNBOld - baseNBOld;
+			if (spaceInOldB > 0) {
+				const amount = Math.min(totalBRefund, spaceInOldB);
+				baseNBOld += amount;
+				totalBRefund -= amount;
+			}
+			baseNBNew += totalBRefund;
+
+			// 3. TÍNH CỘNG DỒN (Accrual Logic) - Logic Năm Cũ/Mới nằm ở đây
+			const accrualResult = calculateAccruals(emp, ctx); // Hàm con tách riêng bên dưới
+			
+			// Cộng kết quả vào biến tạm
+			basePNNew += accrualResult.addedPN;
+			baseNBNew += accrualResult.addedNB_Current; // Cộng vào quỹ NAY
+			baseNBOld += accrualResult.addedNB_Prev;    // Cộng vào quỹ CŨ
+			
+			// Gộp các bản ghi log bổ sung
+			if(accrualResult.supLogs.length > 0) supInsert.push(...accrualResult.supLogs);
+
+			// 4. KIỂM TRA HỦY ĐƠN
+			checkCancelledRequests(emp, oldShifts, ctx, requestsToCancel);
+
+			// 5. TRỪ ĐI CÁI MỚI (Deduct Logic)
+			const usedNew = calculateUsage(emp.shifts);
+			
+			// Trừ Phép
+			if (basePNOld >= usedNew.p) {
+				basePNOld -= usedNew.p;
+			} else {
+				const remain = usedNew.p - basePNOld;
+				basePNOld = 0;
+				basePNNew -= remain;
+			}
+
+			// Trừ Bù
+			if (baseNBOld >= usedNew.b) {
+				baseNBOld -= usedNew.b;
+			} else {
+				const remain = usedNew.b - baseNBOld;
+				baseNBOld = 0;
+				baseNBNew -= remain;
+			}
+
+			// 6. CẬP NHẬT OBJECT NHÂN VIÊN
+			emp.pn = parseFloat(basePNNew.toFixed(2));
+			emp.pn_old = parseFloat(basePNOld.toFixed(2));
+			emp.nb = parseFloat(baseNBNew.toFixed(2));
+			emp.nb_old = parseFloat(baseNBOld.toFixed(2));
+
+			// 7. CHUẨN BỊ DATA DATABASE
+			schUpsert.push({
+				week_start: currentWeekStart, group_name: currentGroup,
+				emp_code: emp.code, emp_name: emp.name, emp_role: emp.role,
+				shifts: emp.shifts,
+				nb_new: emp.nb, pn_new: emp.pn,
+				nb_old: emp.nb_old, pn_old: emp.pn_old,
+				stt: emp.stt || 9999, note: emp.note || "",
+				last_modifier_id: MY_CLIENT_ID // Đảm bảo biến này global hoặc được truyền vào
+			});
+
+			balUpsert.push({
+				emp_code: emp.code, year: ctx.currentYear,
+				nb_val: emp.nb, pn_val: emp.pn,
+				pn_old_val: emp.pn_old, nb_old_val: emp.nb_old,
+				pn_expire: ctx.pnExpireDate, nb_expire: ctx.nbExpireDate
+			});
+		});
+
+		return { schUpsert, balUpsert, supInsert, requestsToCancel };
+	}
+
+	// Hàm con: Tính toán cộng thêm (Tách riêng để dễ nhìn logic năm cũ mới)
+	function calculateAccruals(emp, ctx) {
+		let addedPN = 0;
+		let addedNB_Current = 0;
+		let addedNB_Prev = 0;
+		const supLogs = [];
+
+		// Logic Phép tháng 15
+		if (ctx.autoPhepReason && ctx.target15Date) {
+			let isEligible = true;
+			if (emp.join_date) {
+				const joinDate = new Date(emp.join_date);
+				joinDate.setHours(0,0,0,0);
+				const diffDays = Math.ceil((ctx.target15Date - joinDate) / (1000 * 60 * 60 * 24));
+				if (diffDays < 15) isEligible = false;
+			}
+			if (isEligible) {
+				const hasMonthlyLeave = ctx.history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(ctx.autoPhepReason));
+				if (!hasMonthlyLeave) {
+					addedPN += 1.0;
+					supLogs.push({ emp_code: emp.code, type: 'PN', amount: 1.0, reason: ctx.autoPhepReason, date: new Date() });
+				}
+			}
+		}
+
+		// Logic Bù lễ (Có phân loại năm)
+		const ALLOWED_SHIFTS = ["S", "C", "HC", "S1", "CT", "S+", "NC"];
+		emp.shifts.forEach((s, idx) => {
+			const dObj = new Date(ctx.y, ctx.m - 1, ctx.d + idx);
+			const shiftYear = dObj.getFullYear(); // <--- MỐC QUAN TRỌNG
+
+			const key = `${dObj.getDate()}/${dObj.getMonth()+1}`;
+			const fullDateStr = `${String(dObj.getDate()).padStart(2,'0')}/${String(dObj.getMonth()+1).padStart(2,'0')}/${dObj.getFullYear()}`;
+			const cleanS = s ? s.trim().toUpperCase() : "";
+
+			if (ctx.holidays[key] && ALLOWED_SHIFTS.includes(cleanS)) {
+				const hInfo = ctx.holidays[key];
+				const safeNote = hInfo.note || "Lễ";
+				const reasonCheck = `(${fullDateStr})-(${safeNote})`;
+				
+				const isPaid = ctx.history.some(h => h.emp_code === emp.code && h.type === 'NB' && h.reason && h.reason.includes(reasonCheck));
+				
+				if (!isPaid) {
+					const amount = Number(hInfo.val);
+					
+					// PHÂN LOẠI CỘNG VÀO ĐÂU
+					if (shiftYear < ctx.currentYear) {
+						addedNB_Prev += amount;
+					} else {
+						addedNB_Current += amount;
+					}
+
+					supLogs.push({ 
+						emp_code: emp.code, type: 'NB', amount: amount, 
+						reason: `Bù Ngày Lễ ${reasonCheck}`, date: new Date() 
+					});
+				}
+			}
+		});
+
+		return { addedPN, addedNB_Current, addedNB_Prev, supLogs };
+	}
+
+	// Hàm con: Kiểm tra hủy đơn
+	function checkCancelledRequests(emp, oldShifts, ctx, requestsToCancel) {
+		const LEAVE_CODES = ["P", "P/2", "NB", "NB/2", "0.5NB", "NC", "Ô", "Te", "L", "NM"];
+		
+		emp.shifts.forEach((newS, idx) => {
+			const oldS = oldShifts[idx] || "";
+			const wasLeave = LEAVE_CODES.some(c => oldS === c || oldS.startsWith(c));
+			
+			if (wasLeave && newS !== oldS) {
+				const dObj = new Date(ctx.y, ctx.m - 1, ctx.d + idx);
+				const dateISO = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+				requestsToCancel.push({ emp_code: emp.code, date: dateISO });
+			}
+		});
+	}
+
+	// Thực hiện ghi xuống DB
+	async function commitToDatabase(pkg, ctx) {
+		const promises = [
+			_supabase.from('weeks').upsert({ 
+				group_name: currentGroup, week_start: currentWeekStart, 
+				week_range: document.getElementById("weekRangeDisplay").innerText 
+			}, { onConflict: 'group_name, week_start' }),
+			
+			_supabase.from('schedule').upsert(pkg.schUpsert, { onConflict: 'week_start, emp_code' }),
+			
+			_supabase.from('leave_balance').upsert(pkg.balUpsert, { onConflict: 'emp_code, year' })
+		];
+
+		if (pkg.supInsert.length > 0) {
+			promises.push(_supabase.from('supplemental_leave').insert(pkg.supInsert));
+		}
+
+		if (pkg.requestsToCancel.length > 0) {
+			const cancelPromises = pkg.requestsToCancel.map(req => 
+				_supabase.from('leave_requests')
+					.update({ status: 'Hủy bởi Admin', reason: `Admin sửa lịch trực tiếp (Hủy)` })
+					.eq('emp_code', req.emp_code)
+					.eq('date', req.date)
+					.in('status', ['Chờ duyệt', 'Đã duyệt']) 
+			);
+			promises.push(...cancelPromises);
+		}
+
+		await Promise.all(promises);
+	}
+
+	// Các hàm tiện ích nhỏ
+	async function checkPreSaveConditions(isSilent) {
+		if (!isSilent) { 
+			// Giả sử hàm checkContinuousWorkWarning của bạn đã có sẵn
+			const warningList = (typeof checkContinuousWorkWarning === 'function') ? checkContinuousWorkWarning() : [];
+			if (warningList.length > 0) {
+				const msg = "⚠️ CẢNH BÁO QUÁ SỨC!\n\nCác nhân viên sau đang làm việc 7 ngày liên tục:\n" + warningList.join("\n") + "\n\nBạn có chắc chắn muốn lưu không?";
+				if (!confirm(msg)) return false; 
+			}
+		}
+		return true;
+	}
+
+	function updateStatusUI(msg) {
+		const statusSpan = document.getElementById("autoSaveStatus");
+		if (statusSpan) statusSpan.innerText = msg;
+	}
+
+	function finalizeSave(isSilent, ctx) {
+		const statusSpan = document.getElementById("autoSaveStatus");
+		if (statusSpan) {
+			statusSpan.innerText = "✅ Đã lưu tự động";
+			setTimeout(() => statusSpan.innerText = "", 3000);
+		}
+
+		if (!isSilent) {
+			let msg = "Đã lưu thành công!";
+			if (ctx.autoPhepReason) msg += `\n(+1.0 Phép tháng 15)`;
+			showSystemMsg("THÔNG BÁO",msg, "info");
+		}
+		
+		localStorage.setItem("LAST_WEEK_" + currentGroup, currentWeekStart);
+		if (!isSilent) loadSchedule();
+		
 		const container = document.getElementById("summaryContainer");
 		if (container && container.style.display !== 'none') {
 			updateDetailSummary();
 		}
 	}
-	
-	// Hàm phụ trợ: Tính tổng số công Phép/Bù trong danh sách ca
+
+	// Giữ nguyên hàm calculateUsage của bạn
 	function calculateUsage(shifts) {
 		let p = 0, b = 0;
 		if (Array.isArray(shifts)) {
 			shifts.forEach(s => {
 				const code = s ? s.toUpperCase() : "";
-				// Tính P
 				if (code === "P" || code === "P (1.0)") p += 1.0;
 				if (code === "P/2" || code === "0.5P") p += 0.5;
-				
-				// Tính NB
 				if (code === "NB" || code === "NB (1.0)") b += 1.0;
 				if (code === "NB/2" || code === "0.5NB") b += 0.5;
 			});
@@ -1852,7 +2004,7 @@
 
 			} catch (e) {
 				console.error("Lỗi tạo đơn:", e);
-				alert("Lỗi khi lưu đơn nghỉ: " + e.message);
+				showSystemMsg("LỖI",'Lỗi khi lưu đơn nghỉ: ' + e.message, "error");
 			}
 		}
 
@@ -1926,13 +2078,13 @@
         let finalDate = selVal || newVal;
 
         if (!finalDate) {
-            return showSystemMsg("HỆ THỐNG",'Vui lòng chọn một tuần từ danh sách HOẶC chọn ngày để tạo mới!',"error");
+            return showSystemMsg("LỖI",'Vui lòng chọn một tuần từ danh sách HOẶC chọn ngày để tạo mới!',"error");
         }
         
         if (newVal && !selVal) {
             const d = new Date(newVal);
             if (d.getDay() !== 1) {
-                return showSystemMsg("HỆ THỐNG",'⚠️ Ngày bắt đầu tuần mới phải là Thứ 2!',"error");
+                return showSystemMsg("LỖI",'⚠️ Ngày bắt đầu tuần mới phải là Thứ 2!',"error");
             }
         }
 
@@ -1958,9 +2110,9 @@
 		const name = document.getElementById("newEmpName").value.trim();
 		const role = document.getElementById("newEmpRole").value.trim();
 
-		if(!code || !name) return showSystemMsg("HỆ THỐNG",'Vui lòng nhập đủ thông tin!',"error");
+		if(!code || !name) return showSystemMsg("LỖI",'Vui lòng nhập đủ thông tin!',"error");
 		
-		if(employeesData.some(e => e.code === code)) return showSystemMsg("HỆ THỐNG",'Mã NV đã hiển thị trên bảng!',"error");
+		if(employeesData.some(e => e.code === code)) return showSystemMsg("LỖI",'Mã NV đã hiển thị trên bảng!',"error");
 
 		// --- [MỚI] TÍNH TOÁN STT TIẾP THEO ---
 		// Tìm số STT lớn nhất hiện có trong danh sách
@@ -1998,9 +2150,9 @@
 			
 			renderTable();
 			closePopup('addEmpPopup');
-			showSystemMsg("HỆ THỐNG",'✅ Đã thêm nhân viên thành công!',"");
+			showSystemMsg("HỆ THỐNG",'✅ Đã thêm nhân viên thành công!', "info");
 			
-		} catch(e) { console.error(e); alert("Lỗi: " + e.message); }
+		} catch(e) { console.error(e); showSystemMsg("LỖI",'Lỗi: ' + e.message, "error"); }
 		showLoading(false);
 	}
 
@@ -2064,7 +2216,7 @@
         }));
         await _supabase.from('leave_balance').upsert(upserts, { onConflict: 'emp_code, year' });
 
-        showSystemMsg("HỆ THỐNG",'Đã cộng thành công!',"");
+        showSystemMsg("HỆ THỐNG",'Đã cộng thành công!', "info");
         closePopup('bulkLeavePopup');
         renderTable();
         showLoading(false);
@@ -2090,11 +2242,11 @@
                 
                 if(error) throw error;
                 
-                showSystemMsg("HỆ THỐNG",`✅ Đã cập nhật trạng thái nhân viên ${emp.name} thành "Đã nghỉ".`,"");
+                showSystemMsg("HỆ THỐNG",`✅ Đã cập nhật trạng thái nhân viên ${emp.name} thành "Đã nghỉ".`, "info");
                 
                 employeesData.splice(idx, 1);
                 renderTable();
-            } catch(e) { console.error(e); alert("Lỗi cập nhật: "+e.message); }
+            } catch(e) { console.error(e); showSystemMsg("HỆ THỐNG",'Lỗi cập nhật: ' +e.message, "error"); }
             showLoading(false);
         }
     }
@@ -2539,7 +2691,7 @@
                 // Dùng await để đợi lưu xong mới tải lại danh sách
                 await updateAndAutoSave(empCode, type, dateStr);
             } else {
-                alert("Đã từ chối yêu cầu!");
+                showSystemMsg("HỆ THỐNG",'Đã từ chối yêu cầu!', "info");
             }
 
             // 3. Tải lại danh sách yêu cầu
@@ -2548,7 +2700,7 @@
             
         } catch(e) {
             console.error(e);
-            alert("Lỗi xử lý: " + e.message);
+            showSystemMsg("HỆ THỐNG",'Lỗi xử lý: ' + e.message, "error");
         } finally {
             showLoading(false);
         }
@@ -3070,7 +3222,7 @@
 
         } catch(e) {
             console.error(e);
-            alert("Lỗi xuất file: " + e.message);
+            showSystemMsg("HỆ THỐNG",'Lỗi xuất file: ' + e.message, "error");
         } finally {
             btn.innerText = oldText; btn.disabled = false;
         }
@@ -4083,7 +4235,7 @@
 
         } catch (e) {
             console.error(e);
-            alert("Lỗi cập nhật: " + e.message);
+            showSystemMsg("HỆ THỐNG",'Lỗi cập nhật: ' + e.message, "error");
         } finally {
             btnSave.innerText = oldText; btnSave.disabled = false;
         }
@@ -4235,7 +4387,7 @@
 			
 		} catch (err) {
 			console.error(err);
-			alert("Lỗi khi duyệt đơn trên server: " + err.message);
+			showSystemMsg("HỆ THỐNG",'Lỗi khi duyệt đơn trên server: ' + err.message, "error");
 		}
 	}
 	
@@ -4275,7 +4427,7 @@
 			} catch (e) {
 				console.error(e);
 				showLoading(false);
-				showSystemMsg("Lỗi Kết Nối", "Không thể kiểm tra dữ liệu tuần: " + e.message, "error");
+				showSystemMsg("Lỗi Kết Nối", 'Không thể kiểm tra dữ liệu tuần: ' + e.message, "error");
 				return;
 			}
 			showLoading(false);
@@ -4319,6 +4471,214 @@
 
 		// 3. Hiển thị
 		popup.style.display = "flex";
+	}
+	
+	// ============================================================
+	// HÀM LOGIC MỚI: TÍNH TOÁN SỐ DƯ (Dán xuống cuối file script)
+	// ============================================================
+
+	function calculateEmployeeBalances(emp, ctx) {
+		// 1. CHUẨN BỊ DỮ LIỆU
+		const oldRec = ctx.oldSchedule.find(x => x.emp_code === emp.code);
+		const oldShifts = oldRec ? oldRec.shifts : [];
+
+		// --- [LOGIC MỚI] TỰ ĐỘNG CHUYỂN SỐ DƯ (ROLLOVER) ---
+		let liveBal = ctx.balCurrent[emp.code]; // Lấy số dư năm nay (VD: 2026)
+		const prevData = ctx.balPrev[emp.code]; // Lấy số dư năm ngoái (VD: 2025)
+
+		// Nếu CHƯA CÓ dòng số dư năm nay, nhưng CÓ dòng năm ngoái -> Thực hiện chuyển giao
+		if (!liveBal && prevData) {
+			console.log(`🔄 Đang khởi tạo số dư năm mới cho: ${emp.code}`);
+			liveBal = {
+				// 1. Phép tồn cũ = Phép còn lại của năm ngoái
+				pn_old_val: Number(prevData.pn_val) || 0,
+				
+				// 2. Bù tồn cũ = Bù còn lại của năm ngoái
+				nb_old_val: Number(prevData.nb_val) || 0,
+
+				// 3. Cấp mới phép năm nay (Mặc định 12, hoặc lấy từ profile nhân viên)
+				// Bạn có thể sửa số 12 này thành logic riêng (VD: thâm niên 5 năm được 13 ngày)
+				pn_val: 0, 
+				
+				// 4. Bù mới reset về 0
+				nb_val: 0
+			};
+		} 
+		// Nếu chưa có cả năm cũ lẫn năm mới -> Tạo mới tinh
+		else if (!liveBal) {
+			liveBal = { pn_val: 12.0, nb_val: 0, pn_old_val: 0, nb_old_val: 0 };
+		}
+		// -----------------------------------------------------
+
+		// Lấy mốc trần để tính toán Undo (Giữ nguyên code cũ)
+		const maxPNOld = prevData ? (Number(prevData.pn_val) || 0) : 999; 
+		const maxNBOld = prevData ? (Number(prevData.nb_val) || 0) : 999;
+
+		// Clone dữ liệu để tính toán (Giữ nguyên code cũ)
+		let current = {
+			pn: Number(liveBal.pn_val) || 0,
+			pn_old: Number(liveBal.pn_old_val) || 0,
+			nb: Number(liveBal.nb_val) || 0,
+			nb_old: Number(liveBal.nb_old_val) || 0
+		};
+
+		// 2. HOÀN TÁC (REVERT) - Trả lại những gì đã trừ ở Lịch Cũ
+		const expireDateObj = new Date(ctx.pnExpireDate); 
+		expireDateObj.setHours(23, 59, 59, 999);
+
+		oldShifts.forEach(s => {
+			const usage = parseShiftUsage(s);
+			// Trả Phép
+			if (usage.p > 0) {
+				const spaceInOld = maxPNOld - current.pn_old;
+				if (spaceInOld > 0) {
+					const amountToOld = Math.min(usage.p, spaceInOld);
+					current.pn_old += amountToOld;
+					current.pn += (usage.p - amountToOld);
+				} else {
+					current.pn += usage.p;
+				}
+			}
+			// Trả Bù
+			if (usage.b > 0) {
+				const spaceInOld = maxNBOld - current.nb_old;
+				if (spaceInOld > 0) {
+					const amountToOld = Math.min(usage.b, spaceInOld);
+					current.nb_old += amountToOld;
+					current.nb += (usage.b - amountToOld);
+				} else {
+					current.nb += usage.b;
+				}
+			}
+		});
+
+		// 3. CỘNG PHÁT SINH (ACCRUE)
+		const supLogs = [];
+		
+		// 3.1 Phép tháng 15
+		if (ctx.autoPhepReason && ctx.target15Date) {
+			let isEligible = true;
+			if (emp.join_date) {
+				const joinDate = new Date(emp.join_date);
+				joinDate.setHours(0,0,0,0);
+				const diffDays = Math.ceil((ctx.target15Date - joinDate) / (1000 * 60 * 60 * 24));
+				if (diffDays < 15) isEligible = false;
+			}
+			if (isEligible) {
+				const hasMonthlyLeave = ctx.history.some(h => h.emp_code === emp.code && h.type === 'PN' && h.reason && h.reason.includes(ctx.autoPhepReason));
+				if (!hasMonthlyLeave) {
+					current.pn += 1.0;
+					supLogs.push({ emp_code: emp.code, type: 'PN', amount: 1.0, reason: ctx.autoPhepReason, date: new Date() });
+				}
+			}
+		}
+
+		// 3.2 Bù Lễ (Phân loại năm Cũ/Mới)
+		const ALLOWED_SHIFTS = ["S", "C", "HC", "S1", "CT", "S+", "NC"];
+		emp.shifts.forEach((s, idx) => {
+			const dObj = new Date(ctx.y, ctx.m - 1, ctx.d + idx);
+			const shiftYear = dObj.getFullYear();
+			const key = `${dObj.getDate()}/${dObj.getMonth()+1}`;
+			const cleanS = s ? s.trim().toUpperCase() : "";
+			
+			if (ctx.holidays[key] && ALLOWED_SHIFTS.includes(cleanS)) {
+				const hInfo = ctx.holidays[key];
+				const reasonCheck = `(${dObj.getDate()}/${dObj.getMonth()+1}/${shiftYear})-(${hInfo.note || 'Lễ'})`;
+				const isPaid = ctx.history.some(h => h.emp_code === emp.code && h.type === 'NB' && h.reason && h.reason.includes(reasonCheck));
+				
+				if (!isPaid) {
+					const amount = Number(hInfo.val);
+					// LOGIC QUAN TRỌNG: Tách năm
+					if (shiftYear < ctx.currentYear) {
+						current.nb_old += amount; 
+					} else {
+						current.nb += amount;     
+					}
+					supLogs.push({ emp_code: emp.code, type: 'NB', amount: amount, reason: `Bù Ngày Lễ ${reasonCheck}`, date: new Date() });
+				}
+			}
+		});
+
+		// 4. TRỪ TIÊU DÙNG (DEDUCT) - Lịch Mới
+		const requestsToCancel = [];
+		const LEAVE_CODES = ["P", "P/2", "NB", "NB/2", "0.5NB", "NC", "Ô", "TE", "L", "NM"];
+
+		emp.shifts.forEach((s, idx) => {
+			const code = s ? s.trim().toUpperCase() : "";
+			if (!code) return;
+
+			// Check hủy đơn
+			const oldS = oldShifts[idx] || "";
+			if (LEAVE_CODES.some(c => oldS.startsWith(c)) && s !== oldS) {
+				const dObj = new Date(ctx.y, ctx.m - 1, ctx.d + idx);
+				const dateISO = `${dObj.getFullYear()}-${String(dObj.getMonth()+1).padStart(2,'0')}-${String(dObj.getDate()).padStart(2,'0')}`;
+				requestsToCancel.push({ emp_code: emp.code, date: dateISO });
+			}
+
+			const usage = parseShiftUsage(s);
+			const currentShiftDate = new Date(ctx.y, ctx.m - 1, ctx.d + idx);
+
+			// Trừ Phép (Check Hạn)
+			if (usage.p > 0) {
+				if (currentShiftDate <= expireDateObj && current.pn_old >= usage.p) {
+					current.pn_old -= usage.p;
+				} else {
+					current.pn -= usage.p;
+				}
+			}
+			// Trừ Bù (Ưu tiên cũ)
+			if (usage.b > 0) {
+				if (current.nb_old >= usage.b) {
+					current.nb_old -= usage.b;
+				} else {
+					current.nb -= usage.b;
+				}
+			}
+		});
+
+		// [MỚI] BƯỚC 5: CHỐT SỔ (HARD RESET)
+		// Nếu tuần hiện tại đã vượt quá ngày hết hạn -> Ghi số 0 vào DB luôn
+		// ======================================================
+		
+		// Lấy ngày cuối tuần hiện tại để so sánh cho chắc chắn
+		const currentWeekEnd = new Date(ctx.y, ctx.m - 1, ctx.d + 6); 
+		
+		// Check hạn Phép (PN)
+		const pnExpire = new Date(ctx.pnExpireDate);
+		pnExpire.setHours(23, 59, 59, 999);
+		
+		if (currentWeekEnd > pnExpire) {
+			// Nếu đã qua ngày hết hạn, số dư tồn cũ phải về 0
+			// (Trừ khi bạn muốn giữ lại lịch sử, nhưng logic chuẩn là reset)
+			current.pn_old = 0;
+		}
+
+		// Check hạn Bù (NB) - Tương tự
+		const nbExpire = new Date(ctx.nbExpireDate);
+		nbExpire.setHours(23, 59, 59, 999);
+
+		if (currentWeekEnd > nbExpire) {
+			current.nb_old = 0;
+		}
+
+		return {
+			pn: parseFloat(current.pn.toFixed(2)),
+			pn_old: parseFloat(current.pn_old.toFixed(2)),
+			nb: parseFloat(current.nb.toFixed(2)),
+			nb_old: parseFloat(current.nb_old.toFixed(2)),
+			supLogs,
+			requestsToCancel
+		};
+	}
+
+	function parseShiftUsage(shiftStr) {
+		let p = 0, b = 0;
+		const code = shiftStr ? shiftStr.trim().toUpperCase() : "";
+		if (code === "P" || code === "P (1.0)") p = 1.0;
+		else if (code === "P/2" || code === "0.5P") p = 0.5;
+		if (code === "NB" || code === "NB (1.0)") b = 1.0;
+		else if (code === "NB/2" || code === "0.5NB") b = 0.5;
+		return { p, b };
 	}
 </script>
 </body>
